@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+model Cohort {
+  id        String           @id @default(cuid())
+  name      String
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  users     User[]
+  schedules CohortSchedule[]
+}
+
+model CohortSchedule {
+  id              String   @id @default(cuid())
+  cohortId        String
+  cohort          Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  moduleId        String
+  module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  startDate       DateTime?
+  preworkDue      DateTime?
+  sessionDate     DateTime?
+  sessionLocation String?
+  sessionZoomLink String?
+
+  @@unique([cohortId, moduleId])
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String
+  password    String
+  role        String       @default("STUDENT")
+  cohort               String?
+  cohortId             String?
+  cohortRef            Cohort?   @relation(fields: [cohortId], references: [id])
+  onboardedAt          DateTime?
+  createdAt            DateTime     @default(now())
+  certificateIssuedAt  DateTime?
+  notionAccessToken    String?
+  notionWorkspaceName  String?
+  notionWorkspaceIcon  String?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean   @default(false)
+  submissions          Submission[]
+  progress             Progress[]
+  notes                Note[]
+  coachingNotes        CoachingNote[]
+  worksheetResponses   WorksheetResponse[]
+  surveyResponses      SurveyResponse[]
+  notifications        Notification[]
+  supportTickets       SupportTicket[]
+  passwordResetTokens  PasswordResetToken[]
+  attendanceRecords    AttendanceRecord[]
+  crmLead              Lead?
+}
+
+// ─── CRM ──────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  company     String?
+  jobTitle    String?
+  linkedinUrl String?
+
+  // Pipeline
+  stage       String   @default("LEAD")
+  // LEAD | CONTACTED | QUALIFIED | PROPOSAL | ENROLLED | LOST
+
+  source      String?
+  // REFERRAL | LINKEDIN | WEBSITE | INSTAGRAM | COLD_EMAIL | EVENT | OTHER
+
+  lostReason  String?
+  priority    String   @default("NORMAL") // LOW | NORMAL | HIGH
+  tags        String[] @default([])
+  notes       String?
+
+  // Link to LMS user when converted to student
+  enrolledUserId String? @unique
+  enrolledUser   User?   @relation(fields: [enrolledUserId], references: [id])
+
+  activities  LeadActivity[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([stage])
+  @@index([email])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String   // NOTE | EMAIL | CALL | MEETING | STAGE_CHANGE | ENROLLED | CREATED
+  content   String?
+  metadata  String?  // JSON — used for stage_change { from, to }
+  createdBy String?  // admin user id
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // FEEDBACK | APPROVED | NEEDS_REVISION | ANNOUNCEMENT
+  title     String
+  body      String?
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model Module {
+  id          String       @id @default(cuid())
+  number      Int          @unique
+  title       String
+  subtitle    String?
+  description String?
+  week        Int
+  icon        String?
+  unlocked    Boolean      @default(true)
+  startDate       DateTime?
+  preworkDue      DateTime?
+  sessionDate     DateTime?
+  sessionLocation String?
+  sessionZoomLink String?
+  sections        Section[]
+  submissions     Submission[]
+  progress        Progress[]
+  attendance      AttendanceRecord[]
+  cohortSchedules CohortSchedule[]
+}
+
+model Section {
+  id            String     @id @default(cuid())
+  moduleId      String
+  module        Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type          String
+  title         String
+  content       String?
+  order         Int
+  notionPageId  String?
+  lastSyncedAt  DateTime?
+  resources     Resource[]
+  progress      Progress[]
+}
+
+model Resource {
+  id        String   @id @default(cuid())
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  url       String?
+  filePath  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  title       String
+  content     String?
+  fileUrl     String?
+  fileName    String?
+  status          String   @default("PENDING")
+  feedback        String?
+  aiFeedback      String?
+  aiReviewedAt    DateTime?
+  studentReply    String?
+  studentRepliedAt DateTime?
+  submittedAt     DateTime @default(now())
+  reviewedAt      DateTime?
+}
+
+model Progress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  sectionId   String?
+  section     Section? @relation(fields: [sectionId], references: [id])
+  completedAt DateTime @default(now())
+
+  @@unique([userId, sectionId])
+}
+
+model WorksheetResponse {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  worksheetId String
+  rows        Json
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, moduleId, worksheetId])
+}
+
+model Announcement {
+  id           String    @id @default(cuid())
+  title        String
+  body         String
+  emoji        String    @default("📣")
+  cohort       String?
+  pinned       Boolean   @default(false)
+  scheduledFor DateTime? // null = publish immediately
+  emailsSentAt DateTime? // null = emails not yet sent
+  createdAt    DateTime  @default(now())
+  createdBy    String
+}
+
+model SurveyResponse {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  answers     Json
+  submittedAt DateTime @default(now())
+
+  @@unique([userId, moduleId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  moduleId  String
+  content   String?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, moduleId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  attended  Boolean  @default(false)
+  note      String?
+  markedAt  DateTime @default(now())
+
+  @@unique([userId, moduleId])
+}
+
+model ReminderLog {
+  id        String   @id @default(cuid())
+  userId    String
+  moduleId  String
+  type      String   // PREWORK | SESSION
+  sentAt    DateTime @default(now())
+
+  @@unique([userId, moduleId, type])
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  category    String   // TECHNICAL | CONTENT | COACHING | BILLING | OTHER
+  description String
+  status      String   @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED
+  priority    String   @default("NORMAL") // LOW | NORMAL | HIGH
+  adminReply  String?
+  repliedAt   DateTime?
+  repliedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CoachingNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  authorId  String   // admin user id who wrote it
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
