@@ -50,6 +50,9 @@ model User {
   notionWorkspaceIcon  String?
   twoFactorSecret      String?
   twoFactorEnabled     Boolean   @default(false)
+  gmailRefreshToken    String?   // OAuth refresh token for Gmail sync
+  gmailEmail           String?   // which Gmail address is connected
+  gmailSyncedAt        DateTime? // last time we pulled Sent folder
   submissions          Submission[]
   progress             Progress[]
   notes                Note[]
@@ -185,6 +188,9 @@ model LeadActivity {
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   type      String   // NOTE | EMAIL | CALL | MEETING | STAGE_CHANGE | ENROLLED | CREATED
   content   String?
+  subject   String?  // email subject line
+  emailTo   String?  // recipient email address
+  source    String?  // COMPOSER | SEQUENCE | GMAIL_SYNC | TEMPLATE
   metadata  String?  // JSON — used for stage_change { from, to }
   createdBy String?  // admin user id
   createdAt DateTime @default(now())

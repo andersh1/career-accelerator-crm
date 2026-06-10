@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Mail, Phone, Building2, Briefcase, Linkedin, Tag,
   Loader2, CheckCircle2, Trash2, Edit2, MessageSquare, Send,
-  ChevronDown, UserCheck, Sparkles, FileText,
+  ChevronDown, UserCheck, Sparkles, FileText, PenLine,
 } from "lucide-react";
 import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, stageInfo, sourceLabel } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
@@ -14,11 +14,13 @@ import StudentProgressPanel from "@/components/crm/StudentProgressPanel";
 import TaskPanel from "@/components/crm/TaskPanel";
 import EmailTemplateMenu from "@/components/crm/EmailTemplates";
 import SequenceEnrollPanel from "@/components/crm/SequenceEnrollPanel";
+import EmailComposer from "@/components/crm/EmailComposer";
 import { useToast } from "@/lib/toast";
 
 interface Activity {
   id: string; type: string; content: string | null;
   metadata: string | null; createdBy: string | null; createdAt: string;
+  subject?: string | null; emailTo?: string | null; source?: string | null;
 }
 
 interface Lead {
@@ -54,6 +56,7 @@ export default function LeadDetailPage() {
   const [converting,    setConverting]    = useState(false);
   const [deleting,      setDeleting]      = useState(false);
   const [enriching,     setEnriching]     = useState(false);
+  const [showComposer,  setShowComposer]  = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/crm/leads/${id}`);
@@ -162,6 +165,14 @@ export default function LeadDetailPage() {
             className="flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-800 px-3 py-1.5 rounded-lg hover:bg-violet-50 border border-violet-200 transition disabled:opacity-50">
             {enriching ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
             Enrich
+          </button>
+          <button onClick={() => setShowComposer(v => !v)}
+            className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition ${
+              showComposer
+                ? "bg-blue-600 text-white border-blue-600"
+                : "text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-200"
+            }`}>
+            <PenLine size={13} /> Compose Email
           </button>
           <Link href={`/leads/${id}/proposal`}
             className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-50 border border-emerald-200 transition">
@@ -347,6 +358,18 @@ export default function LeadDetailPage() {
 
         {/* Right: activity feed */}
         <div className="lg:col-span-2 space-y-4">
+
+          {/* Email Composer */}
+          {showComposer && (
+            <EmailComposer
+              leadId={id}
+              leadName={`${lead.firstName} ${lead.lastName}`}
+              leadEmail={lead.email}
+              onSent={async () => { await load(); success("Email sent and logged to timeline."); }}
+              onClose={() => setShowComposer(false)}
+            />
+          )}
+
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Log Activity</p>
             <div className="flex gap-2 mb-3 flex-wrap items-center">
@@ -410,14 +433,27 @@ export default function LeadDetailPage() {
                       stageTo   = stageInfo(parsed.to)?.label   ?? parsed.to;
                     } catch { /* ignore */ }
                   }
+                  const isEmail = act.type === "EMAIL";
+                  const sourceBadge =
+                    act.source === "COMPOSER"   ? { label: "Sent via CRM",  cls: "bg-blue-50 text-blue-600" }
+                    : act.source === "GMAIL_SYNC" ? { label: "Gmail",         cls: "bg-red-50 text-red-600" }
+                    : act.source === "SEQUENCE"   ? { label: "Sequence",      cls: "bg-violet-50 text-violet-600" }
+                    : act.source === "TEMPLATE"   ? { label: "Template",      cls: "bg-emerald-50 text-emerald-600" }
+                    : null;
+
                   return (
                     <div key={act.id} className="px-5 py-4 flex items-start gap-3">
                       <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-sm">
                         {meta.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span className="text-xs font-bold text-slate-700">{meta.label}</span>
+                          {sourceBadge && (
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${sourceBadge.cls}`}>
+                              {sourceBadge.label}
+                            </span>
+                          )}
                           <span className="text-[11px] text-slate-400">
                             {new Date(act.createdAt).toLocaleDateString("en-US", {
                               month: "short", day: "numeric",
@@ -425,6 +461,12 @@ export default function LeadDetailPage() {
                             })}
                           </span>
                         </div>
+                        {isEmail && act.subject && (
+                          <p className="text-sm font-semibold text-slate-800 mb-0.5 truncate">{act.subject}</p>
+                        )}
+                        {isEmail && act.emailTo && (
+                          <p className="text-[11px] text-slate-400 mb-1">To: {act.emailTo}</p>
+                        )}
                         {act.type === "STAGE_CHANGE" ? (
                           <p className="text-sm text-slate-600">
                             <span className="line-through text-slate-400">{stageFrom}</span>
@@ -432,7 +474,7 @@ export default function LeadDetailPage() {
                             <span className="font-semibold text-slate-800">{stageTo}</span>
                           </p>
                         ) : act.content ? (
-                          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{act.content}</p>
+                          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap line-clamp-4">{act.content}</p>
                         ) : null}
                       </div>
                     </div>
