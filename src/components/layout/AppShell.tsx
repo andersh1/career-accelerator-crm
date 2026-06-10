@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Kanban, List, TrendingUp, Settings, LogOut, Menu, X,
-  Users, ChevronRight, CheckSquare,
+  Users, ChevronRight, CheckSquare, Search,
 } from "lucide-react";
+import GlobalSearch from "@/components/crm/GlobalSearch";
 
 const nav = [
   { href: "/pipeline",  label: "Pipeline",   icon: Kanban       },
@@ -35,8 +36,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
+      {/* Search trigger */}
+      <div className="px-3 pb-3">
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition text-xs"
+        >
+          <Search size={12} />
+          <span className="flex-1 text-left">Search leads…</span>
+          <kbd className="font-mono text-[10px] bg-slate-700 px-1.5 py-0.5 rounded opacity-70">⌘K</kbd>
+        </button>
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
+      <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto scrollbar-thin">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = href === "/pipeline"
             ? pathname === "/pipeline"
@@ -91,6 +104,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
+      <GlobalSearch />
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-[240px] shrink-0 bg-slate-900 border-r border-slate-800/60">
         <SidebarContent />

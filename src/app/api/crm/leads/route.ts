@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { computeScore } from "@/lib/scoring";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
@@ -39,7 +40,22 @@ export async function GET(req: NextRequest) {
     orderBy: { updatedAt: "desc" },
   });
 
-  return NextResponse.json(leads);
+  // Attach computed score to each lead
+  const withScores = leads.map(lead => ({
+    ...lead,
+    score: computeScore({
+      stage:         lead.stage,
+      updatedAt:     lead.updatedAt,
+      priority:      lead.priority,
+      dealValue:     lead.dealValue ?? 0,
+      phone:         lead.phone,
+      company:       lead.company,
+      linkedinUrl:   lead.linkedinUrl,
+      activityCount: lead._count.activities,
+    }),
+  }));
+
+  return NextResponse.json(withScores);
 }
 
 // POST /api/crm/leads
