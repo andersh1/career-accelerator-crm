@@ -199,10 +199,26 @@ export async function GET() {
     spotsLeft:  c.capacity ? Math.max(0, c.capacity - c._count.users) : null,
   }));
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Weighted pipeline (close probability per stage)
+  // ─────────────────────────────────────────────────────────────────────────
+  const STAGE_PROB: Record<string, number> = {
+    LEAD: 0.05, CONTACTED: 0.15, QUALIFIED: 0.35, PROPOSAL: 0.65, ENROLLED: 1, LOST: 0,
+  };
+  const weightedPipeline = leads
+    .filter(l => l.stage !== "LOST")
+    .reduce((sum, l) => sum + (l.dealValue ?? 0) * (STAGE_PROB[l.stage] ?? 0.05), 0);
+
+  const funnelWeighted = funnel.map(f => ({
+    ...f,
+    probability: Math.round((STAGE_PROB[f.stage] ?? 0) * 100),
+    weightedValue: Math.round(f.value * (STAGE_PROB[f.stage] ?? 0)),
+  }));
+
   return NextResponse.json({
-    kpis: { total, enrolled, lost, active, winRate, pipelineValue, avgDeal },
+    kpis: { total, enrolled, lost, active, winRate, pipelineValue, avgDeal, weightedPipeline: Math.round(weightedPipeline) },
     mom:  { newThisMonth, newLastMonth, newMoM, enrolledThisMonth, enrolledLastMonth, enrolledMoM },
-    funnel,
+    funnel: funnelWeighted,
     sources,
     monthly,
     timeInStage,

@@ -13,6 +13,7 @@ import LeadForm from "@/components/crm/LeadForm";
 import StudentProgressPanel from "@/components/crm/StudentProgressPanel";
 import TaskPanel from "@/components/crm/TaskPanel";
 import EmailTemplateMenu from "@/components/crm/EmailTemplates";
+import SequenceEnrollPanel from "@/components/crm/SequenceEnrollPanel";
 import { useToast } from "@/lib/toast";
 
 interface Activity {
@@ -361,6 +362,7 @@ export default function LeadDetailPage() {
           </div>
 
           <TaskPanel leadId={id} />
+          <SequenceEnrollPanel leadId={id} />
 
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-100">

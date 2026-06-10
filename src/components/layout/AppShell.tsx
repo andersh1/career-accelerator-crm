@@ -5,14 +5,16 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Kanban, List, TrendingUp, Settings, LogOut, Menu, X,
-  Users, ChevronRight, CheckSquare, Search,
+  Users, ChevronRight, CheckSquare, Search, Mail,
 } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
+import NotificationBell from "@/components/crm/NotificationBell";
 
 const nav = [
   { href: "/pipeline",  label: "Pipeline",   icon: Kanban       },
   { href: "/leads",     label: "All Leads",  icon: List         },
   { href: "/tasks",     label: "Tasks",      icon: CheckSquare  },
+  { href: "/sequences", label: "Sequences",  icon: Mail         },
   { href: "/analytics", label: "Analytics",  icon: TrendingUp   },
 ];
 
@@ -91,13 +93,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <p className="text-xs text-slate-500 truncate">{session.user.email}</p>
           </div>
         )}
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-colors"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          Sign out
-        </button>
+        <div className="flex items-center justify-between px-3 py-1">
+          <NotificationBell />
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-2 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-colors px-2"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

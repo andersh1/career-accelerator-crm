@@ -94,8 +94,9 @@ model Lead {
   enrolledUserId String? @unique
   enrolledUser   User?   @relation(fields: [enrolledUserId], references: [id])
 
-  activities  LeadActivity[]
-  tasks       Task[]
+  activities          LeadActivity[]
+  tasks               Task[]
+  sequenceEnrollments EmailSequenceEnrollment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -117,6 +118,58 @@ model Task {
 
   @@index([leadId])
   @@index([dueAt])
+}
+
+model CRMNotification {
+  id        String   @id @default(cuid())
+  type      String   // TASK_OVERDUE | LEAD_ENROLLED | NEW_INTAKE | LEAD_COLD | SEQUENCE_SENT
+  title     String
+  body      String?
+  leadId    String?
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
+}
+
+model EmailSequence {
+  id          String                    @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  steps       EmailSequenceStep[]
+  enrollments EmailSequenceEnrollment[]
+}
+
+model EmailSequenceStep {
+  id         String        @id @default(cuid())
+  sequenceId String
+  sequence   EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  stepNumber Int
+  subject    String
+  body       String
+  delayDays  Int           @default(0)
+
+  @@unique([sequenceId, stepNumber])
+  @@index([sequenceId])
+}
+
+model EmailSequenceEnrollment {
+  id          String        @id @default(cuid())
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sequenceId  String
+  sequence    EmailSequence @relation(fields: [sequenceId], references: [id])
+  currentStep Int           @default(1)
+  status      String        @default("ACTIVE") // ACTIVE | PAUSED | COMPLETED | CANCELLED
+  nextSendAt  DateTime?
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  @@unique([leadId, sequenceId])
+  @@index([status, nextSendAt])
 }
 
 model LeadActivity {

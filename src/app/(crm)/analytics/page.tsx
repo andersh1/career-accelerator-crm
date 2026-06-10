@@ -10,13 +10,13 @@ import {
 interface AnalyticsData {
   kpis: {
     total: number; enrolled: number; lost: number; active: number;
-    winRate: number; pipelineValue: number; avgDeal: number;
+    winRate: number; pipelineValue: number; avgDeal: number; weightedPipeline: number;
   };
   mom: {
     newThisMonth: number; newLastMonth: number; newMoM: number | null;
     enrolledThisMonth: number; enrolledLastMonth: number; enrolledMoM: number | null;
   };
-  funnel: { stage: string; count: number; value: number }[];
+  funnel: { stage: string; count: number; value: number; probability: number; weightedValue: number }[];
   sources: { key: string; count: number; value: number }[];
   monthly: { month: string; label: string; leads: number; enrolled: number; revenue: number }[];
   timeInStage: { stage: string; avgDaysToNext: number; avgDaysCurrent: number; sampleSize: number }[];
@@ -138,14 +138,22 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Revenue KPIs */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-3">
             <DollarSign size={16} className="opacity-70" />
-            <span className="text-xs font-bold uppercase tracking-wide opacity-70">Pipeline Value</span>
+            <span className="text-xs font-bold uppercase tracking-wide opacity-70">Gross Pipeline</span>
           </div>
           <p className="text-3xl font-extrabold">{fmt$$(kpis.pipelineValue)}</p>
-          <p className="text-xs opacity-60 mt-1">All non-lost leads</p>
+          <p className="text-xs opacity-60 mt-1">All non-lost deal values</p>
+        </div>
+        <div className="bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl p-5 text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={16} className="opacity-70" />
+            <span className="text-xs font-bold uppercase tracking-wide opacity-70">Weighted Forecast</span>
+          </div>
+          <p className="text-3xl font-extrabold">{fmt$$(kpis.weightedPipeline)}</p>
+          <p className="text-xs opacity-60 mt-1">× close probability per stage</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-3">
@@ -210,7 +218,10 @@ export default function AnalyticsPage() {
                         <span className="text-sm font-semibold text-slate-700">{STAGE_LABELS[stage.stage] ?? stage.stage}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400">{stage.value > 0 ? fmt$$(stage.value) : ""}</span>
+                        {stage.weightedValue > 0 && (
+                          <span className="text-xs font-semibold text-violet-600">{fmt$$(stage.weightedValue)}</span>
+                        )}
+                        <span className="text-xs text-slate-400">{stage.probability}%</span>
                         <span className="text-sm font-bold text-slate-900">{stage.count}</span>
                         {convRate !== null && (
                           <span className="text-xs text-slate-400">→ {convRate}%</span>

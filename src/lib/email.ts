@@ -26,6 +26,29 @@ function wrap(title: string, body: string) {
 </body></html>`;
 }
 
+export async function sendSequenceEmail({
+  to, subject, body, leadName,
+}: {
+  to: string; subject: string; body: string; leadName: string;
+}) {
+  if (!resend) return { ok: false, error: "No API key" };
+  const firstName = leadName.split(" ")[0] || leadName;
+  // Replace template variables
+  const resolvedBody = body
+    .replace(/\{\{firstName\}\}/g, firstName)
+    .replace(/\{\{name\}\}/g, leadName);
+  const htmlBody = resolvedBody
+    .split("\n\n")
+    .map(p => `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">${p.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+  try {
+    await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, htmlBody) });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
 export async function sendStudentInviteEmail({
   to, studentName, resetUrl, cohort,
 }: {
