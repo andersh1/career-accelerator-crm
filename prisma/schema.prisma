@@ -86,6 +86,7 @@ model Lead {
   priority      String   @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
   paymentStatus String?  @default("UNPAID")
   // UNPAID | PAID_FULL | PAYMENT_PLAN | SCHOLARSHIP | OUTSTANDING
+  dealValue   Int?     @default(0) // USD, whole dollars
   tags        String[] @default([])
   notes       String?
 

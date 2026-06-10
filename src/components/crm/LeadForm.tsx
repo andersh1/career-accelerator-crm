@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, Tag } from "lucide-react";
+import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, Tag, DollarSign } from "lucide-react";
 import { STAGES, SOURCES, PRIORITIES } from "./constants";
 import { useToast } from "@/lib/toast";
 
@@ -17,6 +17,7 @@ export interface LeadFormData {
   source:        string;
   priority:      string;
   paymentStatus: string;
+  dealValue:     string;
   tags:          string;
   notes:         string;
 }
@@ -32,7 +33,7 @@ const PAYMENT_OPTIONS = [
 const EMPTY: LeadFormData = {
   firstName: "", lastName: "", email: "", phone: "", company: "",
   jobTitle: "", linkedinUrl: "", stage: "LEAD", source: "", priority: "NORMAL",
-  paymentStatus: "UNPAID", tags: "", notes: "",
+  paymentStatus: "UNPAID", dealValue: "", tags: "", notes: "",
 };
 
 interface Props {
@@ -57,6 +58,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
     try {
       const payload = {
         ...form,
+        dealValue: form.dealValue ? parseInt(form.dealValue, 10) : 0,
         tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       };
       const res = await fetch(
@@ -189,12 +191,23 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Payment Status</label>
-            <select value={form.paymentStatus} onChange={e => set("paymentStatus", e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
-              {PAYMENT_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Payment Status</label>
+              <select value={form.paymentStatus} onChange={e => set("paymentStatus", e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+                {PAYMENT_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Deal Value ($)</label>
+              <div className="relative">
+                <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="number" min="0" value={form.dealValue} onChange={e => set("dealValue", e.target.value)}
+                  placeholder="3500"
+                  className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+              </div>
+            </div>
           </div>
 
           <div>

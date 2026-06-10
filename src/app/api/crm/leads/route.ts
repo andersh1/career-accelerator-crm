@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { firstName, lastName, email, phone, company, jobTitle, linkedinUrl,
-          stage, source, priority, tags, notes } = body;
+          stage, source, priority, paymentStatus, dealValue, tags, notes } = body;
 
   if (!firstName || !lastName || !email) {
     return NextResponse.json({ error: "First name, last name and email are required" }, { status: 400 });
@@ -58,15 +58,17 @@ export async function POST(req: NextRequest) {
   const lead = await prisma.lead.create({
     data: {
       firstName, lastName, email: email.toLowerCase().trim(),
-      phone:       phone       || null,
-      company:     company     || null,
-      jobTitle:    jobTitle    || null,
-      linkedinUrl: linkedinUrl || null,
-      stage:    stage    || "LEAD",
-      source:   source   || null,
-      priority: priority || "NORMAL",
-      tags:     Array.isArray(tags) ? tags : [],
-      notes:    notes || null,
+      phone:         phone         || null,
+      company:       company       || null,
+      jobTitle:      jobTitle      || null,
+      linkedinUrl:   linkedinUrl   || null,
+      stage:         stage         || "LEAD",
+      source:        source        || null,
+      priority:      priority      || "NORMAL",
+      paymentStatus: paymentStatus || "UNPAID",
+      dealValue:     typeof dealValue === "number" ? dealValue : 0,
+      tags:          Array.isArray(tags) ? tags : [],
+      notes:         notes || null,
     },
   });
 
