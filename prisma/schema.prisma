@@ -94,12 +94,28 @@ model Lead {
   enrolledUser   User?   @relation(fields: [enrolledUserId], references: [id])
 
   activities  LeadActivity[]
+  tasks       Task[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([stage])
   @@index([email])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title       String
+  notes       String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([dueAt])
 }
 
 model LeadActivity {

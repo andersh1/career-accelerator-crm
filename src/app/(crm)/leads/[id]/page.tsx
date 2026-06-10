@@ -11,6 +11,8 @@ import {
 import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, stageInfo, sourceLabel } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
 import StudentProgressPanel from "@/components/crm/StudentProgressPanel";
+import TaskPanel from "@/components/crm/TaskPanel";
+import EmailTemplateMenu from "@/components/crm/EmailTemplates";
 import { useToast } from "@/lib/toast";
 
 interface Activity {
@@ -323,7 +325,7 @@ export default function LeadDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Log Activity</p>
-            <div className="flex gap-2 mb-3 flex-wrap">
+            <div className="flex gap-2 mb-3 flex-wrap items-center">
               {ACTIVITY_TYPES.map(t => (
                 <button key={t.key} onClick={() => setActType(t.key)}
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition ${
@@ -334,6 +336,12 @@ export default function LeadDetailPage() {
                   {t.icon} {t.label}
                 </button>
               ))}
+              <div className="ml-auto">
+                <EmailTemplateMenu
+                  leadName={`${lead.firstName} ${lead.lastName}`}
+                  onSelect={(body) => { setActType("EMAIL"); setActContent(body); }}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <textarea
@@ -351,6 +359,8 @@ export default function LeadDetailPage() {
               </button>
             </div>
           </div>
+
+          <TaskPanel leadId={id} />
 
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-100">

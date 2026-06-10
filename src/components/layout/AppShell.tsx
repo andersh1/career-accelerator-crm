@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Kanban, List, TrendingUp, Settings, LogOut, Menu, X,
-  Users, ChevronRight,
+  Users, ChevronRight, CheckSquare,
 } from "lucide-react";
 
 const nav = [
-  { href: "/pipeline",  label: "Pipeline",   icon: Kanban     },
-  { href: "/leads",     label: "All Leads",  icon: List       },
-  { href: "/analytics", label: "Analytics",  icon: TrendingUp },
+  { href: "/pipeline",  label: "Pipeline",   icon: Kanban       },
+  { href: "/leads",     label: "All Leads",  icon: List         },
+  { href: "/tasks",     label: "Tasks",      icon: CheckSquare  },
+  { href: "/analytics", label: "Analytics",  icon: TrendingUp   },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
