@@ -6,24 +6,33 @@ import { STAGES, SOURCES, PRIORITIES } from "./constants";
 import { useToast } from "@/lib/toast";
 
 export interface LeadFormData {
-  firstName: string;
-  lastName:  string;
-  email:     string;
-  phone:     string;
-  company:   string;
-  jobTitle:  string;
-  linkedinUrl: string;
-  stage:     string;
-  source:    string;
-  priority:  string;
-  tags:      string;
-  notes:     string;
+  firstName:     string;
+  lastName:      string;
+  email:         string;
+  phone:         string;
+  company:       string;
+  jobTitle:      string;
+  linkedinUrl:   string;
+  stage:         string;
+  source:        string;
+  priority:      string;
+  paymentStatus: string;
+  tags:          string;
+  notes:         string;
 }
+
+const PAYMENT_OPTIONS = [
+  { key: "UNPAID",       label: "Unpaid"       },
+  { key: "PAID_FULL",    label: "Paid in Full" },
+  { key: "PAYMENT_PLAN", label: "Payment Plan" },
+  { key: "SCHOLARSHIP",  label: "Scholarship"  },
+  { key: "OUTSTANDING",  label: "Outstanding"  },
+];
 
 const EMPTY: LeadFormData = {
   firstName: "", lastName: "", email: "", phone: "", company: "",
   jobTitle: "", linkedinUrl: "", stage: "LEAD", source: "", priority: "NORMAL",
-  tags: "", notes: "",
+  paymentStatus: "UNPAID", tags: "", notes: "",
 };
 
 interface Props {
@@ -178,6 +187,14 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
                 {PRIORITIES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Payment Status</label>
+            <select value={form.paymentStatus} onChange={e => set("paymentStatus", e.target.value)}
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+              {PAYMENT_OPTIONS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
           </div>
 
           <div>

@@ -11,8 +11,15 @@ export async function GET() {
 
   const cohorts = await prisma.cohort.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, isActive: true },
+    select: {
+      id: true, name: true, isActive: true, capacity: true,
+      _count: { select: { users: true } },
+    },
   });
 
-  return NextResponse.json(cohorts);
+  return NextResponse.json(cohorts.map(c => ({
+    ...c,
+    enrolled:   c._count.users,
+    spotsLeft:  c.capacity != null ? Math.max(0, c.capacity - c._count.users) : null,
+  })));
 }

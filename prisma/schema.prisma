@@ -12,6 +12,7 @@ model Cohort {
   id        String           @id @default(cuid())
   name      String
   isActive  Boolean          @default(true)
+  capacity  Int?
   createdAt DateTime         @default(now())
   users     User[]
   schedules CohortSchedule[]
@@ -81,8 +82,10 @@ model Lead {
   source      String?
   // REFERRAL | LINKEDIN | WEBSITE | INSTAGRAM | COLD_EMAIL | EVENT | OTHER
 
-  lostReason  String?
-  priority    String   @default("NORMAL") // LOW | NORMAL | HIGH
+  lostReason    String?
+  priority      String   @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  paymentStatus String?  @default("UNPAID")
+  // UNPAID | PAID_FULL | PAYMENT_PLAN | SCHOLARSHIP | OUTSTANDING
   tags        String[] @default([])
   notes       String?
 

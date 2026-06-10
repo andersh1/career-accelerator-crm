@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, stageInfo, sourceLabel } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
+import StudentProgressPanel from "@/components/crm/StudentProgressPanel";
 import { useToast } from "@/lib/toast";
 
 interface Activity {
@@ -21,14 +22,14 @@ interface Lead {
   id: string; firstName: string; lastName: string; email: string;
   phone: string | null; company: string | null; jobTitle: string | null;
   linkedinUrl: string | null; stage: string; source: string | null;
-  priority: string; tags: string[]; notes: string | null; lostReason: string | null;
+  priority: string; paymentStatus: string | null; tags: string[]; notes: string | null; lostReason: string | null;
   enrolledUserId: string | null;
   enrolledUser: { id: string; name: string; email: string; cohort: string | null } | null;
   activities: Activity[];
   createdAt: string; updatedAt: string;
 }
 
-interface Cohort { id: string; name: string; isActive: boolean; }
+interface Cohort { id: string; name: string; isActive: boolean; capacity: number | null; enrolled: number; spotsLeft: number | null; }
 
 export default function LeadDetailPage() {
   const { id }   = useParams<{ id: string }>();
@@ -263,6 +264,10 @@ export default function LeadDetailPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-slate-500">Payment</span>
+                <PaymentBadge status={lead.paymentStatus} />
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-slate-500">Added</span>
                 <span className="font-medium text-slate-700">
                   {new Date(lead.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -309,6 +314,9 @@ export default function LeadDetailPage() {
               <UserCheck size={16} /> Convert to Student
             </button>
           )}
+
+          {/* LMS Progress Panel — shown once enrolled */}
+          {isEnrolled && <StudentProgressPanel leadId={id} />}
         </div>
 
         {/* Right: activity feed */}
@@ -412,8 +420,8 @@ export default function LeadDetailPage() {
             company: lead.company ?? "", jobTitle: lead.jobTitle ?? "",
             linkedinUrl: lead.linkedinUrl ?? "",
             stage: lead.stage, source: lead.source ?? "",
-            priority: lead.priority, tags: lead.tags.join(", "),
-            notes: lead.notes ?? "",
+            priority: lead.priority, paymentStatus: lead.paymentStatus ?? "UNPAID",
+            tags: lead.tags.join(", "), notes: lead.notes ?? "",
           }}
         />
       )}
@@ -438,7 +446,12 @@ export default function LeadDetailPage() {
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">— No cohort yet —</option>
                   {cohorts.filter(c => c.isActive).map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id} disabled={c.spotsLeft === 0}>
+                      {c.name}
+                      {c.spotsLeft !== null
+                        ? ` — ${c.spotsLeft === 0 ? "FULL" : `${c.spotsLeft} spot${c.spotsLeft === 1 ? "" : "s"} left`}`
+                        : ` (${c.enrolled} enrolled)`}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -479,5 +492,30 @@ export default function LeadDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── PaymentBadge ─────────────────────────────────────────────────────────────
+const PAYMENT_STYLES: Record<string, string> = {
+  PAID_FULL:     "bg-emerald-100 text-emerald-700",
+  PAYMENT_PLAN:  "bg-blue-100 text-blue-700",
+  SCHOLARSHIP:   "bg-violet-100 text-violet-700",
+  OUTSTANDING:   "bg-red-100 text-red-700",
+  UNPAID:        "bg-slate-100 text-slate-500",
+};
+const PAYMENT_LABELS: Record<string, string> = {
+  PAID_FULL:    "Paid in Full",
+  PAYMENT_PLAN: "Payment Plan",
+  SCHOLARSHIP:  "Scholarship",
+  OUTSTANDING:  "Outstanding",
+  UNPAID:       "Unpaid",
+};
+
+function PaymentBadge({ status }: { status: string | null }) {
+  const key = status ?? "UNPAID";
+  return (
+    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${PAYMENT_STYLES[key] ?? PAYMENT_STYLES.UNPAID}`}>
+      {PAYMENT_LABELS[key] ?? key}
+    </span>
   );
 }
