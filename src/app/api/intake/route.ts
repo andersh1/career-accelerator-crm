@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { enrichFromEmail } from "@/lib/enrichment";
 
 export async function POST(req: NextRequest) {
   // Optional API key check
@@ -55,13 +56,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: existing.id, created: false }, { status: 200 });
   }
 
+  // Auto-enrich from email domain if no company provided
+  let resolvedCompany = company || null;
+  if (!resolvedCompany) {
+    try {
+      const enriched = await enrichFromEmail(email.toLowerCase().trim());
+      if (enriched?.company) resolvedCompany = enriched.company;
+    } catch { /* non-fatal */ }
+  }
+
   const lead = await prisma.lead.create({
     data: {
       firstName: first,
       lastName:  last,
       email:     email.toLowerCase().trim(),
       phone:     phone     || null,
-      company:   company   || null,
+      company:   resolvedCompany,
       jobTitle:  jobTitle  || null,
       linkedinUrl: linkedinUrl || null,
       stage:   "LEAD",
@@ -76,9 +86,20 @@ export async function POST(req: NextRequest) {
     data: {
       leadId:  lead.id,
       type:    "CREATED",
-      content: `Submitted interest form (source: ${source})`,
+      content: `Submitted interest form (source: ${source})${resolvedCompany ? ` — enriched company: ${resolvedCompany}` : ""}`,
     },
   });
+
+  // Fire a CRM notification for new intake
+  await prisma.cRMNotification.create({
+    data: {
+      type:   "NEW_INTAKE",
+      title:  `New lead: ${first} ${last}`,
+      body:   resolvedCompany ? `from ${resolvedCompany}` : email.toLowerCase().trim(),
+      leadId: lead.id,
+      href:   `/leads/${lead.id}`,
+    },
+  }).catch(() => {});
 
   return NextResponse.json({ id: lead.id, created: true }, { status: 201 });
 }

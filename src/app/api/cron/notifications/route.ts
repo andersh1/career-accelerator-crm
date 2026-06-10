@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendSlack, coldLeadBlocks } from "@/lib/slack";
 
 function authOk(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -70,15 +71,18 @@ export async function GET(req: NextRequest) {
     if (existing) continue;
 
     const daysStale = Math.floor((now.getTime() - lead.updatedAt.getTime()) / 86400000);
+    const name = `${lead.firstName} ${lead.lastName}`;
     await prisma.cRMNotification.create({
       data: {
         type:   "LEAD_COLD",
-        title:  `${lead.firstName} ${lead.lastName} hasn't been touched in ${daysStale} days`,
+        title:  `${name} hasn't been touched in ${daysStale} days`,
         body:   `High-priority lead — consider a follow-up`,
         leadId: lead.id,
         href:   `/leads/${lead.id}`,
       },
     });
+    const { text, blocks } = coldLeadBlocks(name, lead.id, daysStale);
+    await sendSlack(text, blocks);
     created++;
   }
 

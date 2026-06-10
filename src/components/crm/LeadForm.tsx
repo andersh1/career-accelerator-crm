@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, Tag, DollarSign } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, Tag, DollarSign, UserCircle2 } from "lucide-react";
 import { STAGES, SOURCES, PRIORITIES } from "./constants";
 import { useToast } from "@/lib/toast";
 
@@ -18,6 +18,7 @@ export interface LeadFormData {
   priority:      string;
   paymentStatus: string;
   dealValue:     string;
+  assignedTo:    string;
   tags:          string;
   notes:         string;
 }
@@ -33,7 +34,7 @@ const PAYMENT_OPTIONS = [
 const EMPTY: LeadFormData = {
   firstName: "", lastName: "", email: "", phone: "", company: "",
   jobTitle: "", linkedinUrl: "", stage: "LEAD", source: "", priority: "NORMAL",
-  paymentStatus: "UNPAID", dealValue: "", tags: "", notes: "",
+  paymentStatus: "UNPAID", dealValue: "", assignedTo: "", tags: "", notes: "",
 };
 
 interface Props {
@@ -43,10 +44,19 @@ interface Props {
   editId?:  string;
 }
 
+interface AdminUser { id: string; name: string | null; email: string; }
+
 export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
   const { success, error: toastError } = useToast();
   const [form, setForm] = useState<LeadFormData>({ ...EMPTY, ...initial });
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+
+  useEffect(() => {
+    fetch("/api/crm/users").then(r => r.json()).then((d) => {
+      if (Array.isArray(d)) setUsers(d);
+    }).catch(() => {});
+  }, []);
 
   function set(field: keyof LeadFormData, value: string) {
     setForm(f => ({ ...f, [field]: value }));
@@ -209,6 +219,21 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
               </div>
             </div>
           </div>
+
+          {users.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
+                <span className="inline-flex items-center gap-1"><UserCircle2 size={12} className="text-slate-400" /> Assigned To</span>
+              </label>
+              <select value={form.assignedTo} onChange={e => set("assignedTo", e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+                <option value="">— Unassigned —</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-1">

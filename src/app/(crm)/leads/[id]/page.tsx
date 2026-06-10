@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Mail, Phone, Building2, Briefcase, Linkedin, Tag,
   Loader2, CheckCircle2, Trash2, Edit2, MessageSquare, Send,
-  ChevronDown, UserCheck,
+  ChevronDown, UserCheck, Sparkles, FileText,
 } from "lucide-react";
 import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, stageInfo, sourceLabel } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
@@ -53,6 +53,7 @@ export default function LeadDetailPage() {
   const [sendInvite,    setSendInvite]    = useState(true);
   const [converting,    setConverting]    = useState(false);
   const [deleting,      setDeleting]      = useState(false);
+  const [enriching,     setEnriching]     = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/crm/leads/${id}`);
@@ -143,7 +144,29 @@ export default function LeadDetailPage() {
         <Link href="/pipeline" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition">
           <ArrowLeft size={15} /> Back to Pipeline
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={async () => {
+              if (!lead) return;
+              setEnriching(true);
+              const res  = await fetch("/api/crm/leads/enrich", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ leadId: lead.id }),
+              });
+              const data = await res.json() as { enriched: boolean; message?: string; updated?: Record<string, string> };
+              if (data.enriched && Object.keys(data.updated ?? {}).length > 0) {
+                success("Lead enriched ✓"); load();
+              } else { success(data.message ?? "Already up to date"); }
+              setEnriching(false);
+            }}
+            disabled={enriching}
+            className="flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-800 px-3 py-1.5 rounded-lg hover:bg-violet-50 border border-violet-200 transition disabled:opacity-50">
+            {enriching ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            Enrich
+          </button>
+          <Link href={`/leads/${id}/proposal`}
+            className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-50 border border-emerald-200 transition">
+            <FileText size={13} /> Proposal
+          </Link>
           <button onClick={() => setShowEdit(true)}
             className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-100 border border-slate-200 transition">
             <Edit2 size={13} /> Edit

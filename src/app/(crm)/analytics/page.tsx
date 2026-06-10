@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   TrendingUp, TrendingDown, Users, UserCheck, UserX, Activity,
-  DollarSign, Clock, Target, Loader2, RefreshCw,
+  DollarSign, Clock, Target, Loader2, RefreshCw, UserCircle2,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,6 +23,10 @@ interface AnalyticsData {
   cohorts: {
     id: string; name: string; isActive: boolean; capacity: number | null;
     enrolled: number; fillPct: number | null; spotsLeft: number | null;
+  }[];
+  reps: {
+    id: string; name: string; total: number; active: number; enrolled: number;
+    lost: number; pipeline: number; revenue: number; winRate: number;
   }[];
 }
 
@@ -75,7 +79,7 @@ const SOURCE_COLORS: Record<string, string> = {
 export default function AnalyticsPage() {
   const [data,    setData]    = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<"pipeline" | "time" | "cohorts">("pipeline");
+  const [tab,     setTab]     = useState<"pipeline" | "time" | "cohorts" | "reps">("pipeline");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,7 +100,7 @@ export default function AnalyticsPage() {
     <div className="p-10 text-center text-slate-400">Failed to load analytics.</div>
   );
 
-  const { kpis, mom, funnel, sources, monthly, timeInStage, cohorts } = data;
+  const { kpis, mom, funnel, sources, monthly, timeInStage, cohorts, reps = [] } = data;
   const maxFunnel  = Math.max(...funnel.map(f => f.count), 1);
   const maxMonthly = Math.max(...monthly.map(m => Math.max(m.leads, m.enrolled)), 1);
   const totalSrc   = sources.reduce((a, b) => a + b.count, 0);
@@ -187,7 +191,7 @@ export default function AnalyticsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {([["pipeline", "Pipeline"], ["time", "Time in Stage"], ["cohorts", "Cohorts"]] as const).map(([key, label]) => (
+        {([["pipeline", "Pipeline"], ["time", "Time in Stage"], ["cohorts", "Cohorts"], ["reps", "By Rep"]] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition ${
               tab === key ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"
@@ -427,6 +431,94 @@ export default function AnalyticsPage() {
                 )}
               </div>
             ))
+          )}
+        </div>
+      )}
+      {/* ── Reps tab ────────────────────────────────────────────────────────── */}
+      {tab === "reps" && (
+        <div className="space-y-4">
+          {reps.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-16 text-center">
+              <UserCircle2 size={28} className="mx-auto text-slate-300 mb-3" />
+              <p className="text-slate-400 text-sm">No leads are assigned yet.</p>
+              <p className="text-slate-400 text-xs mt-1">Assign leads to reps from the lead form or detail page.</p>
+            </div>
+          ) : (
+            <>
+              {/* Summary table */}
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100">
+                  <h2 className="text-sm font-bold text-slate-900">Rep Performance</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Pipeline value and conversion by team member</p>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Rep</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Total</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Active</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Enrolled</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Win Rate</th>
+                      <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Pipeline</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reps.map((rep, i) => (
+                      <tr key={rep.id} className={`border-b border-slate-50 ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}>
+                        <td className="px-6 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                              rep.id === "unassigned" ? "bg-slate-300" : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                            }`}>
+                              {rep.name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <span className={`font-semibold ${rep.id === "unassigned" ? "text-slate-400 italic" : "text-slate-900"}`}>
+                              {rep.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-semibold text-slate-700">{rep.total}</td>
+                        <td className="px-4 py-3.5 text-right text-slate-600">{rep.active}</td>
+                        <td className="px-4 py-3.5 text-right">
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full">
+                            {rep.enrolled}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <span className={`text-xs font-bold ${rep.winRate >= 50 ? "text-emerald-600" : rep.winRate >= 25 ? "text-amber-600" : "text-slate-500"}`}>
+                            {rep.winRate}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-3.5 text-right font-semibold text-slate-700">{fmt$$(rep.pipeline)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Bar chart: pipeline by rep */}
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+                <h2 className="text-sm font-bold text-slate-900 mb-4">Pipeline Value by Rep</h2>
+                <div className="space-y-3">
+                  {reps.filter(r => r.id !== "unassigned").map(rep => {
+                    const maxPipeline = Math.max(...reps.filter(r => r.id !== "unassigned").map(r => r.pipeline), 1);
+                    const pct = (rep.pipeline / maxPipeline) * 100;
+                    return (
+                      <div key={rep.id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-slate-700">{rep.name}</span>
+                          <span className="text-xs font-bold text-slate-500">{fmt$$(rep.pipeline)}</span>
+                        </div>
+                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all"
+                            style={{ width: `${Math.max(pct, rep.pipeline > 0 ? 2 : 0)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

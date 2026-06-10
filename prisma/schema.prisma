@@ -83,6 +83,7 @@ model Lead {
   // REFERRAL | LINKEDIN | WEBSITE | INSTAGRAM | COLD_EMAIL | EVENT | OTHER
 
   lostReason    String?
+  assignedTo    String?  // admin user email
   priority      String   @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
   paymentStatus String?  @default("UNPAID")
   // UNPAID | PAID_FULL | PAYMENT_PLAN | SCHOLARSHIP | OUTSTANDING
@@ -118,6 +119,12 @@ model Task {
 
   @@index([leadId])
   @@index([dueAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model CRMNotification {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendSlack, enrolledBlocks } from "@/lib/slack";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
@@ -48,6 +49,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         createdBy: (session as { user: { id: string } }).user.id,
       },
     });
+
+    // Slack + CRM notification on enrollment
+    if (newStage === "ENROLLED") {
+      const fullLead = await prisma.lead.findUnique({
+        where: { id: params.id },
+        select: { firstName: true, lastName: true, dealValue: true },
+      });
+      if (fullLead) {
+        const name = `${fullLead.firstName} ${fullLead.lastName}`;
+        const { text, blocks } = enrolledBlocks(name, params.id, fullLead.dealValue ?? null);
+        await sendSlack(text, blocks);
+        await prisma.cRMNotification.create({
+          data: {
+            type:   "LEAD_ENROLLED",
+            title:  `🎉 ${name} enrolled!`,
+            body:   fullLead.dealValue ? `Deal value: $${fullLead.dealValue.toLocaleString()}` : undefined,
+            leadId: params.id,
+            href:   `/leads/${params.id}`,
+          },
+        });
+      }
+    }
   }
 
   return NextResponse.json(lead);

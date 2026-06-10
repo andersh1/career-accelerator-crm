@@ -16,8 +16,14 @@ export async function GET() {
   const leads = await prisma.lead.findMany({
     select: {
       id: true, stage: true, source: true, priority: true,
-      createdAt: true, dealValue: true, paymentStatus: true,
+      createdAt: true, dealValue: true, paymentStatus: true, assignedTo: true,
     },
+  });
+
+  // ── Admin users (for per-rep analytics) ───────────────────────────────────
+  const adminUsers = await prisma.user.findMany({
+    where: { role: "ADMIN" },
+    select: { id: true, name: true, email: true },
   });
 
   // ── Stage-change activities (for time-in-stage) ───────────────────────────
@@ -215,6 +221,47 @@ export async function GET() {
     weightedValue: Math.round(f.value * (STAGE_PROB[f.stage] ?? 0)),
   }));
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Per-rep analytics
+  // ─────────────────────────────────────────────────────────────────────────
+  const reps = adminUsers.map(u => {
+    const repLeads    = leads.filter(l => l.assignedTo === u.id);
+    const repEnrolled = repLeads.filter(l => l.stage === "ENROLLED");
+    const repLost     = repLeads.filter(l => l.stage === "LOST");
+    const repActive   = repLeads.filter(l => l.stage !== "ENROLLED" && l.stage !== "LOST");
+    const pipeline    = repLeads.filter(l => l.stage !== "LOST").reduce((s, l) => s + (l.dealValue ?? 0), 0);
+    const revenue     = repEnrolled.reduce((s, l) => s + (l.dealValue ?? 0), 0);
+    const winRate     = repLeads.length > 0 ? Math.round((repEnrolled.length / repLeads.length) * 100) : 0;
+    return {
+      id:       u.id,
+      name:     u.name ?? u.email,
+      total:    repLeads.length,
+      active:   repActive.length,
+      enrolled: repEnrolled.length,
+      lost:     repLost.length,
+      pipeline,
+      revenue,
+      winRate,
+    };
+  }).filter(r => r.total > 0).sort((a, b) => b.total - a.total);
+
+  // Unassigned
+  const unassignedLeads    = leads.filter(l => !l.assignedTo);
+  const unassignedEnrolled = unassignedLeads.filter(l => l.stage === "ENROLLED");
+  if (unassignedLeads.length > 0) {
+    reps.push({
+      id:       "unassigned",
+      name:     "Unassigned",
+      total:    unassignedLeads.length,
+      active:   unassignedLeads.filter(l => l.stage !== "ENROLLED" && l.stage !== "LOST").length,
+      enrolled: unassignedEnrolled.length,
+      lost:     unassignedLeads.filter(l => l.stage === "LOST").length,
+      pipeline: unassignedLeads.filter(l => l.stage !== "LOST").reduce((s, l) => s + (l.dealValue ?? 0), 0),
+      revenue:  unassignedEnrolled.reduce((s, l) => s + (l.dealValue ?? 0), 0),
+      winRate:  unassignedLeads.length > 0 ? Math.round((unassignedEnrolled.length / unassignedLeads.length) * 100) : 0,
+    });
+  }
+
   return NextResponse.json({
     kpis: { total, enrolled, lost, active, winRate, pipelineValue, avgDeal, weightedPipeline: Math.round(weightedPipeline) },
     mom:  { newThisMonth, newLastMonth, newMoM, enrolledThisMonth, enrolledLastMonth, enrolledMoM },
@@ -223,5 +270,6 @@ export async function GET() {
     monthly,
     timeInStage,
     cohorts: cohortData,
+    reps,
   });
 }

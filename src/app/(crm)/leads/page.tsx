@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Plus, Search, Filter, ArrowUpDown, ExternalLink, Loader2,
@@ -22,7 +22,8 @@ interface Lead {
   _count: { activities: number };
 }
 
-interface SavedFilter { name: string; stage: string; source: string; priority: string; }
+interface SavedFilter { name: string; stage: string; source: string; priority: string; assignedTo?: string; }
+interface AdminUser { id: string; name: string | null; email: string; }
 
 const PRIORITY_ORDER: Record<string, number> = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
 const PRIORITIES = ["URGENT", "HIGH", "NORMAL", "LOW"];
@@ -52,9 +53,12 @@ export default function LeadsPage() {
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState("");
-  const [stageFilter,  setStageFilter]  = useState("");
-  const [sourceFilter, setSourceFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [stageFilter,      setStageFilter]      = useState("");
+  const [sourceFilter,     setSourceFilter]     = useState("");
+  const [priorityFilter,   setPriorityFilter]   = useState("");
+  const [assignedToFilter, setAssignedToFilter] = useState("");
+  const [adminUsers,       setAdminUsers]       = useState<AdminUser[]>([]);
+  const usersLoaded = useRef(false);
   const [sortBy,       setSortBy]       = useState<"updatedAt" | "createdAt" | "name" | "priority" | "score">("score");
   const [showForm,     setShowForm]     = useState(false);
   const [showFilters,  setShowFilters]  = useState(false);
@@ -82,6 +86,12 @@ export default function LeadsPage() {
 
   useEffect(() => {
     setSavedFilters(loadSaved());
+    if (!usersLoaded.current) {
+      usersLoaded.current = true;
+      fetch("/api/crm/users").then(r => r.json()).then((d) => {
+        if (Array.isArray(d)) setAdminUsers(d);
+      }).catch(() => {});
+    }
     // Check for duplicates in background
     fetch("/api/crm/leads/duplicates")
       .then(r => r.json())
@@ -92,16 +102,17 @@ export default function LeadsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (stageFilter)    params.set("stage",    stageFilter);
-    if (sourceFilter)   params.set("source",   sourceFilter);
-    if (priorityFilter) params.set("priority", priorityFilter);
-    if (search)         params.set("q",        search);
+    if (stageFilter)      params.set("stage",      stageFilter);
+    if (sourceFilter)     params.set("source",     sourceFilter);
+    if (priorityFilter)   params.set("priority",   priorityFilter);
+    if (assignedToFilter) params.set("assignedTo", assignedToFilter);
+    if (search)           params.set("q",          search);
     const res  = await fetch(`/api/crm/leads?${params}`);
     const data = await res.json();
     if (Array.isArray(data)) setLeads(data);
     setLoading(false);
     setSelected(new Set());
-  }, [stageFilter, sourceFilter, priorityFilter, search]);
+  }, [stageFilter, sourceFilter, priorityFilter, assignedToFilter, search]);
 
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
 
@@ -145,12 +156,13 @@ export default function LeadsPage() {
   }
 
   // ── Saved filters ───────────────────────────────────────────────────────────
-  const hasActiveFilters = !!(stageFilter || sourceFilter || priorityFilter);
+  const hasActiveFilters = !!(stageFilter || sourceFilter || priorityFilter || assignedToFilter);
 
   function applySaved(sf: SavedFilter) {
     setStageFilter(sf.stage);
     setSourceFilter(sf.source);
     setPriorityFilter(sf.priority);
+    setAssignedToFilter(sf.assignedTo ?? "");
   }
   function deleteSaved(name: string) {
     const next = savedFilters.filter(f => f.name !== name);
@@ -160,12 +172,13 @@ export default function LeadsPage() {
     if (!saveName.trim()) return;
     const next = [...savedFilters.filter(f => f.name !== saveName.trim()), {
       name: saveName.trim(), stage: stageFilter, source: sourceFilter, priority: priorityFilter,
+      assignedTo: assignedToFilter,
     }];
     setSavedFilters(next); saveToDisk(next);
     setSaveDialogOpen(false); setSaveName("");
     success("Filter saved ✓");
   }
-  function clearFilters() { setStageFilter(""); setSourceFilter(""); setPriorityFilter(""); }
+  function clearFilters() { setStageFilter(""); setSourceFilter(""); setPriorityFilter(""); setAssignedToFilter(""); }
 
   const sortLabels: Record<string, string> = {
     score: "Score", updatedAt: "Last updated", createdAt: "Date added", name: "Name", priority: "Priority",
@@ -360,6 +373,16 @@ export default function LeadsPage() {
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
+          {adminUsers.length > 0 && (
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1 block">Assigned To</label>
+              <select value={assignedToFilter} onChange={e => setAssignedToFilter(e.target.value)}
+                className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All reps</option>
+                {adminUsers.map(u => <option key={u.id} value={u.id}>{u.name ?? u.email}</option>)}
+              </select>
+            </div>
+          )}
           {hasActiveFilters && (
             <button onClick={clearFilters}
               className="self-end text-xs text-slate-400 hover:text-slate-600 transition px-2 py-1.5">
