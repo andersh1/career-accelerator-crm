@@ -9,7 +9,7 @@ import { sendSequenceEmail } from "@/lib/email";
 
 function authOk(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // no secret configured — allow (dev)
+  if (!secret) return false;
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
@@ -41,20 +41,97 @@ export async function GET(req: NextRequest) {
     }
 
     const fullName = `${enrollment.lead.firstName} ${enrollment.lead.lastName}`;
-    const result   = await sendSequenceEmail({
-      to: enrollment.lead.email, subject: step.subject,
-      body: step.body, leadName: fullName,
-    });
 
-    if (result.ok) {
-      // Log activity
+    // ── Smart skip logic ────────────────────────────────────────────────────
+    // 1. If lead is already ENROLLED, remaining outreach is moot — complete the sequence.
+    const leadFull = await prisma.lead.findUnique({
+      where: { id: enrollment.lead.id },
+      select: { stage: true },
+    });
+    if (leadFull?.stage === "ENROLLED") {
+      await prisma.emailSequenceEnrollment.update({
+        where: { id: enrollment.id },
+        data: { status: "COMPLETED", completedAt: now },
+      });
       await prisma.leadActivity.create({
         data: {
           leadId:  enrollment.lead.id,
-          type:    "EMAIL",
-          content: `[Sequence: ${enrollment.sequence.name}] Step ${step.stepNumber}: ${step.subject}`,
+          type:    "NOTE",
+          content: `Sequence "${enrollment.sequence.name}" auto-completed — lead is already enrolled`,
+          source:  "SEQUENCE",
         },
       });
+      sent++;
+      continue;
+    }
+
+    // 2. For step 2+, if the lead has already opened an email from this sequence
+    //    in the last 7 days, skip this follow-up step and advance to the next.
+    if (step.stepNumber > 1) {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+      const recentOpen = await prisma.leadActivity.findFirst({
+        where: {
+          leadId:  enrollment.lead.id,
+          type:    "EMAIL",
+          source:  "SEQUENCE",
+          openedAt: { not: null },
+          createdAt: { gte: sevenDaysAgo },
+        },
+      });
+      if (recentOpen) {
+        // Skip this step — lead already engaged
+        await prisma.leadActivity.create({
+          data: {
+            leadId:  enrollment.lead.id,
+            type:    "NOTE",
+            content: `Sequence step ${step.stepNumber} skipped — lead already engaged (opened a recent sequence email)`,
+            source:  "SEQUENCE",
+          },
+        });
+        const nextStep = enrollment.sequence.steps.find(s => s.stepNumber === enrollment.currentStep + 1);
+        if (nextStep) {
+          await prisma.emailSequenceEnrollment.update({
+            where: { id: enrollment.id },
+            data: {
+              currentStep: nextStep.stepNumber,
+              nextSendAt:  new Date(now.getTime() + nextStep.delayDays * 86400000),
+            },
+          });
+        } else {
+          await prisma.emailSequenceEnrollment.update({
+            where: { id: enrollment.id },
+            data: { status: "COMPLETED", completedAt: now },
+          });
+        }
+        sent++;
+        continue;
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://career-accelerator-lms.vercel.app"}/api/crm/unsubscribe?email=${encodeURIComponent(enrollment.lead.email)}`;
+
+    // Create the activity record FIRST so we have its ID for the tracking pixel
+    const activity = await prisma.leadActivity.create({
+      data: {
+        leadId:  enrollment.lead.id,
+        type:    "EMAIL",
+        subject: step.subject,
+        emailTo: enrollment.lead.email,
+        content: `[Sequence: ${enrollment.sequence.name}] Step ${step.stepNumber}: ${step.subject}`,
+        source:  "SEQUENCE",
+      },
+    });
+
+    const result = await sendSequenceEmail({
+      to:         enrollment.lead.email,
+      subject:    step.subject,
+      body:       step.body + `\n\n---\n[Unsubscribe from these emails](${unsubUrl})`,
+      leadName:   fullName,
+      activityId: activity.id,
+    });
+
+    if (result.ok) {
 
       const nextStep = enrollment.sequence.steps.find(s => s.stepNumber === enrollment.currentStep + 1);
       if (nextStep) {
