@@ -5,6 +5,7 @@ import AppShell from "@/components/layout/AppShell";
 
 export default async function CRMLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  const crmRole = session?.user?.crmRole;
+  if (!session || (crmRole !== "ADMIN" && crmRole !== "MEMBER")) redirect("/login");
   return <AppShell>{children}</AppShell>;
 }
