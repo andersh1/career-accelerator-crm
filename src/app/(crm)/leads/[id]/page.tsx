@@ -15,19 +15,22 @@ import TaskPanel from "@/components/crm/TaskPanel";
 import EmailTemplateMenu from "@/components/crm/EmailTemplates";
 import SequenceEnrollPanel from "@/components/crm/SequenceEnrollPanel";
 import EmailComposer from "@/components/crm/EmailComposer";
+import PaymentPanel from "@/components/crm/PaymentPanel";
+import TranscriptParser from "@/components/crm/TranscriptParser";
 import { useToast } from "@/lib/toast";
 
 interface Activity {
   id: string; type: string; content: string | null;
   metadata: string | null; createdBy: string | null; createdAt: string;
   subject?: string | null; emailTo?: string | null; source?: string | null;
+  openedAt?: string | null;
 }
 
 interface Lead {
   id: string; firstName: string; lastName: string; email: string;
   phone: string | null; company: string | null; jobTitle: string | null;
   linkedinUrl: string | null; stage: string; source: string | null;
-  priority: string; paymentStatus: string | null; tags: string[]; notes: string | null; lostReason: string | null;
+  priority: string; paymentStatus: string | null; dealValue: number | null; tags: string[]; notes: string | null; lostReason: string | null;
   enrolledUserId: string | null;
   enrolledUser: { id: string; name: string; email: string; cohort: string | null } | null;
   activities: Activity[];
@@ -57,6 +60,8 @@ export default function LeadDetailPage() {
   const [deleting,      setDeleting]      = useState(false);
   const [enriching,     setEnriching]     = useState(false);
   const [showComposer,  setShowComposer]  = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [showAllActs, setShowAllActs] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/crm/leads/${id}`);
@@ -173,6 +178,10 @@ export default function LeadDetailPage() {
                 : "text-blue-600 hover:text-blue-800 hover:bg-blue-50 border-blue-200"
             }`}>
             <PenLine size={13} /> Compose Email
+          </button>
+          <button onClick={() => setShowTranscript(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-800 px-3 py-1.5 rounded-lg hover:bg-violet-50 border border-violet-200 transition">
+            <FileText size={13} /> Parse Transcript
           </button>
           <Link href={`/leads/${id}/proposal`}
             className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-800 px-3 py-1.5 rounded-lg hover:bg-emerald-50 border border-emerald-200 transition">
@@ -331,6 +340,21 @@ export default function LeadDetailPage() {
             )}
           </div>
 
+          {/* Payment Panel */}
+          <PaymentPanel
+            leadId={id}
+            dealValue={lead.dealValue ?? null}
+            paymentStatus={lead.paymentStatus ?? null}
+            onStatusChange={async (status) => {
+              await fetch(`/api/crm/leads/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentStatus: status }),
+              });
+              await load();
+            }}
+          />
+
           {lead.enrolledUser && (
             <div className="bg-green-50 border border-green-200 rounded-2xl shadow-sm p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -423,14 +447,18 @@ export default function LeadDetailPage() {
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {lead.activities.map(act => {
+                {(showAllActs ? lead.activities : lead.activities.slice(0, 5)).map(act => {
                   const meta = ACTIVITY_META[act.type] ?? ACTIVITY_META.NOTE;
                   let stageFrom = "", stageTo = "";
-                  if (act.type === "STAGE_CHANGE" && act.metadata) {
+                  let recordingUrl = "";
+                  if (act.metadata) {
                     try {
                       const parsed = JSON.parse(act.metadata);
-                      stageFrom = stageInfo(parsed.from)?.label ?? parsed.from;
-                      stageTo   = stageInfo(parsed.to)?.label   ?? parsed.to;
+                      if (act.type === "STAGE_CHANGE") {
+                        stageFrom = stageInfo(parsed.from)?.label ?? parsed.from;
+                        stageTo   = stageInfo(parsed.to)?.label   ?? parsed.to;
+                      }
+                      if (parsed.recordingUrl) recordingUrl = parsed.recordingUrl;
                     } catch { /* ignore */ }
                   }
                   const isEmail = act.type === "EMAIL";
@@ -439,6 +467,7 @@ export default function LeadDetailPage() {
                     : act.source === "GMAIL_SYNC" ? { label: "Gmail",         cls: "bg-red-50 text-red-600" }
                     : act.source === "SEQUENCE"   ? { label: "Sequence",      cls: "bg-violet-50 text-violet-600" }
                     : act.source === "TEMPLATE"   ? { label: "Template",      cls: "bg-emerald-50 text-emerald-600" }
+                    : act.source === "BLAST"      ? { label: "Email Blast",   cls: "bg-amber-50 text-amber-600" }
                     : null;
 
                   return (
@@ -452,6 +481,11 @@ export default function LeadDetailPage() {
                           {sourceBadge && (
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${sourceBadge.cls}`}>
                               {sourceBadge.label}
+                            </span>
+                          )}
+                          {isEmail && act.openedAt && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 flex items-center gap-0.5">
+                              👁 Opened {new Date(act.openedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
                           <span className="text-[11px] text-slate-400">
@@ -476,10 +510,32 @@ export default function LeadDetailPage() {
                         ) : act.content ? (
                           <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap line-clamp-4">{act.content}</p>
                         ) : null}
+                        {recordingUrl && (
+                          <a
+                            href={recordingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-violet-600 hover:text-violet-800 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2.5 py-1 rounded-lg transition"
+                          >
+                            📹 Watch Recording
+                          </a>
+                        )}
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {lead.activities.length > 5 && (
+              <div className="px-5 py-3 border-t border-slate-50">
+                <button
+                  onClick={() => setShowAllActs(v => !v)}
+                  className="w-full text-xs font-semibold text-slate-400 hover:text-slate-600 transition py-1"
+                >
+                  {showAllActs
+                    ? "Show less"
+                    : `Show ${lead.activities.length - 5} more event${lead.activities.length - 5 !== 1 ? "s" : ""}`}
+                </button>
               </div>
             )}
           </div>
@@ -500,6 +556,16 @@ export default function LeadDetailPage() {
             priority: lead.priority, paymentStatus: lead.paymentStatus ?? "UNPAID",
             tags: lead.tags.join(", "), notes: lead.notes ?? "",
           }}
+        />
+      )}
+
+      {showTranscript && (
+        <TranscriptParser
+          leadId={id}
+          currentStage={lead.stage}
+          leadName={`${lead.firstName} ${lead.lastName}`}
+          onApplied={() => { load(); success("Transcript applied to CRM ✓"); }}
+          onClose={() => setShowTranscript(false)}
         />
       )}
 

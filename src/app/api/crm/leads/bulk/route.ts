@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
 }
+function requireCrmAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
+  return requireAdmin(session) || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN";
+}
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -47,7 +50,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "delete") {
-    await prisma.lead.deleteMany({ where: { id: { in: ids } } });
+    if (requireCrmAdmin(session)) return NextResponse.json({ error: "Requires CRM Admin role" }, { status: 403 });
+    await prisma.lead.updateMany({ where: { id: { in: ids } }, data: { deletedAt: new Date() } });
     return NextResponse.json({ deleted: ids.length });
   }
 

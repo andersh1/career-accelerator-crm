@@ -50,9 +50,10 @@ model User {
   notionWorkspaceIcon  String?
   twoFactorSecret      String?
   twoFactorEnabled     Boolean   @default(false)
-  gmailRefreshToken    String?   // OAuth refresh token for Gmail sync
-  gmailEmail           String?   // which Gmail address is connected
-  gmailSyncedAt        DateTime? // last time we pulled Sent folder
+  gmailRefreshToken    String?
+  gmailEmail           String?
+  gmailSyncedAt        DateTime?
+  crmRole              String?   // ADMIN | MEMBER — only set for CRM users; null = LMS-only
   submissions          Submission[]
   progress             Progress[]
   notes                Note[]
@@ -64,6 +65,14 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   attendanceRecords    AttendanceRecord[]
   crmLead              Lead?
+  preworkSubmissions   PreworkSubmission[]
+  oneOnOneSlots        OneOnOneSlot[]       @relation("AdminSlots")
+  oneOnOneBookings     OneOnOneBooking[]    @relation("StudentBookings")
+  discussionPosts      DiscussionPost[]
+  discussionReplies    DiscussionReply[]
+  discussionReactions  DiscussionReaction[]
+  videoProgress        VideoProgress[]
+  sectionComments      SectionComment[]
 }
 
 // ─── CRM ──────────────────────────────────────────────────────────────────────
@@ -101,12 +110,16 @@ model Lead {
   activities          LeadActivity[]
   tasks               Task[]
   sequenceEnrollments EmailSequenceEnrollment[]
+  paymentRecords      PaymentRecord[]
+
+  deletedAt   DateTime? // soft delete — null = active, non-null = in recycle bin
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([stage])
   @@index([email])
+  @@index([deletedAt])
 }
 
 model Task {
@@ -183,17 +196,18 @@ model EmailSequenceEnrollment {
 }
 
 model LeadActivity {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   leadId    String
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type      String   // NOTE | EMAIL | CALL | MEETING | STAGE_CHANGE | ENROLLED | CREATED
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String    // NOTE | EMAIL | CALL | MEETING | STAGE_CHANGE | ENROLLED | CREATED
   content   String?
-  subject   String?  // email subject line
-  emailTo   String?  // recipient email address
-  source    String?  // COMPOSER | SEQUENCE | GMAIL_SYNC | TEMPLATE
-  metadata  String?  // JSON — used for stage_change { from, to }
-  createdBy String?  // admin user id
-  createdAt DateTime @default(now())
+  subject   String?   // email subject line
+  emailTo   String?   // recipient email address
+  source    String?   // COMPOSER | SEQUENCE | GMAIL_SYNC | TEMPLATE | BLAST | UNSUBSCRIBE
+  metadata  String?   // JSON — used for stage_change { from, to }
+  createdBy String?   // admin user id
+  openedAt  DateTime? // set when tracking pixel is loaded (email opens)
+  createdAt DateTime  @default(now())
 
   @@index([leadId])
 }
@@ -226,17 +240,22 @@ model Module {
   sessionDate     DateTime?
   sessionLocation String?
   sessionZoomLink String?
-  sections        Section[]
-  submissions     Submission[]
-  progress        Progress[]
-  attendance      AttendanceRecord[]
-  cohortSchedules CohortSchedule[]
+  sections          Section[]
+  submissions       Submission[]
+  progress          Progress[]
+  attendance        AttendanceRecord[]
+  cohortSchedules   CohortSchedule[]
+  preworkQuestions  PreworkQuestion[]
+  preworkSubmissions PreworkSubmission[]
+  oneOnOneSlots     OneOnOneSlot[]
+  oneOnOneBookings  OneOnOneBooking[]
+  discussionPosts   DiscussionPost[]
 }
 
 model Section {
-  id            String     @id @default(cuid())
+  id            String           @id @default(cuid())
   moduleId      String
-  module        Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   type          String
   title         String
   content       String?
@@ -245,18 +264,20 @@ model Section {
   lastSyncedAt  DateTime?
   resources     Resource[]
   progress      Progress[]
+  comments      SectionComment[]
 }
 
 model Resource {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  section   Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   type      String
   title     String
   url       String?
   filePath  String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+  videoProgress VideoProgress[]
 }
 
 model Submission {
@@ -375,19 +396,39 @@ model ReminderLog {
 }
 
 model SupportTicket {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject     String
-  category    String   // TECHNICAL | CONTENT | COACHING | BILLING | OTHER
-  description String
-  status      String   @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED
-  priority    String   @default("NORMAL") // LOW | NORMAL | HIGH
-  adminReply  String?
-  repliedAt   DateTime?
-  repliedBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String          @id @default(cuid())
+  ticketNumber       Int             @unique @default(autoincrement())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject            String
+  category           String          // TECHNICAL | CONTENT | COACHING | BILLING | OTHER
+  description        String
+  status             String          @default("OPEN") // OPEN | IN_PROGRESS | WAITING | RESOLVED | CLOSED
+  priority           String          @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  assigneeId         String?         // admin userId
+  closedAt           DateTime?
+  lastActivityAt     DateTime        @default(now())
+  satisfactionRating Int?            // 1-5 after resolved
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  messages           TicketMessage[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorName String
+  authorRole String        // STUDENT | ADMIN
+  content    String
+  isInternal Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
 }
 
 model CoachingNote {
@@ -398,4 +439,201 @@ model CoachingNote {
   authorId  String   // admin user id who wrote it
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── Prework ──────────────────────────────────────────────────────────────────
+
+model PreworkQuestion {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  order       Int
+  question    String
+  type        String   @default("textarea") // "text" | "textarea"
+  placeholder String?
+  required    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  answers     PreworkAnswer[]
+
+  @@index([moduleId])
+}
+
+model PreworkSubmission {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  submittedAt DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  answers     PreworkAnswer[]
+
+  @@unique([userId, moduleId])
+  @@index([moduleId])
+  @@index([userId])
+}
+
+model PreworkAnswer {
+  id           String            @id @default(cuid())
+  submissionId String
+  submission   PreworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     PreworkQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer       String
+
+  @@unique([submissionId, questionId])
+}
+
+// ─── 1-on-1 Scheduling ───────────────────────────────────────────────────────
+
+model OneOnOneSlot {
+  id               String           @id @default(cuid())
+  adminId          String
+  admin            User             @relation("AdminSlots", fields: [adminId], references: [id], onDelete: Cascade)
+  startTime        DateTime
+  endTime          DateTime
+  moduleId         String?
+  module           Module?          @relation(fields: [moduleId], references: [id])
+  isBooked         Boolean          @default(false)
+  recurringGroupId String?
+  createdAt        DateTime         @default(now())
+  booking          OneOnOneBooking?
+
+  @@index([startTime])
+  @@index([adminId])
+}
+
+model OneOnOneBooking {
+  id                 String       @id @default(cuid())
+  slotId             String       @unique
+  slot               OneOnOneSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  studentId          String
+  student            User         @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  moduleId           String
+  module             Module       @relation(fields: [moduleId], references: [id])
+  status             String       @default("CONFIRMED") // CONFIRMED | CANCELLED
+  preworkEmailSentAt DateTime?
+  zoomMeetingId      String?
+  zoomJoinUrl        String?
+  zoomStartUrl       String?
+  createdAt          DateTime     @default(now())
+
+  @@unique([studentId, moduleId])
+  @@index([studentId])
+  @@index([moduleId])
+}
+
+// ─── Community / Discussion ───────────────────────────────────────────────────
+
+model DiscussionPost {
+  id        String               @id @default(cuid())
+  authorId  String
+  author    User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  moduleId  String?
+  module    Module?              @relation(fields: [moduleId], references: [id])
+  content   String
+  postType  String               @default("DISCUSSION")
+  isPinned  Boolean              @default(false)
+  isDeleted Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  replies   DiscussionReply[]
+  reactions DiscussionReaction[]
+
+  @@index([moduleId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model DiscussionReply {
+  id        String         @id @default(cuid())
+  postId    String
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  isAnswer  Boolean        @default(false)
+  isDeleted Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  @@index([postId])
+}
+
+model DiscussionReaction {
+  id        String         @id @default(cuid())
+  postId    String
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+}
+
+// ─── Help Center ─────────────────────────────────────────────────────────────
+
+model HelpArticle {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  category  String   @default("GENERAL")
+  published Boolean  @default(false)
+  pinned    Boolean  @default(false)
+  order     Int      @default(0)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, published])
+}
+
+// ─── Payment Records ─────────────────────────────────────────────────────────
+
+model PaymentRecord {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  amount    Int
+  note      String?
+  paidAt    DateTime @default(now())
+  createdBy String?
+
+  @@index([leadId])
+}
+
+model VideoProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId      String
+  resource        Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  moduleId        String
+  percentWatched  Float    @default(0)
+  watchedSeconds  Int      @default(0)
+  durationSeconds Int?
+  completedAt     DateTime?
+  lastWatchedAt   DateTime @default(now())
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@index([resourceId])
+  @@index([moduleId])
+}
+
+model SectionComment {
+  id        String   @id @default(cuid())
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  moduleId  String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  isPinned  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([sectionId])
+  @@index([moduleId])
 }

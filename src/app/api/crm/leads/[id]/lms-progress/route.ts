@@ -22,48 +22,73 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const userId = lead.enrolledUserId;
 
   // Fetch everything in parallel
-  const [user, allSections, progressRecords, submissions, attendance] = await Promise.all([
+  const [
+    user, allSections, progressRecords, submissions,
+    attendance, preworkSubmissions, bookings,
+  ] = await Promise.all([
     prisma.user.findUnique({
-      where: { id: userId },
+      where:  { id: userId },
       select: { id: true, name: true, email: true, cohort: true, createdAt: true, onboardedAt: true },
     }),
     prisma.section.findMany({ select: { id: true, moduleId: true } }),
     prisma.progress.findMany({
-      where: { userId },
-      select: { sectionId: true, moduleId: true, completedAt: true },
+      where:   { userId },
+      select:  { sectionId: true, moduleId: true, completedAt: true },
       orderBy: { completedAt: "desc" },
     }),
     prisma.submission.findMany({
-      where: { userId },
+      where:   { userId },
       include: { module: { select: { number: true, title: true } } },
       orderBy: { submittedAt: "desc" },
     }),
     prisma.attendanceRecord.findMany({
-      where: { userId },
+      where:   { userId },
       include: { module: { select: { number: true, title: true } } },
+    }),
+    // Prework submissions with all Q&A
+    prisma.preworkSubmission.findMany({
+      where: { userId },
+      include: {
+        answers: {
+          include: { question: { select: { question: true, order: true } } },
+          orderBy: { question: { order: "asc" } },
+        },
+      },
+    }),
+    // 1-on-1 bookings
+    prisma.oneOnOneBooking.findMany({
+      where:   { studentId: userId, status: "CONFIRMED" },
+      include: { slot: { select: { startTime: true, endTime: true } } },
     }),
   ]);
 
   // Overall completion
-  const totalSections  = allSections.length;
-  const doneSections   = progressRecords.filter(p => p.sectionId).length;
-  const completionPct  = totalSections > 0 ? Math.round((doneSections / totalSections) * 100) : 0;
+  const totalSections = allSections.length;
+  const doneSections  = progressRecords.filter(p => p.sectionId).length;
+  const completionPct = totalSections > 0 ? Math.round((doneSections / totalSections) * 100) : 0;
+
+  // Build lookup maps
+  const preworkByModule  = Object.fromEntries(preworkSubmissions.map(ps => [ps.moduleId, ps]));
+  const bookingByModule  = Object.fromEntries(bookings.map(b => [b.moduleId, b]));
 
   // Per-module breakdown
   const moduleIdSet = new Set(allSections.map(s => s.moduleId));
   const moduleIds   = Array.from(moduleIdSet);
   const modules = await prisma.module.findMany({
-    where: { id: { in: moduleIds } },
-    select: { id: true, number: true, title: true },
+    where:   { id: { in: moduleIds } },
+    select:  { id: true, number: true, title: true },
     orderBy: { number: "asc" },
   });
 
   const moduleBreakdown = modules.map(mod => {
-    const modSections   = allSections.filter(s => s.moduleId === mod.id);
-    const modCompleted  = progressRecords.filter(p => p.moduleId === mod.id && p.sectionId).length;
-    const modPct        = modSections.length > 0 ? Math.round((modCompleted / modSections.length) * 100) : 0;
-    const sub           = submissions.find(s => s.moduleId === mod.id);
-    const att           = attendance.find(a => a.moduleId === mod.id);
+    const modSections  = allSections.filter(s => s.moduleId === mod.id);
+    const modCompleted = progressRecords.filter(p => p.moduleId === mod.id && p.sectionId).length;
+    const modPct       = modSections.length > 0 ? Math.round((modCompleted / modSections.length) * 100) : 0;
+    const sub          = submissions.find(s => s.moduleId === mod.id);
+    const att          = attendance.find(a => a.moduleId === mod.id);
+    const prework      = preworkByModule[mod.id] ?? null;
+    const booking      = bookingByModule[mod.id] ?? null;
+
     return {
       moduleId:   mod.id,
       number:     mod.number,
@@ -73,20 +98,46 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       pct:        modPct,
       submission: sub ? { status: sub.status, submittedAt: sub.submittedAt } : null,
       attended:   att?.attended ?? null,
+      // New: prework
+      prework: prework ? {
+        submittedAt: prework.submittedAt,
+        answers: prework.answers.map(a => ({
+          question: a.question.question,
+          answer:   a.answer,
+        })),
+      } : null,
+      // New: 1-on-1 booking
+      booking: booking ? {
+        startTime: booking.slot.startTime,
+        endTime:   booking.slot.endTime,
+        status:    booking.status,
+      } : null,
     };
   });
 
   // Submission summary
   const submissionSummary = {
-    total:        submissions.length,
-    pending:      submissions.filter(s => s.status === "PENDING").length,
-    approved:     submissions.filter(s => s.status === "APPROVED").length,
-    needsRevision:submissions.filter(s => s.status === "NEEDS_REVISION").length,
-    reviewed:     submissions.filter(s => s.status === "REVIEWED").length,
+    total:         submissions.length,
+    pending:       submissions.filter(s => s.status === "PENDING").length,
+    approved:      submissions.filter(s => s.status === "APPROVED").length,
+    needsRevision: submissions.filter(s => s.status === "NEEDS_REVISION").length,
+    reviewed:      submissions.filter(s => s.status === "REVIEWED").length,
   };
 
   // Last active
   const lastActive = progressRecords[0]?.completedAt ?? null;
+
+  // Prework summary counts
+  const preworkSummary = {
+    submitted: preworkSubmissions.length,
+    total:     modules.length,
+  };
+
+  // 1-on-1 summary counts
+  const bookingSummary = {
+    booked: bookings.length,
+    total:  modules.length,
+  };
 
   return NextResponse.json({
     user,
@@ -95,6 +146,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     doneSections,
     moduleBreakdown,
     submissionSummary,
+    preworkSummary,
+    bookingSummary,
     lastActive,
     recentSubmissions: submissions.slice(0, 5),
   });

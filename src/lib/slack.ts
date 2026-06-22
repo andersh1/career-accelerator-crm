@@ -39,6 +39,25 @@ export function enrolledBlocks(leadName: string, leadId: string, dealValue: numb
   };
 }
 
+export function newIntakeBlocks(firstName: string, lastName: string, email: string, leadId: string) {
+  const BASE = process.env.NEXTAUTH_URL ?? "https://career-accelerator-crm.vercel.app";
+  return {
+    text: `🚀 New application: *${firstName} ${lastName}* (${email})`,
+    blocks: [
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `🚀 *New Application*\n*${firstName} ${lastName}* just submitted an interest form.\n📧 ${email}` },
+        accessory: {
+          type: "button",
+          text: { type: "plain_text", text: "View Lead" },
+          url: `${BASE}/leads/${leadId}`,
+          style: "primary",
+        },
+      },
+    ],
+  };
+}
+
 export function coldLeadBlocks(leadName: string, leadId: string, days: number) {
   return {
     text: `🥶 Cold lead: ${leadName} hasn't been touched in ${days} days`,

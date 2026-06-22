@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Career Accelerator CRM",
-  description: "CRM for the Career Accelerator program",
+  title: "10x Career Accelerator CRM",
+  description: "CRM for the 10x Career Accelerator program",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

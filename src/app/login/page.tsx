@@ -2,6 +2,7 @@
 import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function LoginPage() {
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Career Accelerator</h1>
+          <h1 className="text-2xl font-bold text-white">10x Career Accelerator</h1>
           <p className="text-blue-300 text-sm mt-1">CRM — Admin access only</p>
         </div>
 
@@ -67,7 +68,12 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium text-slate-300">Password</label>
+              <Link href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition">
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password" required autoComplete="current-password"
               value={password} onChange={e => setPassword(e.target.value)}

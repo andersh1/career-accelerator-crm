@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus, Search, Filter, ArrowUpDown, ExternalLink, Loader2,
-  ChevronDown, Upload, Trash2, Tag, MoveRight, CheckSquare, Square,
-  BookmarkPlus, Bookmark, X, AlertTriangle, Sparkles,
+  ChevronDown, Upload, Download, Trash2, Tag, MoveRight, CheckSquare, Square,
+  BookmarkPlus, Bookmark, X, AlertTriangle, Sparkles, Merge,
 } from "lucide-react";
 import { STAGES, SOURCES, stageInfo, sourceLabel } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
@@ -48,15 +49,26 @@ function fmt$(n: number | null) {
   return n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`;
 }
 
+function timeSince(iso: string): { text: string; cls: string } {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days === 0) return { text: "Today",     cls: "text-emerald-600" };
+  if (days === 1) return { text: "Yesterday", cls: "text-blue-600" };
+  if (days < 7)  return { text: `${days}d ago`, cls: "text-slate-500" };
+  if (days < 30) return { text: `${Math.floor(days / 7)}w ago`, cls: "text-slate-400" };
+  return { text: `${Math.floor(days / 30)}mo ago`, cls: "text-red-400" };
+}
+
 export default function LeadsPage() {
   const { success, error: toastError } = useToast();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const [search,       setSearch]       = useState("");
-  const [stageFilter,      setStageFilter]      = useState("");
-  const [sourceFilter,     setSourceFilter]     = useState("");
-  const [priorityFilter,   setPriorityFilter]   = useState("");
-  const [assignedToFilter, setAssignedToFilter] = useState("");
+  const [search,       setSearch]       = useState(searchParams.get("q") ?? "");
+  const [stageFilter,      setStageFilter]      = useState(searchParams.get("stage") ?? "");
+  const [sourceFilter,     setSourceFilter]     = useState(searchParams.get("source") ?? "");
+  const [priorityFilter,   setPriorityFilter]   = useState(searchParams.get("priority") ?? "");
+  const [assignedToFilter, setAssignedToFilter] = useState(searchParams.get("assignedTo") ?? "");
   const [adminUsers,       setAdminUsers]       = useState<AdminUser[]>([]);
   const usersLoaded = useRef(false);
   const [sortBy,       setSortBy]       = useState<"updatedAt" | "createdAt" | "name" | "priority" | "score">("score");
@@ -84,6 +96,50 @@ export default function LeadsPage() {
     leads: { id: string; firstName: string; lastName: string; email: string; stage: string }[];
   }[]>([]);
 
+  // Merge
+  const [mergeKeepId,   setMergeKeepId]   = useState<string | null>(null);
+  const [mergeMergeId,  setMergeMergeId]  = useState<string | null>(null);
+  const [merging,       setMerging]       = useState(false);
+
+  // Quick inline stage change
+  const [stagingLeadId, setStagingLeadId] = useState<string | null>(null);
+  // Mobile stage bottom-sheet
+  const [mobileStageLeadId, setMobileStageLeadId] = useState<string | null>(null);
+  // Mobile header overflow menu
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  async function quickStageChange(leadId: string, newStage: string) {
+    setStagingLeadId(null);
+    setMobileStageLeadId(null);
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
+    await fetch(`/api/crm/leads/${leadId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: newStage }),
+    });
+  }
+
+  // Recycle Bin
+  const [binOpen,    setBinOpen]    = useState(false);
+  const [binLeads,   setBinLeads]   = useState<{ id: string; firstName: string; lastName: string; email: string; company: string | null; stage: string; deletedAt: string }[]>([]);
+  const [binLoading, setBinLoading] = useState(false);
+
+  async function loadBin() {
+    setBinLoading(true);
+    try {
+      const res = await fetch("/api/crm/leads/deleted");
+      if (res.ok) setBinLeads(await res.json());
+    } finally { setBinLoading(false); }
+  }
+
+  async function binAction(id: string, action: "restore" | "purge") {
+    await fetch("/api/crm/leads/deleted", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    });
+    await loadBin();
+    if (action === "restore") await load();
+  }
+
   useEffect(() => {
     setSavedFilters(loadSaved());
     if (!usersLoaded.current) {
@@ -92,12 +148,59 @@ export default function LeadsPage() {
         if (Array.isArray(d)) setAdminUsers(d);
       }).catch(() => {});
     }
-    // Check for duplicates in background
     fetch("/api/crm/leads/duplicates")
       .then(r => r.json())
       .then((d: { count: number; groups: typeof dupGroups }) => { setDupCount(d.count); setDupGroups(d.groups); })
       .catch(() => {});
   }, []);
+
+  // Sync filters to URL so views are bookmarkable / shareable
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (search)           p.set("q",          search);
+    if (stageFilter)      p.set("stage",      stageFilter);
+    if (sourceFilter)     p.set("source",     sourceFilter);
+    if (priorityFilter)   p.set("priority",   priorityFilter);
+    if (assignedToFilter) p.set("assignedTo", assignedToFilter);
+    const qs = p.toString();
+    router.replace(qs ? `/leads?${qs}` : "/leads", { scroll: false });
+  }, [search, stageFilter, sourceFilter, priorityFilter, assignedToFilter, router]);
+
+  // Keyboard shortcut: press N to open Add Lead form
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "n" && e.key !== "N") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      e.preventDefault();
+      setShowForm(true);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  async function mergeLeads() {
+    if (!mergeKeepId || !mergeMergeId) return;
+    setMerging(true);
+    const res = await fetch("/api/crm/leads/merge", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keepId: mergeKeepId, mergeId: mergeMergeId }),
+    });
+    if (res.ok) {
+      success("Leads merged ✓");
+      setMergeKeepId(null); setMergeMergeId(null);
+      setDupOpen(false);
+      fetch("/api/crm/leads/duplicates")
+        .then(r => r.json())
+        .then((d: { count: number; groups: typeof dupGroups }) => { setDupCount(d.count); setDupGroups(d.groups); })
+        .catch(() => {});
+      await load();
+    } else {
+      toastError("Merge failed.");
+    }
+    setMerging(false);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -212,6 +315,20 @@ export default function LeadsPage() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-6 space-y-4">
+              {/* Merge confirmation bar */}
+              {mergeKeepId && mergeMergeId && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
+                  <Merge size={14} className="text-blue-600 shrink-0" />
+                  <span className="flex-1 text-blue-800">Keep the first lead selected, merge the second into it.</span>
+                  <button onClick={mergeLeads} disabled={merging}
+                    className="text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    {merging ? <Loader2 size={12} className="animate-spin" /> : <Merge size={12} />}
+                    {merging ? "Merging…" : "Confirm merge"}
+                  </button>
+                  <button onClick={() => { setMergeKeepId(null); setMergeMergeId(null); }}
+                    className="text-slate-400 hover:text-slate-600 transition"><X size={14} /></button>
+                </div>
+              )}
               {dupGroups.map((group, i) => (
                 <div key={i} className="border border-slate-200 rounded-xl overflow-hidden">
                   <div className="bg-slate-50 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wide border-b border-slate-200">
@@ -219,8 +336,10 @@ export default function LeadsPage() {
                   </div>
                   {group.leads.map(lead => {
                     const stg = stageInfo(lead.stage);
+                    const isKeep  = mergeKeepId  === lead.id;
+                    const isMerge = mergeMergeId === lead.id;
                     return (
-                      <div key={lead.id} className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 last:border-0">
+                      <div key={lead.id} className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 last:border-0 transition ${isKeep ? "bg-green-50" : isMerge ? "bg-red-50" : ""}`}>
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
                           <span className="text-white text-[9px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
                         </div>
@@ -229,6 +348,18 @@ export default function LeadsPage() {
                           <p className="text-xs text-slate-400 truncate">{lead.email}</p>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stg.color}`}>{stg.label}</span>
+                        {isKeep  && <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Keep</span>}
+                        {isMerge && <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Merge</span>}
+                        {!isKeep && !isMerge && (
+                          <button
+                            onClick={() => {
+                              if (!mergeKeepId) setMergeKeepId(lead.id);
+                              else if (!mergeMergeId && lead.id !== mergeKeepId) setMergeMergeId(lead.id);
+                            }}
+                            className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 hover:border-blue-300 px-2 py-0.5 rounded-lg transition flex items-center gap-1">
+                            <Merge size={10} /> Select
+                          </button>
+                        )}
                         <Link href={`/leads/${lead.id}`} onClick={() => setDupOpen(false)}
                           className="text-xs font-semibold text-blue-600 hover:underline shrink-0">
                           Open
@@ -244,26 +375,81 @@ export default function LeadsPage() {
       )}
 
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">All Leads</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{leads.length} lead{leads.length !== 1 ? "s" : ""} total</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">All Leads</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{leads.length} lead{leads.length !== 1 ? "s" : ""} total</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/pipeline" className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
-            Pipeline
-          </Link>
-          <Link href="/analytics" className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
-            Analytics
-          </Link>
-          <button onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition">
-            <Upload size={14} /> Import CSV
-          </button>
-          <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm">
-            <Plus size={15} /> Add Lead
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Desktop actions */}
+          <div className="hidden sm:flex items-center gap-2 flex-wrap">
+            <Link href="/pipeline" className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Pipeline
+            </Link>
+            <Link href="/analytics" className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Analytics
+            </Link>
+            <button onClick={() => { setBinOpen(true); loadBin(); }}
+              className="flex items-center gap-2 text-sm font-semibold text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition">
+              <Trash2 size={14} /> Recycle Bin
+            </button>
+            <button onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition">
+              <Upload size={14} /> Import CSV
+            </button>
+            <a
+              href={`/api/crm/leads/export${stageFilter || sourceFilter || priorityFilter ? `?${new URLSearchParams({ ...(stageFilter ? { stage: stageFilter } : {}), ...(sourceFilter ? { source: sourceFilter } : {}), ...(priorityFilter ? { priority: priorityFilter } : {}) }).toString()}` : ""}`}
+              download
+              className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-50 transition"
+            >
+              <Download size={14} /> Export CSV
+            </a>
+            <button onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm">
+              <Plus size={15} /> Add Lead
+              <kbd className="hidden lg:inline-flex items-center text-[10px] font-bold bg-blue-500 text-blue-100 px-1.5 py-0.5 rounded ml-1">N</kbd>
+            </button>
+          </div>
+
+          {/* Mobile actions: search + overflow menu */}
+          <div className="flex sm:hidden items-center gap-2 relative">
+            <button onClick={() => setShowFilters(v => !v)}
+              className={`p-2 rounded-xl border transition ${showFilters || hasActiveFilters ? "bg-blue-50 text-blue-700 border-blue-200" : "text-slate-500 border-slate-200 hover:bg-slate-50"}`}>
+              <Filter size={17} />
+              {hasActiveFilters && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-600" />}
+            </button>
+            <button onClick={() => setMobileMenuOpen(v => !v)}
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition">
+              <ChevronDown size={17} />
+            </button>
+            {mobileMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-slate-200 w-52 py-1.5 text-sm">
+                  <Link href="/pipeline" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition text-slate-700" onClick={() => setMobileMenuOpen(false)}>
+                    <ArrowUpDown size={14} className="text-slate-400" /> Pipeline view
+                  </Link>
+                  <Link href="/analytics" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition text-slate-700" onClick={() => setMobileMenuOpen(false)}>
+                    <Sparkles size={14} className="text-slate-400" /> Analytics
+                  </Link>
+                  <button onClick={() => { setMobileMenuOpen(false); setShowImport(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition text-slate-700">
+                    <Upload size={14} className="text-slate-400" /> Import CSV
+                  </button>
+                  <a href={`/api/crm/leads/export`} download onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition text-slate-700">
+                    <Download size={14} className="text-slate-400" /> Export CSV
+                  </a>
+                  <div className="border-t border-slate-100 mt-1 pt-1">
+                    <button onClick={() => { setMobileMenuOpen(false); setBinOpen(true); loadBin(); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition text-red-600">
+                      <Trash2 size={14} /> Recycle Bin
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -287,7 +473,7 @@ export default function LeadsPage() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, email, company…"
@@ -295,7 +481,7 @@ export default function LeadsPage() {
         </div>
 
         <button onClick={() => setShowFilters(v => !v)}
-          className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border transition ${
+          className={`hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border transition ${
             showFilters || hasActiveFilters
               ? "bg-blue-50 text-blue-700 border-blue-200"
               : "text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -447,9 +633,64 @@ export default function LeadsPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-slate-300" />
-        </div>
+        <>
+          {/* Desktop skeleton */}
+          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  {["", "Name", "Company", "Stage", "Source", "Priority", "Deal", "Score", "Last Touched", ""].map((h, i) => (
+                    <th key={i} className="px-5 py-3 text-left">
+                      {h && <div className="h-3 bg-slate-200 rounded animate-pulse w-16" />}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-b border-slate-50">
+                    <td className="pl-5 pr-2 py-3.5"><div className="w-4 h-4 bg-slate-100 rounded animate-pulse" /></td>
+                    <td className="px-3 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+                        <div className="space-y-1.5">
+                          <div className="h-3 bg-slate-200 rounded animate-pulse w-28" />
+                          <div className="h-2.5 bg-slate-100 rounded animate-pulse w-36" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 hidden lg:table-cell"><div className="h-3 bg-slate-100 rounded animate-pulse w-24" /></td>
+                    <td className="px-5 py-3.5"><div className="h-5 bg-slate-100 rounded-full animate-pulse w-20" /></td>
+                    <td className="px-5 py-3.5 hidden lg:table-cell"><div className="h-3 bg-slate-100 rounded animate-pulse w-16" /></td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell"><div className="h-5 bg-slate-100 rounded-full animate-pulse w-14" /></td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell"><div className="h-3 bg-slate-100 rounded animate-pulse w-12" /></td>
+                    <td className="px-5 py-3.5"><div className="h-5 bg-slate-100 rounded-full animate-pulse w-10" /></td>
+                    <td className="px-5 py-3.5 hidden xl:table-cell"><div className="h-3 bg-slate-100 rounded animate-pulse w-16" /></td>
+                    <td className="px-5 py-3.5"><div className="h-3 bg-slate-100 rounded animate-pulse w-10 ml-auto" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile skeleton */}
+          <div className="md:hidden space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-4 h-4 bg-slate-100 rounded animate-pulse shrink-0" />
+                <div className="w-9 h-9 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-slate-200 rounded animate-pulse w-32" />
+                  <div className="h-2.5 bg-slate-100 rounded animate-pulse w-44" />
+                  <div className="flex gap-2 mt-1">
+                    <div className="h-4 bg-slate-100 rounded-full animate-pulse w-16" />
+                    <div className="h-4 bg-slate-100 rounded-full animate-pulse w-10" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+
       ) : sorted.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-16 text-center">
           <p className="text-slate-400 text-sm">No leads match your filters.</p>
@@ -479,6 +720,7 @@ export default function LeadsPage() {
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">
                     <span className="flex items-center gap-1"><Sparkles size={11} className="text-amber-400" />Score</span>
                   </th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden xl:table-cell">Last Touched</th>
                   <th className="text-right px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
@@ -507,10 +749,16 @@ export default function LeadsPage() {
                             </span>
                           </div>
                           <div>
-                            <Link href={`/leads/${lead.id}`}
-                              className="font-semibold text-slate-900 hover:text-blue-600 transition block">
-                              {lead.firstName} {lead.lastName}
-                            </Link>
+                            <div className="flex items-center gap-1.5">
+                              <Link href={`/leads/${lead.id}`}
+                                className="font-semibold text-slate-900 hover:text-blue-600 transition block">
+                                {lead.firstName} {lead.lastName}
+                              </Link>
+                              {!["ENROLLED","LOST"].includes(lead.stage) &&
+                               (Date.now() - new Date(lead.updatedAt).getTime()) > 14 * 86400000 && (
+                                <span title="Not touched in 14+ days" className="text-amber-400 flex-shrink-0">⚠️</span>
+                              )}
+                            </div>
                             <p className="text-xs text-slate-400 truncate max-w-[160px]">{lead.email}</p>
                           </div>
                         </div>
@@ -519,9 +767,25 @@ export default function LeadsPage() {
                         {lead.company ?? <span className="text-slate-300">—</span>}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${stg.color}`}>
-                          {stg.label}
-                        </span>
+                        {stagingLeadId === lead.id ? (
+                          <select
+                            autoFocus
+                            defaultValue={lead.stage}
+                            onChange={e => quickStageChange(lead.id, e.target.value)}
+                            onBlur={() => setStagingLeadId(null)}
+                            className="text-xs font-semibold border border-blue-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                          >
+                            {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                          </select>
+                        ) : (
+                          <button
+                            onClick={() => setStagingLeadId(lead.id)}
+                            title="Click to change stage"
+                            className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${stg.color} hover:opacity-75 transition cursor-pointer`}
+                          >
+                            {stg.label}
+                          </button>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-slate-500 hidden lg:table-cell text-xs">
                         {sourceLabel(lead.source ?? "")}
@@ -539,6 +803,9 @@ export default function LeadsPage() {
                           {lead.score ?? 0}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5 hidden xl:table-cell">
+                        {(() => { const ts = timeSince(lead.updatedAt); return <span className={`text-xs font-medium ${ts.cls}`}>{ts.text}</span>; })()}
+                      </td>
                       <td className="px-5 py-3.5 text-right">
                         <Link href={`/leads/${lead.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
@@ -553,40 +820,96 @@ export default function LeadsPage() {
           </div>
 
           {/* Mobile card list */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-2 pb-24">
             {sorted.map(lead => {
               const stg        = stageInfo(lead.stage);
               const isSelected = selected.has(lead.id);
+              const ts         = timeSince(lead.updatedAt);
+              const isCold     = !["ENROLLED","LOST"].includes(lead.stage) &&
+                                 (Date.now() - new Date(lead.updatedAt).getTime()) > 14 * 86400000;
               return (
                 <div key={lead.id}
-                  className={`bg-white border rounded-2xl shadow-sm p-4 flex items-center gap-3 transition ${
+                  className={`bg-white border rounded-2xl shadow-sm transition ${
                     isSelected ? "border-blue-300 bg-blue-50/40" : "border-slate-200"
                   }`}>
-                  <button onClick={() => toggleOne(lead.id)} className="text-slate-300 hover:text-blue-600 transition shrink-0">
-                    {isSelected ? <CheckSquare size={16} className="text-blue-600" /> : <Square size={16} />}
-                  </button>
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
-                    <span className="text-white text-[10px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/leads/${lead.id}`}
-                      className="font-semibold text-slate-900 hover:text-blue-600 transition block truncate text-sm">
-                      {lead.firstName} {lead.lastName}
-                    </Link>
-                    <p className="text-xs text-slate-400 truncate">{lead.email}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stg.color}`}>{stg.label}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${scoreColor(lead.score ?? 0)}`}>
-                        ⚡ {lead.score}
-                      </span>
+                  <div className="flex items-center gap-3 p-3.5">
+                    <button onClick={() => toggleOne(lead.id)} className="text-slate-300 hover:text-blue-600 transition shrink-0">
+                      {isSelected ? <CheckSquare size={16} className="text-blue-600" /> : <Square size={16} />}
+                    </button>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? "bg-blue-600" : "bg-gradient-to-br from-blue-500 to-indigo-600"}`}>
+                      <span className="text-white text-[10px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/leads/${lead.id}`}
+                          className="font-semibold text-slate-900 hover:text-blue-600 transition truncate text-sm">
+                          {lead.firstName} {lead.lastName}
+                        </Link>
+                        {isCold && <span title="Not touched in 14+ days" className="text-amber-400 flex-shrink-0 text-xs">⚠️</span>}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate">{lead.company ? `${lead.company} · ${lead.email}` : lead.email}</p>
+                    </div>
+                    <Link href={`/leads/${lead.id}`} className="shrink-0 p-1.5 rounded-xl hover:bg-slate-100 transition">
+                      <ExternalLink size={13} className="text-slate-400" />
+                    </Link>
                   </div>
-                  <Link href={`/leads/${lead.id}`} className="shrink-0 p-2 rounded-xl hover:bg-slate-100 transition">
-                    <ExternalLink size={14} className="text-slate-400" />
-                  </Link>
+                  {/* Action strip */}
+                  <div className="flex items-center gap-2 px-3.5 pb-3 -mt-1">
+                    <button
+                      onClick={() => setMobileStageLeadId(lead.id)}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${stg.color} active:opacity-70 transition`}>
+                      {stg.label}
+                    </button>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PRIORITY_COLOR[lead.priority] ?? PRIORITY_COLOR.NORMAL}`}>
+                      {lead.priority}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${scoreColor(lead.score ?? 0)}`}>
+                      ⚡ {lead.score}
+                    </span>
+                    <span className={`text-[10px] ml-auto ${ts.cls}`}>{ts.text}</span>
+                  </div>
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+
+      {/* Mobile FAB — floating add button */}
+      <button
+        onClick={() => setShowForm(true)}
+        className="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-2xl shadow-xl flex items-center justify-center transition-all">
+        <Plus size={24} />
+      </button>
+
+      {/* Mobile stage bottom-sheet */}
+      {mobileStageLeadId && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm sm:hidden"
+            onClick={() => setMobileStageLeadId(null)} />
+          <div className="fixed bottom-0 inset-x-0 z-50 bg-white rounded-t-3xl shadow-2xl sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+              <span className="font-bold text-slate-900 text-sm">Move to stage</span>
+              <button onClick={() => setMobileStageLeadId(null)} className="p-1.5 rounded-lg hover:bg-slate-100 transition">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="py-2">
+              {STAGES.map(s => {
+                const lead = sorted.find(l => l.id === mobileStageLeadId);
+                const active = lead?.stage === s.key;
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => quickStageChange(mobileStageLeadId, s.key)}
+                    className={`w-full flex items-center gap-3 px-5 py-3.5 transition ${active ? "bg-blue-50" : "hover:bg-slate-50 active:bg-slate-100"}`}>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${stageInfo(s.key).color}`}>{s.label}</span>
+                    {active && <span className="ml-auto text-blue-600 text-xs font-semibold">Current</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="h-6" />
           </div>
         </>
       )}
@@ -599,6 +922,75 @@ export default function LeadsPage() {
       )}
       {showImport && (
         <CsvImportModal onClose={() => setShowImport(false)} onImported={load} />
+      )}
+
+      {/* Recycle Bin modal */}
+      {binOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="font-bold text-slate-900 flex items-center gap-2">
+                <Trash2 size={16} className="text-slate-400" /> Recycle Bin
+              </h2>
+              <button onClick={() => setBinOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 transition">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {binLoading && (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 size={24} className="animate-spin text-slate-300" />
+                </div>
+              )}
+              {!binLoading && binLeads.length === 0 && (
+                <div className="text-center py-16 text-slate-400">
+                  <Trash2 size={32} className="mx-auto mb-3 text-slate-200" />
+                  <p className="text-sm">Recycle bin is empty</p>
+                  <p className="text-xs mt-1">Deleted leads will appear here for recovery.</p>
+                </div>
+              )}
+              {!binLoading && binLeads.length > 0 && (
+                <div className="space-y-2">
+                  {binLeads.map(lead => {
+                    const stg = stageInfo(lead.stage);
+                    const daysAgo = Math.floor((Date.now() - new Date(lead.deletedAt).getTime()) / 86400000);
+                    return (
+                      <div key={lead.id} className="flex items-center gap-3 border border-slate-200 rounded-xl px-4 py-3 bg-slate-50/50">
+                        <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center shrink-0">
+                          <span className="text-slate-500 text-[10px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{lead.firstName} {lead.lastName}</p>
+                          <p className="text-xs text-slate-400 truncate">{lead.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stg.color}`}>{stg.label}</span>
+                            <span className="text-[10px] text-slate-400">Deleted {daysAgo === 0 ? "today" : `${daysAgo}d ago`}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button onClick={() => binAction(lead.id, "restore")}
+                            className="text-xs font-semibold text-emerald-600 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition">
+                            Restore
+                          </button>
+                          <button onClick={() => {
+                            if (confirm(`Permanently delete ${lead.firstName} ${lead.lastName}? This cannot be undone.`))
+                              binAction(lead.id, "purge");
+                          }}
+                            className="text-xs font-semibold text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition">
+                            Delete forever
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-3 border-t border-slate-100 text-xs text-slate-400">
+              {binLeads.length > 0 ? `${binLeads.length} deleted lead${binLeads.length !== 1 ? "s" : ""}` : "No deleted leads"}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

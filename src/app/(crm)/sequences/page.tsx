@@ -14,9 +14,9 @@ const TEMPLATE_STEPS: { label: string; steps: Omit<Step, "id" | "stepNumber">[] 
   {
     label: "Standard 3-touch",
     steps: [
-      { subject: "Quick question about your career goals", body: "Hi {{firstName}},\n\nI came across your profile and thought the Career Accelerator might be a great fit.\n\nWould you be open to a quick 15-minute call this week?\n\nLooking forward to connecting!", delayDays: 0 },
-      { subject: "Following up — Career Accelerator", body: "Hi {{firstName}},\n\nJust wanted to make sure my last message didn't get buried.\n\nIf you're curious about the program, I'm happy to answer any questions — no commitment needed.\n\nAre you free this week?", delayDays: 3 },
-      { subject: "Last note from me", body: "Hi {{firstName}},\n\nI won't keep reaching out after this, but wanted to leave the door open.\n\nIf the Career Accelerator ever feels like the right fit, feel free to reach out anytime. We'd love to have you.\n\nBest of luck with everything!", delayDays: 7 },
+      { subject: "Quick question about your career goals", body: "Hi {{firstName}},\n\nI came across your profile and thought the 10x Career Accelerator might be a great fit.\n\nWould you be open to a quick 15-minute call this week?\n\nLooking forward to connecting!", delayDays: 0 },
+      { subject: "Following up — 10x Career Accelerator", body: "Hi {{firstName}},\n\nJust wanted to make sure my last message didn't get buried.\n\nIf you're curious about the program, I'm happy to answer any questions — no commitment needed.\n\nAre you free this week?", delayDays: 3 },
+      { subject: "Last note from me", body: "Hi {{firstName}},\n\nI won't keep reaching out after this, but wanted to leave the door open.\n\nIf the 10x Career Accelerator ever feels like the right fit, feel free to reach out anytime. We'd love to have you.\n\nBest of luck with everything!", delayDays: 7 },
     ],
   },
 ];
@@ -241,6 +241,20 @@ export default function SequencesPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Smart-skip info banner */}
+            {selected.steps.length > 1 && (
+              <div className="flex items-start gap-2.5 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3">
+                <span className="text-violet-500 mt-0.5 shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </span>
+                <p className="text-xs text-violet-700 leading-relaxed">
+                  <span className="font-bold">Smart skip active —</span> follow-up steps (step 2+) are automatically skipped if the lead has already opened a sequence email in the last 7 days, or completed if the lead is already enrolled.
+                </p>
               </div>
             )}
 

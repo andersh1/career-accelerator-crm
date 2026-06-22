@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
+import { wrapLinksForTracking } from "@/lib/emailTracking";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.EMAIL_FROM ?? "Career Accelerator <onboarding@resend.dev>";
+const FROM   = process.env.EMAIL_FROM ?? "10x Career Accelerator <onboarding@resend.dev>";
 
 function toHtml(text: string, subject: string) {
   const htmlBody = text
@@ -19,12 +20,12 @@ function toHtml(text: string, subject: string) {
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <tr><td style="background:linear-gradient(135deg,#0a1628,#1e3a8a);padding:28px 32px;">
-        <p style="margin:0;color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Career Accelerator</p>
+        <p style="margin:0;color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">10x Career Accelerator</p>
         <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.3;">${subject}</h1>
       </td></tr>
       <tr><td style="padding:32px;">${htmlBody}</td></tr>
       <tr><td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#f8fafc;">
-        <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">Career Accelerator Program</p>
+        <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">10x Career Accelerator Program</p>
       </td></tr>
     </table>
   </td></tr>
@@ -56,19 +57,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Email not configured — add RESEND_API_KEY to env vars" }, { status: 503 });
   }
 
-  const { error: sendError } = await resend.emails.send({
-    from:    FROM,
-    to:      lead.email,
-    subject: subject.trim(),
-    html:    toHtml(text.trim(), subject.trim()),
-  });
-
-  if (sendError) {
-    return NextResponse.json({ error: sendError.message }, { status: 500 });
-  }
-
-  // Log to activity timeline
-  await prisma.leadActivity.create({
+  // Create the activity record first so we have its ID for click tracking correlation
+  const activity = await prisma.leadActivity.create({
     data: {
       leadId:    params.id,
       type:      "EMAIL",
@@ -79,6 +69,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       createdBy: (session as { user: { id: string } }).user.id,
     },
   });
+
+  // Build HTML and wrap links for click tracking
+  const rawHtml     = toHtml(text.trim(), subject.trim());
+  const trackedHtml = wrapLinksForTracking(rawHtml, params.id, activity.id);
+
+  const { error: sendError } = await resend.emails.send({
+    from:    FROM,
+    to:      lead.email,
+    subject: subject.trim(),
+    html:    trackedHtml,
+  });
+
+  if (sendError) {
+    // Clean up the activity record if sending failed
+    await prisma.leadActivity.delete({ where: { id: activity.id } }).catch(() => {});
+    return NextResponse.json({ error: sendError.message }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

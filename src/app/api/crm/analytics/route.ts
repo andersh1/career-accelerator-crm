@@ -14,9 +14,11 @@ export async function GET() {
 
   // ── Lead data ────────────────────────────────────────────────────────────────
   const leads = await prisma.lead.findMany({
+    where: { deletedAt: null },
     select: {
       id: true, stage: true, source: true, priority: true,
       createdAt: true, dealValue: true, paymentStatus: true, assignedTo: true,
+      lostReason: true,
     },
   });
 
@@ -262,6 +264,16 @@ export async function GET() {
     });
   }
 
+  // ── Lost reasons breakdown ────────────────────────────────────────────────
+  const reasonMap: Record<string, number> = {};
+  for (const l of leads.filter(l => l.stage === "LOST")) {
+    const r = l.lostReason?.trim() || "Not specified";
+    reasonMap[r] = (reasonMap[r] ?? 0) + 1;
+  }
+  const lostReasons = Object.entries(reasonMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([reason, count]) => ({ reason, count }));
+
   return NextResponse.json({
     kpis: { total, enrolled, lost, active, winRate, pipelineValue, avgDeal, weightedPipeline: Math.round(weightedPipeline) },
     mom:  { newThisMonth, newLastMonth, newMoM, enrolledThisMonth, enrolledLastMonth, enrolledMoM },
@@ -271,5 +283,6 @@ export async function GET() {
     timeInStage,
     cohorts: cohortData,
     reps,
+    lostReasons,
   });
 }

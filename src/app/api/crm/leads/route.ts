@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeScore } from "@/lib/scoring";
+import { fireWebhook } from "@/lib/webhooks";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
 
   const leads = await prisma.lead.findMany({
     where: {
+      deletedAt: null,
       ...(stage      ? { stage }      : {}),
       ...(source     ? { source }     : {}),
       ...(assignedTo ? { assignedTo } : {}),
@@ -99,6 +101,16 @@ export async function POST(req: NextRequest) {
       createdBy: (session as { user: { id: string } }).user.id,
     },
   });
+
+  // Webhook: new lead created (fire-and-forget)
+  fireWebhook("lead.created", {
+    leadId:    lead.id,
+    firstName: lead.firstName,
+    lastName:  lead.lastName,
+    email:     lead.email,
+    source:    lead.source,
+    stage:     lead.stage,
+  }).catch(() => {});
 
   return NextResponse.json(lead, { status: 201 });
 }

@@ -5,13 +5,15 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN") {
+  const crmRole = (session?.user as { crmRole?: string } | undefined)?.crmRole;
+  if (!session || (crmRole !== "ADMIN" && crmRole !== "MEMBER")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Return all users with a crmRole set (ADMIN or MEMBER)
   const users = await prisma.user.findMany({
-    where: { role: "ADMIN" },
-    select: { id: true, name: true, email: true },
+    where: { crmRole: { not: null } },
+    select: { id: true, name: true, email: true, crmRole: true, createdAt: true },
     orderBy: { name: "asc" },
   });
 

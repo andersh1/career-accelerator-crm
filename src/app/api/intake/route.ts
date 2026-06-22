@@ -9,6 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { enrichFromEmail } from "@/lib/enrichment";
+import { sendIntakeConfirmationEmail } from "@/lib/email";
+import { sendSlack, newIntakeBlocks } from "@/lib/slack";
 
 export async function POST(req: NextRequest) {
   // Optional API key check
@@ -100,6 +102,16 @@ export async function POST(req: NextRequest) {
       href:   `/leads/${lead.id}`,
     },
   }).catch(() => {});
+
+  // Confirmation email to prospect + Slack ping to team — both non-fatal
+  const emailAddr = email.toLowerCase().trim();
+  await Promise.allSettled([
+    sendIntakeConfirmationEmail({ to: emailAddr, firstName: first }),
+    sendSlack(
+      `🚀 New application: ${first} ${last} (${emailAddr})`,
+      newIntakeBlocks(first, last, emailAddr, lead.id).blocks,
+    ),
+  ]);
 
   return NextResponse.json({ id: lead.id, created: true }, { status: 201 });
 }

@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check:schema": "tsx scripts/check-schema-drift.ts",
+    "deploy": "npm run check:schema && vercel --prod"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.438.0",

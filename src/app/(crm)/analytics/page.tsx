@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   TrendingUp, TrendingDown, Users, UserCheck, UserX, Activity,
-  DollarSign, Clock, Target, Loader2, RefreshCw, UserCircle2,
+  DollarSign, Clock, Target, Loader2, RefreshCw, UserCircle2, Mail,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ interface AnalyticsData {
     id: string; name: string; total: number; active: number; enrolled: number;
     lost: number; pipeline: number; revenue: number; winRate: number;
   }[];
+  lostReasons: { reason: string; count: number }[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -74,12 +75,25 @@ const SOURCE_COLORS: Record<string, string> = {
   PAID_AD: "bg-purple-500", OTHER: "bg-slate-400", UNKNOWN: "bg-slate-300",
 };
 
+interface EmailStats {
+  allTime: { sent: number; opened: number; rate: number };
+  last30:  { sent: number; opened: number; rate: number };
+  bySource: { source: string; sent: number; opened: number; rate: number }[];
+  byMonth:  { month: string; label: string; sent: number; opened: number; rate: number }[];
+  clicks?: {
+    allTime: { total: number };
+    last30:  { total: number };
+  };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const [data,    setData]    = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState<"pipeline" | "time" | "cohorts" | "reps">("pipeline");
+  const [data,       setData]       = useState<AnalyticsData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTab]        = useState<"pipeline" | "time" | "cohorts" | "reps" | "email">("pipeline");
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +103,16 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (tab !== "email" || emailStats) return;
+    setEmailLoading(true);
+    fetch("/api/crm/email-open/stats")
+      .then(r => r.json())
+      .then((d: EmailStats) => setEmailStats(d))
+      .catch(() => {})
+      .finally(() => setEmailLoading(false));
+  }, [tab, emailStats]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-full py-40">
@@ -100,7 +124,7 @@ export default function AnalyticsPage() {
     <div className="p-10 text-center text-slate-400">Failed to load analytics.</div>
   );
 
-  const { kpis, mom, funnel, sources, monthly, timeInStage, cohorts, reps = [] } = data;
+  const { kpis, mom, funnel, sources, monthly, timeInStage, cohorts, reps = [], lostReasons = [] } = data;
   const maxFunnel  = Math.max(...funnel.map(f => f.count), 1);
   const maxMonthly = Math.max(...monthly.map(m => Math.max(m.leads, m.enrolled)), 1);
   const totalSrc   = sources.reduce((a, b) => a + b.count, 0);
@@ -191,7 +215,7 @@ export default function AnalyticsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {([["pipeline", "Pipeline"], ["time", "Time in Stage"], ["cohorts", "Cohorts"], ["reps", "By Rep"]] as const).map(([key, label]) => (
+        {([["pipeline", "Pipeline"], ["time", "Time in Stage"], ["cohorts", "Cohorts"], ["reps", "By Rep"], ["email", "Email"]] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition ${
               tab === key ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"
@@ -520,6 +544,199 @@ export default function AnalyticsPage() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Email tab ───────────────────────────────────────────── */}
+      {tab === "email" && (
+        <div className="space-y-5">
+          {emailLoading && (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 size={28} className="animate-spin text-slate-300" />
+            </div>
+          )}
+          {!emailLoading && emailStats && (
+            <>
+              {/* Click tracking notice */}
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+                <Mail size={13} className="text-blue-500 shrink-0" />
+                <p className="text-xs text-blue-700">
+                  <span className="font-bold">Click tracking active</span> — links in emails now route through our tracker
+                </p>
+              </div>
+
+              {/* KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Sent (all time)",  value: emailStats.allTime.sent,    icon: Mail,      bg: "bg-blue-50",    ic: "text-blue-700" },
+                  { label: "Opened (all time)",       value: emailStats.allTime.opened,  icon: UserCheck, bg: "bg-emerald-50", ic: "text-emerald-700" },
+                  { label: "Open Rate (all time)",    value: `${emailStats.allTime.rate}%`,  icon: Target, bg: "bg-violet-50",  ic: "text-violet-700" },
+                  { label: "Open Rate (last 30d)",    value: `${emailStats.last30.rate}%`,   icon: TrendingUp, bg: "bg-amber-50", ic: "text-amber-700" },
+                ].map(k => (
+                  <div key={k.label} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+                    <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center mb-3`}>
+                      <k.icon size={18} className={k.ic} />
+                    </div>
+                    <p className="text-2xl font-extrabold text-slate-900">{k.value}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{k.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Click KPIs */}
+              {emailStats.clicks && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      label: "Clicks (all time)",
+                      value: emailStats.clicks.allTime.total,
+                      icon: TrendingUp,
+                      bg: "bg-cyan-50",
+                      ic: "text-cyan-700",
+                    },
+                    {
+                      label: "Clicks (last 30d)",
+                      value: emailStats.clicks.last30.total,
+                      icon: Activity,
+                      bg: "bg-indigo-50",
+                      ic: "text-indigo-700",
+                    },
+                    {
+                      label: "Click-to-Open Rate",
+                      value: emailStats.allTime.opened > 0
+                        ? `${Math.round((emailStats.clicks.allTime.total / emailStats.allTime.opened) * 100)}%`
+                        : "—",
+                      icon: Target,
+                      bg: "bg-rose-50",
+                      ic: "text-rose-700",
+                    },
+                  ].map(k => (
+                    <div key={k.label} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+                      <div className={`w-10 h-10 rounded-xl ${k.bg} flex items-center justify-center mb-3`}>
+                        <k.icon size={18} className={k.ic} />
+                      </div>
+                      <p className="text-2xl font-extrabold text-slate-900">{k.value}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{k.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Last 30-day snapshot */}
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+                <h2 className="text-sm font-bold text-slate-900 mb-4">Last 30 Days</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {[
+                    { label: "Sent",        value: emailStats.last30.sent },
+                    { label: "Opened",      value: emailStats.last30.opened },
+                    { label: "Open Rate",   value: `${emailStats.last30.rate}%` },
+                    {
+                      label: "Clicks",
+                      value: emailStats.clicks?.last30.total ?? "—",
+                    },
+                  ].map(s => (
+                    <div key={s.label}>
+                      <p className="text-xs font-semibold text-slate-500">{s.label}</p>
+                      <p className="text-2xl font-extrabold text-slate-900 mt-1">{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Monthly trend */}
+              {emailStats.byMonth.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-sm font-bold text-slate-900">6-Month Email Trend</h2>
+                    <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
+                      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block" /> Sent</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" /> Opened</span>
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-4 h-36">
+                    {emailStats.byMonth.map(m => {
+                      const maxVal = Math.max(...emailStats.byMonth.map(x => x.sent), 1);
+                      return (
+                        <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                          <div className="flex items-end gap-1 w-full" style={{ height: "96px" }}>
+                            <div className="flex-1 flex flex-col justify-end">
+                              <div title={`${m.sent} sent`}
+                                className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-md transition-all"
+                                style={{ height: `${Math.max((m.sent / maxVal) * 90, m.sent > 0 ? 4 : 0)}px` }} />
+                            </div>
+                            <div className="flex-1 flex flex-col justify-end">
+                              <div title={`${m.opened} opened`}
+                                className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-md transition-all"
+                                style={{ height: `${Math.max((m.opened / maxVal) * 90, m.opened > 0 ? 4 : 0)}px` }} />
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">{m.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* By source */}
+              {emailStats.bySource.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+                  <h2 className="text-sm font-bold text-slate-900 mb-4">Open Rate by Source</h2>
+                  <div className="space-y-3">
+                    {emailStats.bySource.map(s => (
+                      <div key={s.source}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-slate-700">{s.source || "Direct"}</span>
+                          <span className="text-xs text-slate-500">
+                            {s.opened}/{s.sent} opened · <span className="font-bold text-slate-700">{s.rate}%</span>
+                          </span>
+                        </div>
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all"
+                            style={{ width: `${Math.max(s.rate, s.sent > 0 ? 2 : 0)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {emailStats.allTime.sent === 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-16 text-center">
+                  <Mail size={28} className="mx-auto text-slate-300 mb-3" />
+                  <p className="text-slate-400 text-sm">No emails logged yet.</p>
+                  <p className="text-slate-400 text-xs mt-1">Send emails via lead timelines or blast campaigns to track open rates.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Why We Lose ─────────────────────────────────────────── */}
+      {lostReasons.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+          <h2 className="text-sm font-bold text-slate-900 mb-1">Why We Lose</h2>
+          <p className="text-xs text-slate-400 mb-5">Breakdown of lost-reason tags across {kpis.lost} lost lead{kpis.lost !== 1 ? "s" : ""}</p>
+          <div className="space-y-3">
+            {lostReasons.map(r => {
+              const pct = Math.round((r.count / kpis.lost) * 100);
+              return (
+                <div key={r.reason}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-slate-700 truncate max-w-[60%]">{r.reason}</span>
+                    <span className="text-xs text-slate-400">{r.count} lead{r.count !== 1 ? "s" : ""} · {pct}%</span>
+                  </div>
+                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-red-400 to-rose-500 transition-all"
+                      style={{ width: `${Math.max(pct, r.count > 0 ? 2 : 0)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

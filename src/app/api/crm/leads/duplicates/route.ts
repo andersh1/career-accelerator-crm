@@ -9,6 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const leads = await prisma.lead.findMany({
+    where: { deletedAt: null },
     select: {
       id: true, firstName: true, lastName: true, email: true,
       company: true, stage: true, createdAt: true,

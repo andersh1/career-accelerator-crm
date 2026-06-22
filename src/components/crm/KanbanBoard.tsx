@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Loader2, ArrowRight, Filter, ChevronDown } from "lucide-react";
+import { Plus, Search, Loader2, ArrowRight, Filter, ChevronDown, Sparkles } from "lucide-react";
 import { STAGES, stageInfo, sourceLabel } from "./constants";
 import LeadForm from "./LeadForm";
+import { scoreColor } from "@/lib/scoring";
 import { useToast } from "@/lib/toast";
 
 interface Lead {
@@ -18,6 +19,7 @@ interface Lead {
   source:     string | null;
   priority:   string;
   tags:       string[];
+  score?:     number;
   createdAt:  string;
   updatedAt:  string;
   enrolledUser: { id: string; name: string } | null;
@@ -26,14 +28,18 @@ interface Lead {
 
 type StageEntry = typeof STAGES[number];
 
+const DRAGGABLE_STAGES = ["LEAD", "CONTACTED", "QUALIFIED", "PROPOSAL"];
+
 export default function KanbanBoard() {
   const { success } = useToast();
-  const [leads,    setLeads]    = useState<Lead[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [search,   setSearch]   = useState("");
-  const [movingId, setMovingId] = useState<string | null>(null);
-  const [showLost, setShowLost] = useState(false);
+  const [leads,         setLeads]         = useState<Lead[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [showForm,      setShowForm]      = useState(false);
+  const [search,        setSearch]        = useState("");
+  const [movingId,      setMovingId]      = useState<string | null>(null);
+  const [showLost,      setShowLost]      = useState(false);
+  const [draggingId,    setDraggingId]    = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,22 +110,58 @@ export default function KanbanBoard() {
           <div className="flex gap-4 h-full min-h-[600px]" style={{ minWidth: `${kanbanStages.length * 280}px` }}>
             {kanbanStages.map(stg => {
               const stageLeads = filtered.filter(l => l.stage === stg.key);
+              const isDropTarget = dragOverStage === stg.key && draggingId !== null;
+              const isDraggable  = DRAGGABLE_STAGES.includes(stg.key);
+
               return (
-                <div key={stg.key} className="flex flex-col w-[272px] flex-shrink-0">
-                  <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl mb-3 ${stg.color}`}>
+                <div
+                  key={stg.key}
+                  className="flex flex-col w-[272px] flex-shrink-0"
+                  onDragOver={e => {
+                    if (!isDraggable || !draggingId) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDragEnter={e => {
+                    if (!isDraggable || !draggingId) return;
+                    e.preventDefault();
+                    setDragOverStage(stg.key);
+                  }}
+                  onDragLeave={e => {
+                    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+                      setDragOverStage(null);
+                    }
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const leadId = e.dataTransfer.getData("leadId");
+                    const fromStage = e.dataTransfer.getData("fromStage");
+                    setDragOverStage(null);
+                    setDraggingId(null);
+                    if (leadId && fromStage !== stg.key) moveStage(leadId, stg.key);
+                  }}
+                >
+                  <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl mb-3 transition-colors ${
+                    isDropTarget ? "ring-2 ring-blue-400 ring-offset-1 " + stg.color : stg.color
+                  }`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${stg.dot}`} />
                       <span className="text-sm font-bold text-slate-700">{stg.label}</span>
+                      {isDraggable && <span className="text-[9px] text-slate-400 font-normal">drag to move</span>}
                     </div>
                     <span className="text-xs font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full">
                       {stageLeads.length}
                     </span>
                   </div>
 
-                  <div className="flex-1 space-y-2.5 overflow-y-auto pr-0.5 scrollbar-thin">
+                  <div className={`flex-1 space-y-2.5 overflow-y-auto pr-0.5 scrollbar-thin rounded-2xl transition-colors ${
+                    isDropTarget ? "bg-blue-50/60 outline-2 outline-dashed outline-blue-300 outline-offset-2" : ""
+                  }`}>
                     {stageLeads.length === 0 && (
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center">
-                        <p className="text-xs text-slate-400">No leads here</p>
+                      <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${
+                        isDropTarget ? "border-blue-300 bg-blue-50" : "border-slate-200"
+                      }`}>
+                        <p className="text-xs text-slate-400">{isDropTarget ? "Drop here" : "No leads here"}</p>
                       </div>
                     )}
                     {stageLeads.map(lead => (
@@ -128,7 +170,11 @@ export default function KanbanBoard() {
                         lead={lead}
                         stages={[...kanbanStages]}
                         moving={movingId === lead.id}
+                        dragging={draggingId === lead.id}
+                        draggable={DRAGGABLE_STAGES.includes(lead.stage)}
                         onMove={moveStage}
+                        onDragStart={(id) => setDraggingId(id)}
+                        onDragEnd={() => { setDraggingId(null); setDragOverStage(null); }}
                       />
                     ))}
                   </div>
@@ -150,12 +196,16 @@ export default function KanbanBoard() {
 }
 
 function LeadCard({
-  lead, stages, moving, onMove,
+  lead, stages, moving, dragging, draggable, onMove, onDragStart, onDragEnd,
 }: {
-  lead:   Lead;
-  stages: StageEntry[];
-  moving: boolean;
-  onMove: (id: string, stage: string) => void;
+  lead:        Lead;
+  stages:      StageEntry[];
+  moving:      boolean;
+  dragging:    boolean;
+  draggable:   boolean;
+  onMove:      (id: string, stage: string) => void;
+  onDragStart: (id: string) => void;
+  onDragEnd:   () => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const initials  = `${lead.firstName[0] ?? ""}${lead.lastName[0] ?? ""}`.toUpperCase();
@@ -169,7 +219,23 @@ function LeadCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all p-4 relative">
+    <div
+      draggable={draggable}
+      onDragStart={e => {
+        e.dataTransfer.setData("leadId", lead.id);
+        e.dataTransfer.setData("fromStage", lead.stage);
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart(lead.id);
+      }}
+      onDragEnd={onDragEnd}
+      className={`bg-white rounded-2xl border shadow-sm transition-all p-4 relative select-none ${
+        draggable ? "cursor-grab active:cursor-grabbing" : ""
+      } ${
+        dragging
+          ? "opacity-40 scale-95 border-blue-300"
+          : "border-slate-200 hover:shadow-md hover:border-slate-300"
+      }`}
+    >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -203,6 +269,11 @@ function LeadCard({
             {tag}
           </span>
         ))}
+        {lead.score !== undefined && lead.stage !== "ENROLLED" && lead.stage !== "LOST" && (
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${scoreColor(lead.score)}`}>
+            <Sparkles size={8} /> {lead.score}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-2">
