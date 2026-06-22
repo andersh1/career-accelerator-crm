@@ -75,13 +75,6 @@ export const authOptions: NextAuthOptions = {
         token.id      = user.id;
         token.role    = (user as unknown as { role: string }).role;
         token.crmRole = (user as unknown as { crmRole?: string }).crmRole ?? "MEMBER";
-      } else {
-        const fresh = await prisma.user.findUnique({
-          where:  { id: token.id as string },
-          select: { name: true, crmRole: true },
-        });
-        if (fresh?.name)    token.name    = fresh.name;
-        if (fresh?.crmRole) token.crmRole = fresh.crmRole;
       }
       return token;
     },
