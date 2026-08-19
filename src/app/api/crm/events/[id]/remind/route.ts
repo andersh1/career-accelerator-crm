@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.RESEND_FROM_EMAIL ?? "Vantage Career Accelerator <onboarding@resend.dev>";
+const FROM   = process.env.RESEND_FROM_EMAIL ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 const CRM_SECRET = process.env.CRON_SECRET ?? "";
 
 function dateStr(d: Date, tz: string) {

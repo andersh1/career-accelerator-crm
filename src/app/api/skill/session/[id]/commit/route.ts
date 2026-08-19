@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.EMAIL_FROM ?? "Career Accelerator <onboarding@resend.dev>";
+const FROM   = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 
 function checkApiKey(req: NextRequest) {
   const auth  = req.headers.get("authorization") ?? "";

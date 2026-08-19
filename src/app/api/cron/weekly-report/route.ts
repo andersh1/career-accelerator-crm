@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
 const resend  = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM    = process.env.EMAIL_FROM ?? "10x Career Accelerator <onboarding@resend.dev>";
+const FROM    = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 const CRM_URL = process.env.NEXTAUTH_URL ?? "https://career-accelerator-crm.vercel.app";
 
 function authOk(req: NextRequest) {

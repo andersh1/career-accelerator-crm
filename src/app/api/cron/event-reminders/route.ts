@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.RESEND_FROM_EMAIL ?? "Vantage Career Accelerator <onboarding@resend.dev>";
+const FROM   = process.env.RESEND_FROM_EMAIL ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 
 function fmt(d: Date, tz: string, mode: "date" | "time") {
   return mode === "date"

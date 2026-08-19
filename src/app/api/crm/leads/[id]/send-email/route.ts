@@ -6,7 +6,7 @@ import { Resend } from "resend";
 import { wrapLinksForTracking } from "@/lib/emailTracking";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.EMAIL_FROM ?? "10x Career Accelerator <onboarding@resend.dev>";
+const FROM   = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 
 function toHtml(text: string, subject: string) {
   const htmlBody = text

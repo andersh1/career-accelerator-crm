@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.EMAIL_FROM ?? "10x Career Accelerator <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 function wrap(title: string, body: string) {
