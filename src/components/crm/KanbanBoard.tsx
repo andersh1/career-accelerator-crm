@@ -32,7 +32,7 @@ interface Lead {
 
 type StageEntry = typeof STAGES[number];
 
-const DRAGGABLE_STAGES = ["LEAD", "CONTACTED", "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "COMPLETED"];
+const DRAGGABLE_STAGES = ["WAITLIST", "LEAD", "CONTACTED", "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "COMPLETED"];
 
 export default function KanbanBoard() {
   const { success, error: toastError } = useToast();

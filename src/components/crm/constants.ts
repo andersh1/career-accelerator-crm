@@ -1,4 +1,5 @@
 export const STAGES = [
+  { key: "WAITLIST",      label: "Waitlist",    color: "bg-sky-100 text-sky-700",       dot: "bg-sky-400"     },
   { key: "LEAD",          label: "Lead",        color: "bg-slate-100 text-slate-700",   dot: "bg-slate-400"   },
   { key: "CONTACTED",     label: "Contacted",   color: "bg-blue-100 text-blue-700",     dot: "bg-blue-500"    },
   { key: "APPLIED",       label: "Applied",     color: "bg-sky-100 text-sky-700",       dot: "bg-sky-500"     },
