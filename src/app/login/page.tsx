@@ -41,7 +41,7 @@ export default function LoginPage() {
         style={{ background: "linear-gradient(180deg, #0a6b64 0%, #084f4a 100%)" }}
       >
         <div>
-          <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-8 w-auto object-contain" />
+          <img src="/vantage-logo.svg" alt="Vantage Career" className="h-8 w-auto object-contain" />
         </div>
         <div>
           <p className="text-white/90 text-2xl font-bold leading-snug mb-3">
@@ -63,7 +63,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 flex flex-col items-center gap-1">
             <div style={{ background: "#0a6b64", borderRadius: 8, padding: "7px 12px", display: "inline-flex", alignItems: "center" }}>
-              <img src="/10ximpact-logo.webp" alt="Vantage Career" style={{ height: 26, display: "block" }} />
+              <img src="/vantage-logo.svg" alt="Vantage Career" style={{ height: 26, display: "block" }} />
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, color: "#0a6b64", letterSpacing: "0.8px", textTransform: "uppercase" }}>
               Career Accelerator

@@ -63,7 +63,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full">
       {/* Brand */}
       <div className="px-6 pt-6 pb-5">
-        <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-7 w-auto object-contain" />
+        <img src="/vantage-logo.svg" alt="Vantage Career" className="h-7 w-auto object-contain" />
       </div>
 
       {/* User chip */}
@@ -231,7 +231,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#5a6663" }}>
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-6 w-auto object-contain" />
+          <img src="/vantage-logo.svg" alt="Vantage Career" className="h-6 w-auto object-contain" />
         </header>
         <main className="flex-1 overflow-y-auto scrollbar-thin">
           {children}

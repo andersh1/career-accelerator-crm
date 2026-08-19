@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f8f6f1" }}>
       <div className="w-full max-w-sm">
-        <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-7 w-auto object-contain mb-8" />
+        <img src="/vantage-logo.svg" alt="Vantage Career" className="h-7 w-auto object-contain mb-8" />
         <h1 className="text-2xl font-extrabold mb-1" style={{ color: "#14211f" }}>Set new password</h1>
         <p className="text-sm mb-8" style={{ color: "#5a6663" }}>Choose a new password for your CRM account.</p>
         <Suspense fallback={<p className="text-sm" style={{ color: "#5a6663" }}>Loading…</p>}>

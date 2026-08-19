@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
         <div className="mb-8">
           <div className="mb-8 inline-flex flex-col items-start gap-1">
             <div style={{ background: "#0a6b64", borderRadius: 8, padding: "7px 12px", display: "inline-flex", alignItems: "center" }}>
-              <img src="/10ximpact-logo.webp" alt="Vantage Career" style={{ height: 26, display: "block" }} />
+              <img src="/vantage-logo.svg" alt="Vantage Career" style={{ height: 26, display: "block" }} />
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, color: "#0a6b64", letterSpacing: "0.8px", paddingLeft: 2, textTransform: "uppercase" }}>
               Career Accelerator
