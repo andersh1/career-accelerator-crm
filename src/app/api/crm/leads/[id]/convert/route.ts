@@ -95,7 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
 
   if (sendInvite) {
-    const lmsUrl   = process.env.LMS_URL ?? "https://career-accelerator-lms.vercel.app";
+    const lmsUrl   = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
     const resetUrl = `${lmsUrl}/reset-password?token=${resetToken}`;
     await sendStudentInviteEmail({
       to:          user.email,

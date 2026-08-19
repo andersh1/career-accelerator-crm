@@ -267,7 +267,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                     <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3 bg-slate-50/50">
                       {/* Link to full call sheet on LMS */}
                       <a
-                        href={`https://career-accelerator-lms.vercel.app/admin/prework/${mod.moduleId}/student/${data.user.id}`}
+                        href={`https://lms.vantagecareer.co/admin/prework/${mod.moduleId}/student/${data.user.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition"

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendStudentInviteEmail } from "@/lib/email";
 import crypto from "crypto";
 
-const LMS_URL = process.env.LMS_URL ?? "https://career-accelerator-lms.vercel.app";
+const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 // POST /api/crm/cohorts/[id]/publish
 // Publishes all unpublished students in the cohort to the LMS:

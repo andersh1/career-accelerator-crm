@@ -398,7 +398,7 @@ export default function TicketDetailPage() {
 
           {/* Link to LMS admin user */}
           <a
-            href={`https://career-accelerator-lms.vercel.app/admin/users?highlight=${ticket.user.id}`}
+            href={`https://lms.vantagecareer.co/admin/users?highlight=${ticket.user.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-blue-600 transition"

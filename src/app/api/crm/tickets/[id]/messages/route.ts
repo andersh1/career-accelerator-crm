@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // Email student if NOT an internal note and Resend is configured
   if (!internal && ticket.user.email && resend) {
-    const lmsUrl = process.env.LMS_URL ?? "https://career-accelerator-lms.vercel.app";
+    const lmsUrl = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
     await resend.emails.send({
       from:    "Vantage Career Accelerator Support <noreply@career-accelerator.app>",
       to:      ticket.user.email,

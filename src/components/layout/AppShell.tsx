@@ -179,7 +179,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           Open LMS
         </button>
         <a
-          href="https://crm.vantagecareer.co"
+          href="https://app.10ximpact.co"
           target="_blank"
           rel="noreferrer"
           onClick={() => setOpen(false)}

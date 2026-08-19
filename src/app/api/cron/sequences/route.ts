@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
     }
     // ────────────────────────────────────────────────────────────────────────
 
-    const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://career-accelerator-lms.vercel.app"}/api/crm/unsubscribe?email=${encodeURIComponent(enrollment.lead.email)}`;
+    const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://lms.vantagecareer.co"}/api/crm/unsubscribe?email=${encodeURIComponent(enrollment.lead.email)}`;
 
     // Create the activity record FIRST so we have its ID for the tracking pixel
     const activity = await prisma.leadActivity.create({
