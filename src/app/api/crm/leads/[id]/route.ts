@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendSlack, enrolledBlocks } from "@/lib/slack";
 import { fireWebhook } from "@/lib/webhooks";
+import { sendOutcomeFollowUpEmail } from "@/lib/email";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
@@ -35,10 +36,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const { stage: newStage, notesAppend, ...rest } = body;
 
-  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true } });
+  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const data: Record<string, unknown> = { ...rest };
+  // Whitelist patchable fields to prevent mass-assignment
+  const ALLOWED = new Set(["firstName","lastName","email","phone","company","jobTitle","source","subSource","leadType","priority","paymentStatus","dealValue","assignedTo","tags","notes","lostReason","unsubscribed","enrolledUserId","outcomeStatus","outcomeCompany","outcomeRole","outcomeSalary","outcomeStartDate","outcomeNotes","outcomeUpdatedAt"]);
+  const data: Record<string, unknown> = Object.fromEntries(
+    Object.entries(rest).filter(([k]) => ALLOWED.has(k))
+  );
   if (newStage) data.stage = newStage;
   // Append to notes rather than overwrite
   if (notesAppend) {
@@ -47,7 +52,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       : `[AI from transcript] ${notesAppend}`;
   }
 
-  const lead = await prisma.lead.update({ where: { id: params.id }, data });
+  const lead = await prisma.lead.update({
+    where: { id: params.id },
+    data,
+    select: {
+      firstName: true, lastName: true, email: true,
+      stage: true, dealValue: true,
+      outcomeStatus: true, outcomeEmailSentAt: true,
+    },
+  });
 
   if (newStage && newStage !== existing.stage) {
     await prisma.leadActivity.create({
@@ -100,17 +113,39 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
     }
 
-    // ── Automation: stage-change triggers (fire-and-forget) ──
+    // ── Outcomes follow-up: send email when graduated (stage → COMPLETED) ──
+    if (newStage === "COMPLETED" && !lead.outcomeEmailSentAt) {
+      (async () => {
+        try {
+          const token = crypto.randomUUID();
+          await prisma.lead.update({
+            where: { id: params.id },
+            data: {
+              outcomeToken:       token,
+              outcomeEmailSentAt: new Date(),
+              outcomeStatus:      lead.outcomeStatus ?? "PENDING",
+            },
+          });
+          await sendOutcomeFollowUpEmail({ to: lead.email, firstName: lead.firstName, token });
+        } catch { /* non-fatal */ }
+      })();
+    }
+
+    // ── Automation: stage-change triggers (fire-and-forget, toggle-gated) ──
     const stageTriggers = async () => {
-      if (newStage === "QUALIFIED") {
+      const toggleKeys = ["automation.qualified-trigger", "automation.proposal-trigger", "automation.enrolled-trigger"];
+      const rows = await prisma.appSetting.findMany({ where: { key: { in: toggleKeys } } });
+      const on = (key: string) => Object.fromEntries(rows.map(r => [r.key, r.value]))[key] !== "false";
+
+      if (newStage === "STRATEGY_CALL" && on("automation.qualified-trigger")) {
         await prisma.leadActivity.create({
           data: {
             leadId:  params.id,
             type:    "NOTE",
-            content: "📋 Lead qualified — consider sending proposal within 48 hours",
+            content: "📋 Strategy call scheduled — send offer within 48 hours if they're a fit",
           },
         });
-      } else if (newStage === "PROPOSAL") {
+      } else if (newStage === "OFFER_SENT" && on("automation.proposal-trigger")) {
         const fullLead = await prisma.lead.findUnique({
           where: { id: params.id },
           select: { firstName: true, lastName: true },
@@ -118,15 +153,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (fullLead) {
           await prisma.cRMNotification.create({
             data: {
-              type:   "PROPOSAL_SENT",
-              title:  `New proposal out to ${fullLead.firstName} ${fullLead.lastName} — follow up in 3 days`,
+              type:   "OFFER_SENT",
+              title:  `Offer sent to ${fullLead.firstName} ${fullLead.lastName} — follow up in 3 days`,
               body:   "Keep the momentum going with a timely follow-up",
               leadId: params.id,
               href:   `/leads/${params.id}`,
             },
           });
         }
-      } else if (newStage === "ENROLLED") {
+      } else if (newStage === "ENROLLED" && on("automation.enrolled-trigger")) {
         await prisma.leadActivity.create({
           data: {
             leadId:  params.id,
@@ -148,10 +183,16 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   // Soft delete — moves to recycle bin; use ?permanent=true to hard delete
   const permanent = new URL(req.url).searchParams.get("permanent") === "true";
-  if (permanent) {
-    await prisma.lead.delete({ where: { id: params.id } });
-  } else {
-    await prisma.lead.update({ where: { id: params.id }, data: { deletedAt: new Date() } });
+  try {
+    if (permanent) {
+      await prisma.lead.delete({ where: { id: params.id } });
+    } else {
+      await prisma.lead.update({ where: { id: params.id }, data: { deletedAt: new Date() } });
+    }
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2025") return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    throw err;
   }
   return NextResponse.json({ ok: true });
 }

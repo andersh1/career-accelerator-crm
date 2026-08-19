@@ -44,6 +44,14 @@ export async function POST(req: NextRequest) {
       where:  { leadId: mergeId },
       data:   { leadId: keepId },
     }),
+    prisma.task.updateMany({
+      where: { leadId: mergeId },
+      data:  { leadId: keepId },
+    }),
+    prisma.emailSequenceEnrollment.updateMany({
+      where: { leadId: mergeId },
+      data:  { leadId: keepId },
+    }),
     prisma.lead.delete({ where: { id: mergeId } }),
   ]);
 

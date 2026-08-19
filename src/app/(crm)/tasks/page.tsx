@@ -1,39 +1,50 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { CheckCircle2, Circle, AlertCircle, Clock, Loader2, Phone, X, Send, Plus, Search } from "lucide-react";
+import { CheckCircle2, Circle, AlertCircle, Clock, Loader2, Phone, X, Send, Plus, Search, Pencil, Trash2, Check, UserCircle2 } from "lucide-react";
 import { stageInfo } from "@/components/crm/constants";
 import { useToast } from "@/lib/toast";
 
 interface Task {
   id: string; title: string; notes: string | null; dueAt: string | null;
-  completedAt: string | null; createdAt: string;
+  completedAt: string | null; createdAt: string; assignedTo: string | null;
   lead: { id: string; firstName: string; lastName: string; stage: string };
 }
 
+interface AdminUser { id: string; name: string | null; email: string; }
 interface LeadOption { id: string; firstName: string; lastName: string; company: string | null; stage: string; }
 
 function dueLabel(dueAt: string | null) {
   if (!dueAt) return null;
-  const d    = new Date(dueAt);
-  const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+  const d   = new Date(dueAt);
+  const now = new Date();
+  // Compare calendar dates in local timezone to avoid UTC-offset "overdue" bugs
+  const dCal   = new Date(d.getFullYear(),   d.getMonth(),   d.getDate());
+  const nowCal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days   = Math.round((dCal.getTime() - nowCal.getTime()) / 86400000);
   if (days < 0)   return { text: "Overdue",  cls: "text-red-600 bg-red-50 border-red-200" };
   if (days === 0) return { text: "Today",    cls: "text-amber-600 bg-amber-50 border-amber-200" };
   if (days === 1) return { text: "Tomorrow", cls: "text-blue-600 bg-blue-50 border-blue-200" };
-  return { text: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "text-slate-500 bg-slate-50 border-slate-200" };
+  return { text: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "border-[#e4e0d6]", style: { color: "#8a938f", background: "#f8f6f1" } };
 }
 
 export default function TasksPage() {
   const { success, error: toastError } = useToast();
   const [tasks,   setTasks]   = useState<Task[]>([]);
+  const [admins,  setAdmins]  = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Quick call log state
   const [logTarget, setLogTarget] = useState<{ taskId: string; leadId: string; name: string } | null>(null);
   const [callNote,  setCallNote]  = useState("");
   const [logging,   setLogging]   = useState(false);
 
-  // New task modal state
+  const [editingId,    setEditingId]    = useState<string | null>(null);
+  const [editTitle,    setEditTitle]    = useState("");
+  const [editNotes,    setEditNotes]    = useState("");
+  const [editDueAt,    setEditDueAt]    = useState("");
+  const [editAssigned, setEditAssigned] = useState("");
+  const [editSaving,   setEditSaving]   = useState(false);
+
   const [showNewTask,    setShowNewTask]    = useState(false);
   const [taskTitle,      setTaskTitle]      = useState("");
   const [taskDue,        setTaskDue]        = useState("");
@@ -56,9 +67,10 @@ export default function TasksPage() {
     if (!q.trim()) { setLeadOptions([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearchingLeads(true);
-      const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q.trim())}`);
+      const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q.trim())}&all=true`);
       const data = await res.json();
-      setLeadOptions(Array.isArray(data) ? data.slice(0, 6) : []);
+      const arr  = Array.isArray(data) ? data : (data.leads ?? []);
+      setLeadOptions(arr.slice(0, 6));
       setSearchingLeads(false);
     }, 300);
   }
@@ -92,6 +104,12 @@ export default function TasksPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    fetch("/api/crm/users").then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setAdmins(d);
+    }).catch(() => {});
+  }, []);
+
   async function complete(taskId: string) {
     await fetch(`/api/crm/tasks/${taskId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -99,6 +117,47 @@ export default function TasksPage() {
     });
     setTasks(t => t.filter(x => x.id !== taskId));
     success("Task completed ✓");
+  }
+
+  function openEdit(task: Task) {
+    setLogTarget(null);
+    setEditingId(task.id);
+    setEditTitle(task.title);
+    setEditNotes(task.notes ?? "");
+    setEditDueAt(task.dueAt ? new Date(task.dueAt).toISOString().split("T")[0] : "");
+    setEditAssigned(task.assignedTo ?? "");
+  }
+
+  async function saveEdit(taskId: string) {
+    if (!editTitle.trim()) return;
+    setEditSaving(true);
+    const res = await fetch(`/api/crm/tasks/${taskId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title:      editTitle.trim(),
+        notes:      editNotes || null,
+        dueAt:      editDueAt || null,
+        assignedTo: editAssigned || null,
+      }),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      await load();
+      success("Task updated.");
+    } else { toastError("Failed to update task"); }
+    setEditSaving(false);
+  }
+
+  async function deleteTask(taskId: string) {
+    await fetch(`/api/crm/tasks/${taskId}`, { method: "DELETE" });
+    setTasks(t => t.filter(x => x.id !== taskId));
+    success("Task deleted.");
+  }
+
+  function adminName(email: string | null) {
+    if (!email) return null;
+    const u = admins.find(a => a.email === email);
+    return u?.name ?? email;
   }
 
   async function logCall() {
@@ -122,73 +181,170 @@ export default function TasksPage() {
     }
   }
 
-  const overdue  = tasks.filter(t => t.dueAt && new Date(t.dueAt) < new Date());
+  const startOfToday   = new Date(new Date().toDateString()); // midnight today
+  const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
+  // Mutually exclusive: overdue = before midnight today, today = midnight→midnight
+  const overdue  = tasks.filter(t => t.dueAt && new Date(t.dueAt) < startOfToday);
   const today    = tasks.filter(t => {
     if (!t.dueAt) return false;
-    const d = new Date(t.dueAt); const n = new Date();
-    return d.toDateString() === n.toDateString();
+    const d = new Date(t.dueAt);
+    return d >= startOfToday && d < startOfTomorrow;
   });
   const upcoming = tasks.filter(t => {
     if (!t.dueAt) return false;
-    const d = new Date(t.dueAt); const n = new Date();
-    return d > n && d.toDateString() !== n.toDateString();
+    return new Date(t.dueAt) >= startOfTomorrow;
   });
   const noDue    = tasks.filter(t => !t.dueAt);
 
-  const Section = ({ label, items, accent }: { label: string; items: Task[]; accent: string }) =>
+  const Section = ({ label, items, accentStyle }: { label: string; items: Task[]; accentStyle: React.CSSProperties }) =>
     items.length === 0 ? null : (
       <div>
-        <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${accent}`}>{label} · {items.length}</p>
+        <p className="text-[9px] font-bold uppercase tracking-widest mb-3 px-1" style={{ ...accentStyle, letterSpacing: "0.14em" }}>
+          {label} · {items.length}
+        </p>
         <div className="space-y-2">
           {items.map(task => {
-            const due   = dueLabel(task.dueAt);
-            const stage = stageInfo(task.lead.stage);
+            const due       = dueLabel(task.dueAt);
+            const stage     = stageInfo(task.lead.stage);
             const isLogging = logTarget?.taskId === task.id;
+            const isEditing = editingId === task.id;
+            const assignee  = adminName(task.assignedTo);
             return (
-              <div key={task.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-                <div className="flex items-center gap-4 px-5 py-4">
+              <div key={task.id} className="card overflow-hidden transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-4 px-5 py-4 group">
                   <button onClick={() => complete(task.id)}
-                    className="text-slate-200 hover:text-emerald-500 transition flex-shrink-0">
+                    className="flex-shrink-0 transition"
+                    style={{ color: "#c9c4b8" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#16a34a")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#c9c4b8")}
+                  >
                     <Circle size={18} />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{task.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <Link href={`/leads/${task.lead.id}`}
-                        className="text-xs text-blue-600 hover:underline font-medium">
+                        className="text-xs font-medium transition"
+                        style={{ color: "#0a6b64" }}
+                        onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
+                        onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
+                      >
                         {task.lead.firstName} {task.lead.lastName}
                       </Link>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${stage.color}`}>
                         {stage.label}
                       </span>
+                      {task.notes && (
+                        <span className="text-[10px] truncate max-w-[160px]" style={{ color: "#8a938f" }} title={task.notes}>{task.notes}</span>
+                      )}
+                      {assignee && (
+                        <span className="text-[10px] flex items-center gap-0.5 flex-shrink-0" style={{ color: "#8a938f" }}>
+                          <UserCircle2 size={9} /> {assignee}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {due && (
-                    <span className={`text-[11px] font-bold px-2 py-1 rounded-full border flex-shrink-0 ${due.cls}`}>
+                    <span className={`text-[11px] font-bold px-2 py-1 rounded-full border flex-shrink-0 ${due.cls}`} style={(due as { style?: React.CSSProperties }).style}>
                       {due.text}
                     </span>
                   )}
-                  {/* Quick call log button */}
+                  {/* Edit + Delete — appear on hover */}
+                  <button
+                    onClick={() => { if (isEditing) { setEditingId(null); } else { setLogTarget(null); openEdit(task); } }}
+                    title="Edit task"
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition p-1 rounded-lg"
+                    style={{ color: isEditing ? "#0a6b64" : "#c9c4b8" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#0a6b64")}
+                    onMouseLeave={e => (e.currentTarget.style.color = isEditing ? "#0a6b64" : "#c9c4b8")}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    title="Delete task"
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition p-1 rounded-lg"
+                    style={{ color: "#c9c4b8" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#dc2626")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#c9c4b8")}
+                  >
+                    <Trash2 size={13} />
+                  </button>
                   <button
                     onClick={() => {
                       if (isLogging) { setLogTarget(null); setCallNote(""); }
-                      else { setLogTarget({ taskId: task.id, leadId: task.lead.id, name: `${task.lead.firstName} ${task.lead.lastName}` }); setCallNote(""); }
+                      else { setEditingId(null); setLogTarget({ taskId: task.id, leadId: task.lead.id, name: `${task.lead.firstName} ${task.lead.lastName}` }); setCallNote(""); }
                     }}
                     title="Log a call"
                     className={`flex-shrink-0 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition border ${
-                      isLogging
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-transparent"
+                      isLogging ? "border-[#e4e0d6]" : "border-transparent"
                     }`}
+                    style={isLogging ? { background: "#edf5f4", color: "#0a6b64" } : { color: "#8a938f" }}
+                    onMouseEnter={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; } }}
+                    onMouseLeave={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#8a938f"; } }}
                   >
                     <Phone size={11} /> Call
                   </button>
                 </div>
 
+                {/* Inline edit panel */}
+                {isEditing && (
+                  <div className="border-t px-5 py-4 space-y-3" style={{ borderColor: "#0a6b64", borderLeftWidth: 2, borderLeftColor: "#0a6b64", background: "#f0faf9" }}>
+                    <input
+                      autoFocus value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Escape") setEditingId(null); }}
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-white focus:outline-none"
+                      style={{ border: "1px solid #e4e0d6" }}
+                    />
+                    <input
+                      value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                      placeholder="Notes (optional)…"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-white focus:outline-none"
+                      style={{ border: "1px solid #e4e0d6" }}
+                    />
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Clock size={12} style={{ color: "#8a938f" }} />
+                        <input type="date" value={editDueAt} onChange={e => setEditDueAt(e.target.value)}
+                          className="text-xs rounded-lg px-2 py-1.5 bg-white focus:outline-none"
+                          style={{ border: "1px solid #e4e0d6" }} />
+                      </div>
+                      {admins.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <UserCircle2 size={12} style={{ color: "#8a938f", flexShrink: 0 }} />
+                          <select value={editAssigned} onChange={e => setEditAssigned(e.target.value)}
+                            className="text-xs rounded-lg px-2 py-1.5 bg-white focus:outline-none w-full"
+                            style={{ border: "1px solid #e4e0d6" }}>
+                            <option value="">Unassigned</option>
+                            {admins.map(u => (
+                              <option key={u.id} value={u.email}>{u.name ?? u.email}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => saveEdit(task.id)} disabled={editSaving || !editTitle.trim()}
+                        className="flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition disabled:opacity-40"
+                        style={{ background: "#0a6b64" }}>
+                        {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                        Save
+                      </button>
+                      <button onClick={() => setEditingId(null)}
+                        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-xl transition"
+                        style={{ color: "#8a938f" }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "#14211f")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "#8a938f")}>
+                        <X size={11} /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Inline call log panel */}
                 {isLogging && (
-                  <div className="border-t border-slate-100 bg-blue-50/40 px-5 py-3">
-                    <p className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1.5">
+                  <div className="border-t px-5 py-3" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
+                    <p className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: "#0a6b64" }}>
                       <Phone size={11} /> Log call with {logTarget.name}
                     </p>
                     <div className="flex gap-2">
@@ -198,27 +354,32 @@ export default function TasksPage() {
                         placeholder="What did you discuss? Outcome, next steps…"
                         rows={2}
                         autoFocus
-                        className="flex-1 text-xs border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none bg-white"
+                        className="flex-1 text-xs rounded-xl px-3 py-2 resize-none bg-white focus:outline-none"
+                        style={{ border: "1px solid #e4e0d6" }}
                         onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) logCall(); }}
                       />
                       <div className="flex flex-col gap-1.5">
                         <button
                           onClick={logCall}
                           disabled={!callNote.trim() || logging}
-                          className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition"
+                          className="flex items-center gap-1 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition disabled:opacity-40"
+                          style={{ background: "#0a6b64" }}
                         >
                           {logging ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
                           Log
                         </button>
                         <button
                           onClick={() => { setLogTarget(null); setCallNote(""); }}
-                          className="flex items-center justify-center p-1.5 rounded-xl text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition"
+                          className="flex items-center justify-center p-1.5 rounded-xl transition"
+                          style={{ color: "#c9c4b8" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#5a6663"; (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#c9c4b8"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                         >
                           <X size={12} />
                         </button>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1.5">⌘↵ to save · logged as a CALL activity on this lead</p>
+                    <p className="text-[10px] mt-1.5" style={{ color: "#8a938f" }}>⌘↵ to save · logged as a CALL activity on this lead</p>
                   </div>
                 )}
               </div>
@@ -230,16 +391,20 @@ export default function TasksPage() {
 
   return (
     <>
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-3xl mx-auto p-6 sm:p-8 space-y-8 animate-fade-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{tasks.length} open task{tasks.length !== 1 ? "s" : ""}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Vantage Career Accelerator</p>
+          <h1 className="font-display font-semibold leading-tight" style={{ fontSize: "1.75rem", color: "#14211f" }}>Tasks</h1>
+          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>{tasks.length} open task{tasks.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={openNewTask}
-            className="flex items-center gap-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl transition shadow-sm"
+            className="flex items-center gap-1.5 text-sm font-semibold text-white px-3 py-2 rounded-xl transition shadow-sm"
+            style={{ background: "#0a6b64" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#0a6b64")}
           >
             <Plus size={14} /> New Task
           </button>
@@ -258,122 +423,134 @@ export default function TasksPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-slate-300" />
+          <Loader2 size={24} className="animate-spin" style={{ color: "#c9c4b8" }} />
         </div>
       ) : tasks.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-16 text-center">
-          <CheckCircle2 size={32} className="text-emerald-400 mx-auto mb-3" />
-          <p className="font-semibold text-slate-700 mb-1">All caught up!</p>
-          <p className="text-sm text-slate-400">No open tasks. Add tasks from any lead&apos;s detail page.</p>
+        <div className="card p-16 text-center">
+          <CheckCircle2 size={32} className="mx-auto mb-3" style={{ color: "#0a6b64" }} />
+          <p className="font-semibold mb-1" style={{ color: "#5a6663" }}>All caught up!</p>
+          <p className="text-sm" style={{ color: "#8a938f" }}>No open tasks. Add tasks from any lead&apos;s detail page.</p>
         </div>
       ) : (
         <div className="space-y-8">
-          <Section label="Overdue"     items={overdue}  accent="text-red-500" />
-          <Section label="Today"       items={today}    accent="text-amber-500" />
-          <Section label="Upcoming"    items={upcoming} accent="text-blue-500" />
-          <Section label="No due date" items={noDue}    accent="text-slate-400" />
+          <Section label="Overdue"     items={overdue}  accentStyle={{ color: "#dc2626" }} />
+          <Section label="Today"       items={today}    accentStyle={{ color: "#d97706" }} />
+          <Section label="Upcoming"    items={upcoming} accentStyle={{ color: "#0a6b64" }} />
+          <Section label="No due date" items={noDue}    accentStyle={{ color: "#8a938f" }} />
         </div>
       )}
     </div>
-      {/* New Task modal */}
-      {showNewTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-900">New Task</h3>
-              <button onClick={() => setShowNewTask(false)} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 transition">
-                <X size={16} />
-              </button>
-            </div>
 
-            {/* Task title */}
-            <div className="mb-4">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1.5">Task</label>
-              <input
-                autoFocus
-                value={taskTitle}
-                onChange={e => setTaskTitle(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && taskTitle.trim() && selectedLead) createTask(); }}
-                placeholder="e.g. Follow up on application"
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+    {showNewTask && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" style={{ border: "1px solid #e4e0d6" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold" style={{ color: "#14211f" }}>New Task</h3>
+            <button onClick={() => setShowNewTask(false)} className="p-1.5 rounded-xl transition" style={{ color: "#8a938f" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-            {/* Lead search */}
-            <div className="mb-4">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1.5">Lead</label>
-              {selectedLead ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-[9px] font-bold">{selectedLead.firstName[0]}{selectedLead.lastName[0]}</span>
+          <div className="mb-4">
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Task</label>
+            <input
+              autoFocus
+              value={taskTitle}
+              onChange={e => setTaskTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && taskTitle.trim() && selectedLead) createTask(); }}
+              placeholder="e.g. Follow up on application"
+              className="w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none"
+              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Lead</label>
+            {selectedLead ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "#edf5f4", border: "1px solid #e4e0d6" }}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#0a6b64" }}>
+                  <span className="text-white text-[9px] font-bold">{selectedLead.firstName[0]}{selectedLead.lastName[0]}</span>
+                </div>
+                <span className="text-sm font-semibold flex-1" style={{ color: "#14211f" }}>{selectedLead.firstName} {selectedLead.lastName}</span>
+                <button onClick={() => { setSelectedLead(null); setLeadQuery(""); setLeadOptions([]); }}
+                  style={{ color: "#8a938f" }}>
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+                <input
+                  value={leadQuery}
+                  onChange={e => onLeadQueryChange(e.target.value)}
+                  placeholder="Search by name, email, company…"
+                  className="w-full pl-8 pr-3 py-2.5 text-sm rounded-xl focus:outline-none"
+                  style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                />
+                {searchingLeads && (
+                  <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin" style={{ color: "#8a938f" }} />
+                )}
+                {leadOptions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg overflow-hidden z-10" style={{ border: "1px solid #e4e0d6" }}>
+                    {leadOptions.map(lead => (
+                      <button key={lead.id}
+                        onClick={() => { setSelectedLead(lead); setLeadOptions([]); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition hover:bg-[#f8f6f1]">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#0a6b64" }}>
+                          <span className="text-white text-[9px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{lead.firstName} {lead.lastName}</p>
+                          {lead.company && <p className="text-xs" style={{ color: "#8a938f" }}>{lead.company}</p>}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <span className="text-sm font-semibold text-slate-800 flex-1">{selectedLead.firstName} {selectedLead.lastName}</span>
-                  <button onClick={() => { setSelectedLead(null); setLeadQuery(""); setLeadOptions([]); }}
-                    className="text-slate-400 hover:text-slate-600 transition">
-                    <X size={13} />
-                  </button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={leadQuery}
-                    onChange={e => onLeadQueryChange(e.target.value)}
-                    placeholder="Search by name, email, company…"
-                    className="w-full pl-8 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {searchingLeads && (
-                    <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
-                  )}
-                  {leadOptions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-10">
-                      {leadOptions.map(lead => (
-                        <button key={lead.id}
-                          onClick={() => { setSelectedLead(lead); setLeadOptions([]); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 text-left transition">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-[9px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">{lead.firstName} {lead.lastName}</p>
-                            {lead.company && <p className="text-xs text-slate-400">{lead.company}</p>}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+          </div>
 
-            {/* Due date */}
-            <div className="mb-5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1.5">Due date <span className="font-normal">(optional)</span></label>
-              <input
-                type="date"
-                value={taskDue}
-                onChange={e => setTaskDue(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="mb-5">
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+              Due date <span className="font-normal">(optional)</span>
+            </label>
+            <input
+              type="date"
+              value={taskDue}
+              onChange={e => setTaskDue(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none"
+              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+            />
+          </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setShowNewTask(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
-                Cancel
-              </button>
-              <button
-                onClick={createTask}
-                disabled={!taskTitle.trim() || !selectedLead || creatingTask}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition"
-              >
-                {creatingTask ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                Create Task
-              </button>
-            </div>
+          <div className="flex gap-3">
+            <button onClick={() => setShowNewTask(false)}
+              className="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl transition"
+              style={{ background: "#f1efe8", color: "#5a6663" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#e4e0d6")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#f1efe8")}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={createTask}
+              disabled={!taskTitle.trim() || !selectedLead || creatingTask}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition disabled:opacity-40"
+              style={{ background: "#0a6b64" }}
+              onMouseEnter={e => { if (!creatingTask) (e.currentTarget as HTMLButtonElement).style.background = "#084f4a"; }}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"}
+            >
+              {creatingTask ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Create Task
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
     </>
   );
 }

@@ -28,17 +28,17 @@ function pct(a: number, b: number) {
 }
 
 const STAGE_PROB: Record<string, number> = {
-  LEAD: 0.05, CONTACTED: 0.15, QUALIFIED: 0.35, PROPOSAL: 0.65, ENROLLED: 1, LOST: 0,
+  LEAD: 0.05, CONTACTED: 0.15, STRATEGY_CALL: 0.35, OFFER_SENT: 0.65, ENROLLED: 1, LOST: 0,
 };
 
 const STAGE_LABEL: Record<string, string> = {
-  LEAD: "New Lead", CONTACTED: "Contacted", QUALIFIED: "Qualified",
-  PROPOSAL: "Proposal", ENROLLED: "Enrolled", LOST: "Lost",
+  LEAD: "New Lead", CONTACTED: "Contacted", STRATEGY_CALL: "Interviewed",
+  OFFER_SENT: "Offer Sent", ENROLLED: "Enrolled", LOST: "Lost",
 };
 
 const STAGE_COLOR: Record<string, string> = {
-  LEAD: "#94a3b8", CONTACTED: "#3b82f6", QUALIFIED: "#8b5cf6",
-  PROPOSAL: "#f59e0b", ENROLLED: "#10b981", LOST: "#ef4444",
+  LEAD: "#94a3b8", CONTACTED: "#3b82f6", STRATEGY_CALL: "#8b5cf6",
+  OFFER_SENT: "#f59e0b", ENROLLED: "#10b981", LOST: "#ef4444",
 };
 
 export async function GET(req: NextRequest) {
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     prisma.user.findMany({
-      where: { role: "ADMIN" },
+      where: { crmRole: "ADMIN" },
       select: { id: true, name: true, email: true },
     }),
     prisma.leadActivity.findMany({
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
   }).length;
 
   // ── Funnel snapshot ────────────────────────────────────────────────────────
-  const FUNNEL = ["LEAD", "CONTACTED", "QUALIFIED", "PROPOSAL", "ENROLLED"];
+  const FUNNEL = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED"];
   const funnel = FUNNEL.map(s => ({
     stage: s,
     count: leads.filter(l => l.stage === s).length,
@@ -94,8 +94,8 @@ export async function GET(req: NextRequest) {
   const maxFunnel = Math.max(...funnel.map(f => f.count), 1);
 
   // ── Top leads to focus on (high score, not enrolled/lost) ─────────────────
-  // Sort by stage proximity to enrolled (PROPOSAL > QUALIFIED > CONTACTED > LEAD), then recency
-  const STAGE_ORDER: Record<string, number> = { PROPOSAL: 0, QUALIFIED: 1, CONTACTED: 2, LEAD: 3 };
+  // Sort by stage proximity to enrolled (OFFER_SENT > STRATEGY_CALL > CONTACTED > LEAD), then recency
+  const STAGE_ORDER: Record<string, number> = { OFFER_SENT: 0, STRATEGY_CALL: 1, CONTACTED: 2, LEAD: 3 };
   const focusLeads = [...leads]
     .filter(l => !["ENROLLED", "LOST"].includes(l.stage))
     .sort((a, b) => {
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
   <!-- Header -->
   <tr><td style="background:linear-gradient(135deg,#0a1628,#1e3a8a);padding:28px 32px;">
-    <p style="margin:0 0 4px;color:#93c5fd;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">10x Career Accelerator · Weekly Digest</p>
+    <p style="margin:0 0 4px;color:#93c5fd;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Vantage Career Accelerator · Weekly Digest</p>
     <h1 style="margin:0 0 4px;color:#ffffff;font-size:22px;font-weight:900;">Pipeline Report</h1>
     <p style="margin:0;color:#93c5fd;font-size:12px;">${dateRange}</p>
   </td></tr>
@@ -256,7 +256,7 @@ export async function GET(req: NextRequest) {
   <!-- Footer -->
   <tr><td style="padding:16px 32px;border-top:1px solid #f1f5f9;background:#f8fafc;">
     <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">
-      10x Career Accelerator Weekly Report · Sent every Monday at 8 AM ·
+      Vantage Career Accelerator Weekly Report · Sent every Monday at 8 AM ·
       <a href="${CRM_URL}/settings" style="color:#3b82f6;">Manage</a>
     </p>
   </td></tr>

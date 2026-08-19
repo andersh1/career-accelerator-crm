@@ -19,6 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { taskId: st
   if ("title"       in body) data.title       = body.title;
   if ("notes"       in body) data.notes       = body.notes;
   if ("dueAt"       in body) data.dueAt       = body.dueAt ? new Date(body.dueAt) : null;
+  if ("assignedTo"  in body) data.assignedTo  = body.assignedTo || null;
 
   const task = await prisma.task.update({ where: { id: params.taskId }, data });
   return NextResponse.json(task);

@@ -56,6 +56,7 @@ export default function TranscriptParser({ leadId, currentStage, leadName, onApp
   const [error,      setError]            = useState("");
   const [applying,   setApplying]         = useState(false);
   const [applied,    setApplied]          = useState(false);
+  const [loggedOnly, setLoggedOnly]       = useState(false);
 
   // Selections the user can toggle before applying
   const [selectedSteps, setSelectedSteps] = useState<Set<number>>(new Set());
@@ -83,6 +84,27 @@ export default function TranscriptParser({ leadId, currentStage, leadName, onApp
     } finally {
       setParsing(false);
     }
+  }
+
+  async function logRecordingOnly() {
+    if (!recordingUrl.trim()) return;
+    setApplying(true);
+    const res = await fetch(`/api/crm/leads/${leadId}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "CALL",
+        content: "Fathom recording logged.",
+        metadata: JSON.stringify({ recordingUrl: recordingUrl.trim() }),
+      }),
+    });
+    setApplying(false);
+    if (!res.ok) {
+      setError("Failed to save recording link. Please try again.");
+      return;
+    }
+    setLoggedOnly(true);
+    setTimeout(() => { onApplied(); onClose(); }, 1200);
   }
 
   async function apply() {
@@ -173,6 +195,28 @@ export default function TranscriptParser({ leadId, currentStage, leadName, onApp
                   placeholder="Fathom recording URL (optional) — saved as a link on the call"
                 />
               </div>
+
+              {/* Log Recording Only shortcut */}
+              {recordingUrl.trim() && !transcript.trim() && (
+                <div className="mb-3 p-3 bg-violet-50 border border-violet-200 rounded-xl flex items-center justify-between gap-3">
+                  <p className="text-xs text-violet-700">
+                    No transcript? Save the recording link directly to this lead's timeline.
+                  </p>
+                  <button
+                    onClick={logRecordingOnly}
+                    disabled={applying || loggedOnly}
+                    className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+                  >
+                    {loggedOnly ? (
+                      <><CheckCircle2 size={12} /> Logged!</>
+                    ) : applying ? (
+                      <><Loader2 size={12} className="animate-spin" /> Saving…</>
+                    ) : (
+                      <><Video size={12} /> Log Recording Only</>
+                    )}
+                  </button>
+                </div>
+              )}
 
               <textarea
                 value={transcript}

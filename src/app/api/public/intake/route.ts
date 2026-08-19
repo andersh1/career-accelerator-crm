@@ -6,6 +6,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
+import { sendAdminApplicationAlert } from "@/lib/email";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -18,6 +20,15 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const { limited } = await rateLimit(`intake:${ip}`, 5, 60 * 60 * 1000);
+  if (limited) {
+    return NextResponse.json(
+      { error: "Too many submissions. Please try again later." },
+      { status: 429, headers: CORS_HEADERS },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -34,6 +45,15 @@ export async function POST(req: NextRequest) {
     jobTitle,
     source,
     notes,
+    leadType,
+    stage,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmContent,
+    utmTerm,
+    promoCode,
+    referralCode,
   } = body as Record<string, string | undefined>;
 
   // Required field validation
@@ -86,35 +106,69 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, leadId: existing.id }, { status: 200, headers: CORS_HEADERS });
   }
 
-  // Create the lead
+  const isApplication = leadType?.trim() === "APPLICATION";
+
   const lead = await prisma.lead.create({
     data: {
-      firstName: firstName.trim(),
-      lastName:  lastName.trim(),
-      email:     normalizedEmail,
-      phone:     phone?.trim()    || null,
-      company:   company?.trim()  || null,
-      jobTitle:  jobTitle?.trim() || null,
-      stage:     "LEAD",
-      source:    source?.trim()   ?? "WEBSITE",
-      priority:  "NORMAL",
-      notes:     notes?.trim()    || null,
+      firstName:   firstName.trim(),
+      lastName:    lastName.trim(),
+      email:       normalizedEmail,
+      phone:       phone?.trim()    || null,
+      company:     company?.trim()  || null,
+      jobTitle:    jobTitle?.trim() || null,
+      stage:       stage?.trim()    ?? "LEAD",
+      source:      source?.trim()   ?? "WEBSITE",
+      leadType:    leadType?.trim() ?? "WAITLIST",
+      priority:    isApplication ? "HIGH" : "NORMAL",
+      notes:       notes?.trim()    || null,
+      utmSource:   utmSource?.trim()   || null,
+      utmMedium:   utmMedium?.trim()   || null,
+      utmCampaign: utmCampaign?.trim() || null,
+      utmContent:  utmContent?.trim()  || null,
+      utmTerm:     utmTerm?.trim()      || null,
+      promoCode:    promoCode?.trim().toUpperCase()    || null,
+      referralCode: referralCode?.trim().toUpperCase() || null,
     },
   });
+
+  // Increment promo code usage count (best-effort — never blocks the intake)
+  if (promoCode?.trim()) {
+    const normalized = promoCode.trim().toUpperCase();
+    prisma.promoCode.updateMany({
+      where: { code: normalized, active: true },
+      data:  { usedCount: { increment: 1 } },
+    }).catch(() => {});
+  }
 
   await prisma.leadActivity.create({
     data: {
       leadId:  lead.id,
       type:    "CREATED",
-      content: "Submitted via web form",
+      content: isApplication ? "Submitted application via web form" : "Submitted via web form",
     },
   });
+
+  // Email Dan + Caleb for 3i NextGen applications
+  if (isApplication && source?.trim() === "3I_NEXTGEN") {
+    try {
+      await sendAdminApplicationAlert({
+        firstName: firstName.trim(),
+        lastName:  lastName.trim(),
+        email:     normalizedEmail,
+        phone:     phone?.trim() || null,
+        leadId:    lead.id,
+        notes:     notes?.trim() || null,
+      });
+    } catch (err) {
+      console.error("[intake] Admin alert email failed:", err);
+    }
+  }
 
   // Fire a CRM notification — non-fatal
   await prisma.cRMNotification.create({
     data: {
       type:   "NEW_INTAKE",
-      title:  `New lead: ${firstName.trim()} ${lastName.trim()}`,
+      title:  isApplication ? `New application: ${firstName.trim()} ${lastName.trim()}` : `New lead: ${firstName.trim()} ${lastName.trim()}`,
       body:   company?.trim() ? `from ${company.trim()}` : normalizedEmail,
       leadId: lead.id,
       href:   `/leads/${lead.id}`,

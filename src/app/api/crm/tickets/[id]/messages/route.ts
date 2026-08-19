@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // POST /api/crm/tickets/[id]/messages — admin reply or internal note
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -47,11 +47,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }),
   ]);
 
-  // Email student if NOT an internal note
-  if (!internal && ticket.user.email) {
+  // Always send in-app notification for non-internal replies
+  if (!internal) {
+    await prisma.notification.create({
+      data: {
+        userId: ticket.user.id,
+        type:   "SUPPORT",
+        title:  `Reply on ticket #${ticket.ticketNumber}`,
+        body:   content.slice(0, 100),
+        href:   `/support/${ticket.id}`,
+      },
+    }).catch(() => {});
+  }
+
+  // Email student if NOT an internal note and Resend is configured
+  if (!internal && ticket.user.email && resend) {
     const lmsUrl = process.env.LMS_URL ?? "https://career-accelerator-lms.vercel.app";
     await resend.emails.send({
-      from:    "10x Career Accelerator Support <noreply@career-accelerator.app>",
+      from:    "Vantage Career Accelerator Support <noreply@career-accelerator.app>",
       to:      ticket.user.email,
       subject: `Re: [Ticket #${ticket.ticketNumber}] ${ticket.subject}`,
       html: `
@@ -68,23 +81,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               View & Reply →
             </a>
             <p style="margin-top:20px;font-size:12px;color:#94a3b8">
-              This is an automated message from 10x Career Accelerator Support.<br/>
+              This is an automated message from Vantage Career Accelerator Support.<br/>
               To reply, visit your support portal — do not reply to this email.
             </p>
           </div>
         </div>
       `,
-    }).catch(() => {});
-
-    // In-app notification for student
-    await prisma.notification.create({
-      data: {
-        userId: ticket.user.id,
-        type:   "SUPPORT",
-        title:  `Reply on ticket #${ticket.ticketNumber}`,
-        body:   content.slice(0, 100),
-        href:   `/support/${ticket.id}`,
-      },
     }).catch(() => {});
   }
 

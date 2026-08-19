@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     const payload = {
       event: "webhook.test",
-      data: { message: "Test from 10x Career Accelerator CRM" },
+      data: { message: "Test from Vantage Career Accelerator CRM" },
       timestamp: new Date().toISOString(),
     };
 

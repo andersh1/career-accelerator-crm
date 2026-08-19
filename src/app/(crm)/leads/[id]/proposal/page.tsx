@@ -7,7 +7,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 
 export default async function ProposalPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN") redirect("/login");
+  if (!session || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN") redirect("/login");
 
   const lead = await prisma.lead.findUnique({
     where: { id: params.id },
@@ -23,7 +23,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
     where: { key: { in: ["proposal_program_name", "proposal_tagline", "proposal_footer"] } },
   });
   const s = Object.fromEntries(settings.map(x => [x.key, x.value]));
-  const programName = s.proposal_program_name ?? "10x Career Accelerator Program";
+  const programName = s.proposal_program_name ?? "Vantage Career Accelerator Program";
   const tagline     = s.proposal_tagline ?? "Land your next role. Faster.";
   const footer      = s.proposal_footer  ?? "Questions? Reply to this proposal or book a call.";
 
@@ -60,7 +60,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
           <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 px-12 py-10 text-white">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2">10x Career Accelerator</p>
+                <p className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2">Vantage Career Accelerator</p>
                 <h1 className="text-3xl font-extrabold leading-tight">{programName}</h1>
                 <p className="text-blue-200 mt-2 text-base">{tagline}</p>
               </div>
@@ -191,7 +191,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
           {/* Footer */}
           <div className="px-12 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <p className="text-xs text-slate-400">{footer}</p>
-            <p className="text-xs text-slate-300">10x Career Accelerator · {today}</p>
+            <p className="text-xs text-slate-300">Vantage Career Accelerator · {today}</p>
           </div>
         </div>
       </div>

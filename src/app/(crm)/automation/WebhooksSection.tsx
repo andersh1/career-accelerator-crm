@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Webhook, ExternalLink, Send, CheckCircle, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Webhook, ExternalLink, Send, CheckCircle, XCircle, Save, Loader2 } from "lucide-react";
 
 const WEBHOOK_EVENTS = [
   {
@@ -31,7 +31,7 @@ const WEBHOOK_EVENTS = [
     "lastName": "Smith",
     "email": "jane@example.com",
     "fromStage": "LEAD",
-    "toStage": "QUALIFIED"
+    "toStage": "STRATEGY_CALL"
   },
   "timestamp": "2026-06-16T13:00:00.000Z"
 }`,
@@ -54,27 +54,59 @@ const WEBHOOK_EVENTS = [
 ];
 
 export function WebhooksSection() {
-  const [testUrl, setTestUrl]     = useState("");
-  const [testing, setTesting]     = useState(false);
-  const [result, setResult]       = useState<{ success?: boolean; message?: string } | null>(null);
-  const [expanded, setExpanded]   = useState<string | null>(null);
+  const [webhookUrl,   setWebhookUrl]   = useState("");
+  const [zapierUrl,    setZapierUrl]    = useState("");
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState(false);
+  const [saveOk,       setSaveOk]       = useState(false);
+
+  const [testUrl,  setTestUrl]  = useState("");
+  const [testing,  setTesting]  = useState(false);
+  const [result,   setResult]   = useState<{ success?: boolean; message?: string } | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Load saved URLs
+  useEffect(() => {
+    fetch("/api/crm/app-settings")
+      .then(r => r.json())
+      .then(d => {
+        setWebhookUrl(d.webhook_url       ?? "");
+        setZapierUrl( d.zapier_webhook_url ?? "");
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    setSaving(true); setSaveOk(false);
+    try {
+      await fetch("/api/crm/app-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhook_url: webhookUrl, zapier_webhook_url: zapierUrl }),
+      });
+      setSaveOk(true);
+      setTimeout(() => setSaveOk(false), 3000);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleTest() {
-    if (!testUrl.trim()) return;
-    setTesting(true);
-    setResult(null);
+    const url = testUrl.trim() || webhookUrl.trim() || zapierUrl.trim();
+    if (!url) return;
+    setTesting(true); setResult(null);
     try {
       const res = await fetch("/api/crm/admin/webhook-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: testUrl }),
+        body: JSON.stringify({ url }),
       });
       const json = await res.json();
-      if (json.success) {
-        setResult({ success: true, message: `Delivered — target responded with status ${json.status}` });
-      } else {
-        setResult({ success: false, message: json.error ?? "Unknown error" });
-      }
+      setResult(json.success
+        ? { success: true,  message: `Delivered — target responded with status ${json.status}` }
+        : { success: false, message: json.error ?? "Unknown error" }
+      );
     } catch {
       setResult({ success: false, message: "Network error — could not reach webhook test endpoint" });
     } finally {
@@ -98,20 +130,70 @@ export function WebhooksSection() {
         </p>
       </div>
 
-      {/* Env var note */}
-      <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 flex items-start gap-3">
-        <Webhook className="w-4 h-4 text-sky-600 mt-0.5 shrink-0" />
-        <div className="text-sm">
-          <p className="font-semibold text-sky-800">Set your URL in Vercel</p>
-          <p className="text-sky-700 mt-0.5">
-            Add{" "}
-            <code className="font-mono bg-sky-100 px-1 rounded text-xs">WEBHOOK_URL</code>{" "}
-            or{" "}
-            <code className="font-mono bg-sky-100 px-1 rounded text-xs">ZAPIER_WEBHOOK_URL</code>{" "}
-            as environment variables in your Vercel project settings.
-            Both can be set simultaneously — events are sent to all configured URLs.
-          </p>
-        </div>
+      {/* URL Inputs */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-900">Webhook Endpoints</h3>
+
+        {loading ? (
+          <div className="flex items-center gap-2 py-4">
+            <Loader2 size={14} className="animate-spin text-slate-400" />
+            <span className="text-sm text-slate-400">Loading saved URLs…</span>
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-xs font-semibold block mb-1.5" style={{ color: "#5a6663" }}>
+                Primary Webhook URL
+              </label>
+              <input
+                type="url"
+                value={webhookUrl}
+                onChange={e => setWebhookUrl(e.target.value)}
+                placeholder="https://hooks.make.com/…  or any custom endpoint"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold block mb-1.5" style={{ color: "#5a6663" }}>
+                Zapier Webhook URL
+              </label>
+              <input
+                type="url"
+                value={zapierUrl}
+                onChange={e => setZapierUrl(e.target.value)}
+                placeholder="https://hooks.zapier.com/hooks/catch/…"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-lg bg-sky-600 text-white text-sm font-semibold px-4 py-2 hover:bg-sky-700 disabled:opacity-50 transition-colors"
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                {saving ? "Saving…" : "Save URLs"}
+              </button>
+              {saveOk && (
+                <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
+                  <CheckCircle size={14} className="text-emerald-600" />
+                  Saved
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-400">
+              URLs are saved to the database and take effect immediately — no redeployment needed.
+              Environment variables{" "}
+              <code className="font-mono bg-slate-100 px-1 rounded">WEBHOOK_URL</code>{" "}
+              and{" "}
+              <code className="font-mono bg-slate-100 px-1 rounded">ZAPIER_WEBHOOK_URL</code>{" "}
+              still work as fallbacks if no DB value is set.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Supported events */}
@@ -149,7 +231,7 @@ export function WebhooksSection() {
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Test Webhook</h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Enter a URL and send a test payload to confirm your endpoint is receiving events correctly.
+            Enter a URL below, or leave blank to test against your saved Primary URL.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -157,12 +239,12 @@ export function WebhooksSection() {
             type="url"
             value={testUrl}
             onChange={(e) => { setTestUrl(e.target.value); setResult(null); }}
-            placeholder="https://hooks.zapier.com/hooks/catch/..."
+            placeholder={webhookUrl || "https://hooks.zapier.com/hooks/catch/…"}
             className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <button
             onClick={handleTest}
-            disabled={testing || !testUrl.trim()}
+            disabled={testing || (!testUrl.trim() && !webhookUrl.trim() && !zapierUrl.trim())}
             className="flex items-center gap-1.5 rounded-lg bg-sky-600 text-white text-sm font-semibold px-4 py-2 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
@@ -171,24 +253,20 @@ export function WebhooksSection() {
         </div>
 
         {result && (
-          <div
-            className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm ${
-              result.success
-                ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
-                : "bg-red-50 border border-red-200 text-red-800"
-            }`}
-          >
-            {result.success ? (
-              <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
-            ) : (
-              <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
-            )}
+          <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm ${
+            result.success
+              ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+              : "bg-red-50 border border-red-200 text-red-800"
+          }`}>
+            {result.success
+              ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
+              : <XCircle    className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+            }
             <span>{result.message}</span>
           </div>
         )}
       </div>
 
-      {/* Zapier link */}
       <a
         href="https://zapier.com/apps/webhook/integrations"
         target="_blank"

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   // Fetch everything in parallel
   const [
     user, allSections, progressRecords, submissions,
-    attendance, preworkSubmissions, bookings,
+    attendance, preworkSubmissions, bookings, surveyResponses,
   ] = await Promise.all([
     prisma.user.findUnique({
       where:  { id: userId },
@@ -38,7 +38,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }),
     prisma.submission.findMany({
       where:   { userId },
-      include: { module: { select: { number: true, title: true } } },
+      select: {
+        id: true, moduleId: true, title: true, content: true,
+        status: true, feedback: true, submittedAt: true,
+        module: { select: { number: true, title: true } },
+      },
       orderBy: { submittedAt: "desc" },
     }),
     prisma.attendanceRecord.findMany({
@@ -59,6 +63,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     prisma.oneOnOneBooking.findMany({
       where:   { studentId: userId, status: "CONFIRMED" },
       include: { slot: { select: { startTime: true, endTime: true } } },
+    }),
+    // Survey responses
+    prisma.surveyResponse.findMany({
+      where:   { userId },
+      orderBy: { submittedAt: "desc" },
+      select: {
+        id: true, moduleId: true, submittedAt: true,
+        overallRating: true, contentRating: true,
+        facilitatorRating: true, practicalRating: true,
+        wouldRecommend: true, biggestTakeaway: true,
+        improveSuggestion: true, additionalComments: true,
+      },
     }),
   ]);
 
@@ -96,7 +112,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       sections:   modSections.length,
       completed:  modCompleted,
       pct:        modPct,
-      submission: sub ? { status: sub.status, submittedAt: sub.submittedAt } : null,
+      submission: sub ? {
+        status:      sub.status,
+        submittedAt: sub.submittedAt,
+        feedback:    sub.feedback ?? null,
+        content:     sub.content  ?? null,
+      } : null,
       attended:   att?.attended ?? null,
       // New: prework
       prework: prework ? {
@@ -150,5 +171,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     bookingSummary,
     lastActive,
     recentSubmissions: submissions.slice(0, 5),
+    surveyResponses,
   });
 }

@@ -13,7 +13,7 @@ interface TeamMember {
   createdAt: string;
 }
 
-const inputCls = "w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white";
+const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white";
 
 function RoleBadge({ role }: { role: string | null }) {
   if (role === "ADMIN") {
@@ -25,7 +25,7 @@ function RoleBadge({ role }: { role: string | null }) {
   }
   if (role === "MEMBER") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}>
         <Users size={10} /> Member
       </span>
     );
@@ -163,19 +163,21 @@ export default function TeamPage() {
     new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-6 animate-fade-up">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Team</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <h1 className="text-2xl font-display font-semibold" style={{ color: "#14211f" }}>Team</h1>
+          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
             Manage who has access to the CRM and what they can do.
           </p>
         </div>
         {isAdmin && (
           <button
             onClick={() => { setShowInvite(true); setInviteResult(null); }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
+            className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
+            style={{ background: "#0a6b64" }}
           >
             <UserPlus size={15} /> Invite Member
           </button>
@@ -183,45 +185,45 @@ export default function TeamPage() {
       </div>
 
       {/* Role legend */}
-      <div className="flex gap-4 mb-5 text-xs text-slate-500">
+      <div className="flex gap-4 mb-5 text-xs" style={{ color: "#8a938f" }}>
         <span className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200"><Shield size={9} /> Admin</span>
           Full access — can invite, delete leads, view analytics
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200"><Users size={9} /> Member</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}><Users size={9} /> Member</span>
           Can view/edit leads and activities
         </span>
       </div>
 
       {/* Member list */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="card shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-slate-400">
+          <div className="flex items-center justify-center py-12" style={{ color: "#8a938f" }}>
             <Loader2 size={20} className="animate-spin mr-2" /> Loading…
           </div>
         ) : members.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm">No team members yet.</div>
+          <div className="py-12 text-center text-sm" style={{ color: "#8a938f" }}>No team members yet.</div>
         ) : (
           members.map((m, i) => (
-            <div key={m.id} className={i > 0 ? "border-t border-slate-100" : ""}>
+            <div key={m.id} className={i > 0 ? "border-t border-[#e4e0d6]" : ""}>
               <div className="flex items-center gap-4 px-5 py-4">
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ background: "linear-gradient(135deg, #0a6b64, #0d8a80)" }}>
                   {(m.name ?? m.email)[0].toUpperCase()}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-slate-800">{m.name ?? "—"}</p>
+                    <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{m.name ?? "—"}</p>
                     <RoleBadge role={m.crmRole} />
                     {m.id === currentUserId && (
-                      <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">You</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: "#8a938f", background: "#f1efe8" }}>You</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 truncate">{m.email}</p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Joined {formatDate(m.createdAt)}</p>
+                  <p className="text-xs truncate" style={{ color: "#8a938f" }}>{m.email}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "#c9c4b8" }}>Joined {formatDate(m.createdAt)}</p>
                 </div>
 
                 {/* Actions — ADMIN only, and can't act on yourself */}
@@ -242,7 +244,10 @@ export default function TeamPage() {
                         onClick={() => changeRole(m.id, "MEMBER")}
                         disabled={changingRoleId === m.id}
                         title="Demote to Member"
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition disabled:opacity-50"
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-transparent transition disabled:opacity-50"
+                        style={{ color: "#0a6b64" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "#edf5f4")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "")}
                       >
                         {changingRoleId === m.id ? <Loader2 size={12} className="animate-spin" /> : "→ Member"}
                       </button>
@@ -252,9 +257,13 @@ export default function TeamPage() {
                     <button
                       onClick={() => { setResetTargetId(resetTargetId === m.id ? null : m.id); setResetPw(""); setResetResult(null); }}
                       title="Reset password"
-                      className="p-2 rounded-lg text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition text-xs font-medium"
+                      style={{ color: "#5a6663" }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "#0a6b64"; e.currentTarget.style.background = "#edf5f4"; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = "#5a6663"; e.currentTarget.style.background = ""; }}
                     >
-                      <Lock size={14} />
+                      <Lock size={13} />
+                      <span>Reset pw</span>
                     </button>
 
                     {/* Remove access */}
@@ -262,9 +271,13 @@ export default function TeamPage() {
                       onClick={() => removeMember(m.id, m.name)}
                       disabled={removingId === m.id}
                       title="Remove CRM access"
-                      className="p-2 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-50"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition disabled:opacity-50 text-xs font-medium"
+                      style={{ color: "#5a6663" }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.background = "#fef2f2"; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = "#5a6663"; e.currentTarget.style.background = ""; }}
                     >
-                      {removingId === m.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      {removingId === m.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                      <span>Remove</span>
                     </button>
                   </div>
                 )}
@@ -272,17 +285,18 @@ export default function TeamPage() {
 
               {/* Inline password reset form */}
               {isAdmin && resetTargetId === m.id && (
-                <form onSubmit={resetPassword} className="px-5 pb-4 pt-1 border-t border-slate-100 bg-slate-50">
-                  <p className="text-xs text-slate-500 mb-2">Set a new password for {m.name ?? m.email}</p>
+                <form onSubmit={resetPassword} className="px-5 pb-4 pt-1 border-t border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
+                  <p className="text-xs mb-2" style={{ color: "#5a6663" }}>Set a new password for {m.name ?? m.email}</p>
                   <div className="flex gap-2">
                     <input
                       type="password" value={resetPw} onChange={e => setResetPw(e.target.value)}
                       placeholder="New password (8+ chars)" minLength={8}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
                     />
                     <button
                       type="submit" disabled={resetSaving || resetPw.length < 8}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
+                      className="px-3 py-2 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
+                      style={{ background: "#0a6b64" }}
                     >
                       {resetSaving ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />}
                       {resetSaving ? "Saving…" : "Save"}
@@ -303,39 +317,43 @@ export default function TeamPage() {
       {/* Invite Modal */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+          <div className="card shadow-2xl w-full max-w-md p-6 relative">
             <button
               onClick={() => { setShowInvite(false); setInviteResult(null); }}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              className="absolute top-4 right-4 p-1.5 rounded-lg transition"
+              style={{ color: "#8a938f" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#14211f"; e.currentTarget.style.background = "#f1efe8"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#8a938f"; e.currentTarget.style.background = ""; }}
             >
               <X size={16} />
             </button>
 
-            <h2 className="text-lg font-bold text-slate-900 mb-1">Invite Team Member</h2>
-            <p className="text-sm text-slate-500 mb-5">
+            <h2 className="text-lg font-bold mb-1" style={{ color: "#14211f" }}>Invite Team Member</h2>
+            <p className="text-sm mb-5" style={{ color: "#5a6663" }}>
               They&apos;ll receive an email with login credentials. If they already have an account, their CRM access will be updated.
             </p>
 
             <form onSubmit={invite} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>Full Name</label>
                 <input
                   value={inviteName} onChange={e => setInviteName(e.target.value)}
-                  placeholder="Jane Smith" className={inputCls} required
+                  placeholder="Jane Smith" className={inputCls} style={{ background: "#f8f6f1" }} required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>Email Address</label>
                 <input
                   type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="jane@example.com" className={inputCls} required
+                  placeholder="jane@example.com" className={inputCls} style={{ background: "#f8f6f1" }} required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>Role</label>
                 <select
                   value={inviteRole} onChange={e => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+                  style={{ background: "#f8f6f1" }}
                 >
                   <option value="MEMBER">Member — can view/edit leads, not analytics or team</option>
                   <option value="ADMIN">Admin — full access including team management</option>
@@ -362,14 +380,16 @@ export default function TeamPage() {
                 <button
                   type="button"
                   onClick={() => { setShowInvite(false); setInviteResult(null); }}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-[#e4e0d6] text-sm font-semibold transition hover:bg-[#f8f6f1]"
+                  style={{ color: "#5a6663" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={inviting || !inviteName.trim() || !inviteEmail.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                  className="flex-1 flex items-center justify-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                  style={{ background: "#0a6b64" }}
                 >
                   {inviting ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
                   {inviting ? "Sending…" : "Send Invite"}

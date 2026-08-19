@@ -28,21 +28,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid URL scheme" }, { status: 400 });
   }
 
-  // Fire-and-forget: log click activity if lead exists
-  prisma.lead
-    .findUnique({ where: { id: leadId }, select: { id: true } })
-    .then(lead => {
-      if (!lead) return;
-      return prisma.leadActivity.create({
-        data: {
-          leadId,
-          type:     "EMAIL_CLICK",
-          content:  destinationUrl,
-          metadata: JSON.stringify({ url: destinationUrl, activityId }),
-        },
-      });
-    })
-    .catch(() => {});
+  // Await before redirecting — fire-and-forget doesn't complete in serverless after response is sent
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { id: true } }).catch(() => null);
+  if (lead) {
+    await prisma.leadActivity.create({
+      data: {
+        leadId,
+        type:     "EMAIL_CLICK",
+        content:  destinationUrl,
+        metadata: JSON.stringify({ url: destinationUrl, activityId }),
+      },
+    }).catch(() => {});
+  }
 
   return NextResponse.redirect(destinationUrl, 302);
 }

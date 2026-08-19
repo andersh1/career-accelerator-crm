@@ -19,12 +19,16 @@ export async function GET() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const staleDate = new Date(now.getTime() - STALE_DAYS * 86400000);
 
-  const [tasks, hotLeads, staleLeads, recentActivity, pipelineLeads, cohorts, lostLeads] = await Promise.all([
-    // Today's tasks (due today or overdue, not completed)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [tasks, newApplications, hotLeads, staleLeads, recentActivity, pipelineLeads, cohorts, lostLeads,
+    recentCompletions, enrolledUsers, recentSurveys] = await Promise.all([
+    // Today's tasks (due today or overdue, not completed, not from soft-deleted leads)
     prisma.task.findMany({
       where: {
         completedAt: null,
         dueAt: { lte: todayEnd },
+        lead: { deletedAt: null },
       },
       include: {
         lead: { select: { id: true, firstName: true, lastName: true, stage: true, email: true } },
@@ -33,11 +37,30 @@ export async function GET() {
       take: 20,
     }),
 
-    // Hot leads: score-related — PROPOSAL or QUALIFIED, updated in last 30 days, not lost
+    // New applications: came in via form, not yet reached out to (no email/call/meeting activity)
     prisma.lead.findMany({
       where: {
         deletedAt: null,
-        stage: { in: ["PROPOSAL", "QUALIFIED", "CONTACTED"] },
+        stage: "LEAD",
+        leadType: { not: "CONTACT" },
+        NOT: {
+          activities: { some: { type: { in: ["EMAIL", "CALL", "MEETING"] } } },
+        },
+      },
+      select: {
+        id: true, firstName: true, lastName: true, email: true,
+        stage: true, priority: true, source: true, leadType: true, createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+    }),
+
+    // Hot leads: score-related — OFFER_SENT or STRATEGY_CALL, updated in last 30 days, not lost
+    prisma.lead.findMany({
+      where: {
+        deletedAt: null,
+        stage: { in: ["OFFER_SENT", "STRATEGY_CALL", "CONTACTED"] },
+        leadType: { not: "CONTACT" },
         updatedAt: { gte: new Date(now.getTime() - 30 * 86400000) },
       },
       select: {
@@ -45,7 +68,7 @@ export async function GET() {
         stage: true, priority: true, dealValue: true, updatedAt: true,
         _count: { select: { activities: true } },
       },
-      orderBy: [{ priority: "asc" }, { updatedAt: "desc" }],
+      orderBy: [{ updatedAt: "desc" }],
       take: 8,
     }),
 
@@ -54,6 +77,7 @@ export async function GET() {
       where: {
         deletedAt: null,
         stage: { notIn: ["ENROLLED", "LOST"] },
+        leadType: { not: "CONTACT" },
         updatedAt: { lte: staleDate },
       },
       select: {
@@ -76,9 +100,9 @@ export async function GET() {
       take: 15,
     }),
 
-    // Pipeline snapshot
+    // Pipeline snapshot — exclude contacts
     prisma.lead.findMany({
-      where: { deletedAt: null, stage: { notIn: ["ENROLLED", "LOST"] } },
+      where: { deletedAt: null, stage: { notIn: ["ENROLLED", "LOST"] }, leadType: { not: "CONTACT" } },
       select: { stage: true, dealValue: true },
     }),
 
@@ -97,6 +121,41 @@ export async function GET() {
     prisma.lead.findMany({
       where: { deletedAt: null, stage: "LOST", lostReason: { not: null } },
       select: { lostReason: true },
+    }),
+
+    // Recent section completions (last 7 days)
+    prisma.progress.findMany({
+      where: { completedAt: { gte: sevenDaysAgo } },
+      orderBy: { completedAt: "desc" },
+      take: 20,
+      select: {
+        completedAt: true,
+        userId: true,
+        user: { select: { name: true, email: true } },
+        section: { select: { title: true, module: { select: { number: true, title: true } } } },
+      },
+    }),
+
+    // All enrolled students for at-risk check
+    prisma.user.findMany({
+      where: { role: "STUDENT", cohortId: { not: null } },
+      select: {
+        id: true, name: true, email: true, cohort: true,
+        progress: { orderBy: { completedAt: "desc" }, take: 1, select: { completedAt: true } },
+      },
+    }),
+
+    // Survey submissions this week
+    prisma.surveyResponse.findMany({
+      where: { submittedAt: { gte: sevenDaysAgo } },
+      orderBy: { submittedAt: "desc" },
+      take: 10,
+      select: {
+        submittedAt: true,
+        overallRating: true,
+        moduleId: true,
+        user: { select: { name: true } },
+      },
     }),
   ]);
 
@@ -128,10 +187,18 @@ export async function GET() {
     spotsLeft: c.capacity ? Math.max(0, c.capacity - c._count.users) : null,
   }));
 
-  // Totals
-  const allLeads = await prisma.lead.count();
-  const totalEnrolled = await prisma.lead.count({ where: { deletedAt: null, stage: "ENROLLED" } });
-  const totalLost     = await prisma.lead.count({ where: { deletedAt: null, stage: "LOST" } });
+  // At-risk students: no LMS activity in last 7 days
+  const atRiskStudents = enrolledUsers.filter(u => {
+    const last = u.progress[0]?.completedAt;
+    return !last || last < sevenDaysAgo;
+  }).slice(0, 10);
+
+  // Totals — all three must use deletedAt: null so active = allLeads - enrolled - lost is accurate
+  const [allLeads, totalEnrolled, totalLost] = await Promise.all([
+    prisma.lead.count({ where: { deletedAt: null, leadType: { not: "CONTACT" } } }),
+    prisma.lead.count({ where: { deletedAt: null, stage: "ENROLLED", leadType: { not: "CONTACT" } } }),
+    prisma.lead.count({ where: { deletedAt: null, stage: "LOST", leadType: { not: "CONTACT" } } }),
+  ]);
   const overdueCount  = tasks.filter(t => t.dueAt && new Date(t.dueAt) < todayStart).length;
   const todayCount    = tasks.filter(t => {
     if (!t.dueAt) return false;
@@ -141,12 +208,18 @@ export async function GET() {
 
   return NextResponse.json({
     tasks,
+    newApplications,
     hotLeads,
     staleLeads,
     recentActivity,
     pipeline: stageMap,
     cohortFill,
     lostReasons,
+    lmsActivity: {
+      recentCompletions,
+      atRiskStudents,
+      recentSurveys,
+    },
     summary: {
       totalLeads: allLeads,
       enrolled: totalEnrolled,
@@ -154,7 +227,7 @@ export async function GET() {
       active: allLeads - totalEnrolled - totalLost,
       overdueCount,
       todayCount,
-      staleCount: staleLeads.length,
+      staleCount: await prisma.lead.count({ where: { deletedAt: null, stage: { notIn: ["ENROLLED", "LOST"] }, leadType: { not: "CONTACT" }, updatedAt: { lte: staleDate } } }),
       hotCount: hotLeads.length,
     },
   });

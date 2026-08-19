@@ -1,16 +1,33 @@
-// Fires an outbound webhook. Supports two targets:
-//   WEBHOOK_URL        — primary (custom systems, Make.com, etc.)
-//   ZAPIER_WEBHOOK_URL — Zapier-specific URL (if different)
-// Both are optional; fire-and-forget with a 5s timeout.
+import { prisma } from "@/lib/prisma";
+
+// Fires an outbound webhook. Supports two targets, checked in this order:
+//   1. DB (AppSetting keys: webhook_url, zapier_webhook_url) — set via Automation page
+//   2. Environment variables (WEBHOOK_URL, ZAPIER_WEBHOOK_URL) — Vercel project settings
+// Both slots can be active simultaneously. Fire-and-forget with a 5s timeout.
 export async function fireWebhook(event: string, data: Record<string, unknown>) {
-  const urls = [
-    process.env.WEBHOOK_URL,
-    process.env.ZAPIER_WEBHOOK_URL,
-  ].filter((u): u is string => !!u);
+  // Load DB-saved URLs
+  let dbWebhookUrl: string | null = null;
+  let dbZapierUrl: string | null = null;
+  try {
+    const settings = await prisma.appSetting.findMany({
+      where: { key: { in: ["webhook_url", "zapier_webhook_url"] } },
+    });
+    for (const s of settings) {
+      if (s.key === "webhook_url")        dbWebhookUrl = s.value || null;
+      if (s.key === "zapier_webhook_url") dbZapierUrl  = s.value || null;
+    }
+  } catch {
+    // DB unavailable — fall through to env vars
+  }
 
-  if (urls.length === 0) return; // no-op if not configured
+  const urls = Array.from(new Set([
+    dbWebhookUrl        ?? process.env.WEBHOOK_URL,
+    dbZapierUrl         ?? process.env.ZAPIER_WEBHOOK_URL,
+  ].filter((u): u is string => !!u)));
 
-  const body = JSON.stringify({ event, data, timestamp: new Date().toISOString() });
+  if (urls.length === 0) return;
+
+  const body    = JSON.stringify({ event, data, timestamp: new Date().toISOString() });
   const headers = { "Content-Type": "application/json", "X-Event": event };
 
   await Promise.allSettled(
@@ -19,7 +36,7 @@ export async function fireWebhook(event: string, data: Record<string, unknown>) 
         method: "POST",
         headers,
         body,
-        signal: AbortSignal.timeout(5000), // 5s timeout, don't hang requests
+        signal: AbortSignal.timeout(5000),
       })
     )
   );

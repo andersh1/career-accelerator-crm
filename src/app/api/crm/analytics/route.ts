@@ -1,12 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { searchParams } = new URL(req.url);
+  const startDateParam = searchParams.get("startDate");
+  const startDate = startDateParam ? new Date(startDateParam) : null;
 
   const now  = new Date();
   const som  = new Date(now.getFullYear(), now.getMonth(), 1);         // start of this month
@@ -14,9 +18,12 @@ export async function GET() {
 
   // ── Lead data ────────────────────────────────────────────────────────────────
   const leads = await prisma.lead.findMany({
-    where: { deletedAt: null },
+    where: {
+      deletedAt: null,
+      ...(startDate ? { createdAt: { gte: startDate } } : {}),
+    },
     select: {
-      id: true, stage: true, source: true, priority: true,
+      id: true, stage: true, source: true, subSource: true, priority: true,
       createdAt: true, dealValue: true, paymentStatus: true, assignedTo: true,
       lostReason: true,
     },
@@ -28,12 +35,17 @@ export async function GET() {
     select: { id: true, name: true, email: true },
   });
 
-  // ── Stage-change activities (for time-in-stage) ───────────────────────────
+  // ── Stage-change activities (for time-in-stage AND enrollment tracking) ──
   const stageActivities = await prisma.leadActivity.findMany({
-    where: { type: "STAGE_CHANGE" },
+    where: {
+      type: "STAGE_CHANGE",
+      ...(startDate ? { createdAt: { gte: startDate } } : {}),
+    },
     select: { leadId: true, metadata: true, createdAt: true },
     orderBy: { createdAt: "asc" },
   });
+  // Reuse stageActivities for enrollment counts — no second query needed
+  const enrolledActivities = stageActivities;
 
   // ── Cohorts ───────────────────────────────────────────────────────────────
   const cohorts = await prisma.cohort.findMany({
@@ -66,11 +78,7 @@ export async function GET() {
   const newLastMonth = leads.filter(l => l.createdAt >= solm && l.createdAt < som).length;
   const newMoM       = newLastMonth > 0 ? Math.round(((newThisMonth - newLastMonth) / newLastMonth) * 100) : null;
 
-  // Enrolled this/last month — look for stage change activities to ENROLLED
-  const enrolledActivities = await prisma.leadActivity.findMany({
-    where: { type: "STAGE_CHANGE" },
-    select: { metadata: true, createdAt: true },
-  });
+  // enrolledActivities already set above — reused from stageActivities
   function countEnrolledIn(from: Date, to: Date) {
     return enrolledActivities.filter(a => {
       if (a.createdAt < from || a.createdAt >= to) return false;
@@ -89,7 +97,7 @@ export async function GET() {
   // ─────────────────────────────────────────────────────────────────────────
   // Funnel
   // ─────────────────────────────────────────────────────────────────────────
-  const FUNNEL_STAGES = ["LEAD", "CONTACTED", "QUALIFIED", "PROPOSAL", "ENROLLED"];
+  const FUNNEL_STAGES = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED"];
   const funnel = FUNNEL_STAGES.map(stage => ({
     stage,
     count: leads.filter(l => l.stage === stage).length,
@@ -110,9 +118,30 @@ export async function GET() {
     .map(([key, data]) => ({ key, ...data }))
     .sort((a, b) => b.count - a.count);
 
+  // 3i NextGen sub-source breakdown (member vs non-member referral)
+  const nextgenLeads = leads.filter(l => l.source === "3I_NEXTGEN");
+  const nextgenBreakdown = {
+    total:     nextgenLeads.length,
+    member:    nextgenLeads.filter(l => l.subSource === "MEMBER").length,
+    referral:  nextgenLeads.filter(l => l.subSource === "NON_MEMBER_REFERRAL").length,
+    untagged:  nextgenLeads.filter(l => !l.subSource).length,
+  };
+
   // ─────────────────────────────────────────────────────────────────────────
-  // Monthly volume (last 6 months)
+  // Monthly volume (last 6 months) — single groupBy instead of 6 queries
   // ─────────────────────────────────────────────────────────────────────────
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const paymentRows = await prisma.paymentRecord.findMany({
+    where: { paidAt: { gte: sixMonthsAgo } },
+    select: { paidAt: true, amount: true },
+  });
+  const revenueByMonth: Record<string, number> = {};
+  for (const row of paymentRows) {
+    if (!row.paidAt) continue;
+    const key = row.paidAt.toISOString().slice(0, 7);
+    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + (row.amount ?? 0);
+  }
+
   const monthly: { month: string; label: string; leads: number; enrolled: number; revenue: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -126,18 +155,8 @@ export async function GET() {
       try { return (JSON.parse(a.metadata ?? "{}") as { to?: string }).to === "ENROLLED"; }
       catch { return false; }
     }).length;
-    const revenue = leads
-      .filter(l => l.stage === "ENROLLED")
-      .filter(l => {
-        const ea = enrolledActivities.find(a => {
-          if (a.createdAt < d || a.createdAt >= end) return false;
-          try { return (JSON.parse(a.metadata ?? "{}") as { to?: string }).to === "ENROLLED"; }
-          catch { return false; }
-        });
-        return !!ea;
-      }).reduce((s, l) => s + (l.dealValue ?? 0), 0);
 
-    monthly.push({ month: key, label: lbl, leads: monthLeads.length, enrolled: enrolledCount, revenue });
+    monthly.push({ month: key, label: lbl, leads: monthLeads.length, enrolled: enrolledCount, revenue: revenueByMonth[key] ?? 0 });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -211,7 +230,7 @@ export async function GET() {
   // Weighted pipeline (close probability per stage)
   // ─────────────────────────────────────────────────────────────────────────
   const STAGE_PROB: Record<string, number> = {
-    LEAD: 0.05, CONTACTED: 0.15, QUALIFIED: 0.35, PROPOSAL: 0.65, ENROLLED: 1, LOST: 0,
+    LEAD: 0.05, CONTACTED: 0.15, STRATEGY_CALL: 0.35, OFFER_SENT: 0.65, ENROLLED: 1, LOST: 0,
   };
   const weightedPipeline = leads
     .filter(l => l.stage !== "LOST")
@@ -227,7 +246,7 @@ export async function GET() {
   // Per-rep analytics
   // ─────────────────────────────────────────────────────────────────────────
   const reps = adminUsers.map(u => {
-    const repLeads    = leads.filter(l => l.assignedTo === u.id);
+    const repLeads    = leads.filter(l => l.assignedTo === u.email);
     const repEnrolled = repLeads.filter(l => l.stage === "ENROLLED");
     const repLost     = repLeads.filter(l => l.stage === "LOST");
     const repActive   = repLeads.filter(l => l.stage !== "ENROLLED" && l.stage !== "LOST");
@@ -279,6 +298,7 @@ export async function GET() {
     mom:  { newThisMonth, newLastMonth, newMoM, enrolledThisMonth, enrolledLastMonth, enrolledMoM },
     funnel: funnelWeighted,
     sources,
+    nextgenBreakdown,
     monthly,
     timeInStage,
     cohorts: cohortData,

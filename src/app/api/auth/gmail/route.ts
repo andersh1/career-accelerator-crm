@@ -15,7 +15,6 @@ const REDIRECT_URI  = `${BASE_URL}/api/auth/gmail`;
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
-  "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
 
@@ -37,7 +36,9 @@ export async function GET(req: NextRequest) {
   if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/login", BASE_URL));
   }
-  const userId = (session as { user: { id: string } }).user.id;
+  const sessionUser = (session as { user: { id: string; email?: string } }).user;
+  const userId    = sessionUser.id;
+  const userEmail = sessionUser.email ?? "";
 
   const { searchParams } = new URL(req.url);
   const action = searchParams.get("action");
@@ -45,8 +46,8 @@ export async function GET(req: NextRequest) {
 
   // ── Return connection status ──────────────────────────────────────────────
   if (action === "status") {
-    const user = await prisma.user.findUnique({
-      where:  { id: userId },
+    const user = await prisma.user.findFirst({
+      where:  { OR: [{ id: userId }, { email: userEmail }] },
       select: { gmailEmail: true, gmailSyncedAt: true, gmailRefreshToken: true },
     });
     return NextResponse.json({
@@ -67,8 +68,8 @@ export async function GET(req: NextRequest) {
 
   // ── Disconnect ────────────────────────────────────────────────────────────
   if (action === "disconnect") {
-    await prisma.user.update({
-      where: { id: userId },
+    await prisma.user.updateMany({
+      where: { OR: [{ id: userId }, { email: userEmail }] },
       data:  { gmailRefreshToken: null, gmailEmail: null, gmailSyncedAt: null },
     });
     return NextResponse.redirect(new URL("/settings?gmail=disconnected", BASE_URL));
@@ -92,8 +93,9 @@ export async function GET(req: NextRequest) {
         access_token?: string; refresh_token?: string; error?: string;
       };
       if (tokens.error || !tokens.refresh_token) {
-        console.error("Gmail OAuth token error:", tokens.error);
-        return NextResponse.redirect(new URL("/settings?gmail=error", BASE_URL));
+        console.error("Gmail OAuth token error:", JSON.stringify(tokens));
+        const errParam = encodeURIComponent(tokens.error ?? "no_refresh_token");
+        return NextResponse.redirect(new URL(`/settings?gmail=error&reason=${errParam}`, BASE_URL));
       }
 
       // Get the Gmail address associated with this token
@@ -102,19 +104,20 @@ export async function GET(req: NextRequest) {
       });
       const profile = await profileRes.json() as { email?: string };
 
-      await prisma.user.update({
-        where: { id: userId },
+      await prisma.user.updateMany({
+        where: { OR: [{ id: userId }, { email: userEmail }] },
         data:  {
           gmailRefreshToken: tokens.refresh_token,
           gmailEmail:        profile.email ?? null,
-          gmailSyncedAt:     null, // reset so next sync pulls fresh
+          gmailSyncedAt:     null,
         },
       });
 
       return NextResponse.redirect(new URL("/settings?gmail=connected", BASE_URL));
     } catch (err) {
-      console.error("Gmail OAuth callback error:", err);
-      return NextResponse.redirect(new URL("/settings?gmail=error", BASE_URL));
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Gmail OAuth callback error:", msg);
+      return NextResponse.redirect(new URL(`/settings?gmail=error&reason=${encodeURIComponent("catch:" + msg.slice(0, 80))}`, BASE_URL));
     }
   }
 

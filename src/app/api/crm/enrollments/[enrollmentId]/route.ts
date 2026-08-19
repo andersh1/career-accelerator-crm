@@ -11,7 +11,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { enrollment
   const session = await getServerSession(authOptions);
   if (requireAdmin(session)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { status } = await req.json() as { status: "ACTIVE" | "PAUSED" | "CANCELLED" };
+  const { status } = await req.json() as { status: string };
+  const VALID_STATUSES = ["ACTIVE", "PAUSED", "CANCELLED"];
+  if (!VALID_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
 
   const enrollment = await prisma.emailSequenceEnrollment.update({
     where: { id: params.enrollmentId },

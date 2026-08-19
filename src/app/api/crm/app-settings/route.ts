@@ -3,10 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const ALLOWED_KEYS = ["slack_webhook_url", "proposal_program_name", "proposal_tagline", "proposal_footer"];
+const ALLOWED_KEYS = [
+  "slack_webhook_url", "proposal_program_name", "proposal_tagline", "proposal_footer",
+  "automation.stale-escalation", "automation.stale-notification",
+  "automation.proposal-followup", "automation.qualified-trigger",
+  "automation.proposal-trigger", "automation.enrolled-trigger",
+  "webhook_url", "zapier_webhook_url",
+];
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
-  return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
+  return !session || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN";
 }
 
 export async function GET() {

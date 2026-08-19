@@ -20,8 +20,8 @@ function parseCSV(text: string): Record<string, string>[] {
       .replace("firstname", "firstName")
       .replace("lastname",  "lastName")
       .replace("jobtitle",  "jobTitle")
-      .replace("linkedin",  "linkedinUrl")
       .replace("linkedinurl", "linkedinUrl")
+      .replace(/^linkedin$/, "linkedinUrl")
     );
 
   return lines.slice(1).map(line => {

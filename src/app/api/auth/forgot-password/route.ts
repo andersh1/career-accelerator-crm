@@ -9,11 +9,11 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { email: email.trim().toLowerCase() },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, crmRole: true },
   });
 
   // Always return success to avoid leaking whether an email exists
-  if (!user || user.role !== "ADMIN") {
+  if (!user) {
     return NextResponse.json({ ok: true });
   }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   });
 
   const resetUrl = `${CRM_URL}/reset-password?token=${token}`;
-  await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+  await sendPasswordResetEmail({ to: user.email, name: user.name ?? "there", resetUrl });
 
   return NextResponse.json({ ok: true });
 }

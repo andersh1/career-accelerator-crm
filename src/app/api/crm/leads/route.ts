@@ -17,32 +17,56 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const stage      = searchParams.get("stage");
   const source     = searchParams.get("source");
+  const subSource  = searchParams.get("subSource");
+  const priority   = searchParams.get("priority");
   const q          = searchParams.get("q");
   const tag        = searchParams.get("tag");
   const assignedTo = searchParams.get("assignedTo");
+  const leadType   = searchParams.get("leadType");
+  const excludeStages = searchParams.getAll("excludeStage");
+  const all        = searchParams.get("all") === "true";
+  const page       = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const pageSize   = Math.min(200, Math.max(1, parseInt(searchParams.get("pageSize") ?? "50", 10)));
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      deletedAt: null,
-      ...(stage      ? { stage }      : {}),
-      ...(source     ? { source }     : {}),
-      ...(assignedTo ? { assignedTo } : {}),
-      ...(q ? {
-        OR: [
-          { firstName: { contains: q, mode: "insensitive" } },
-          { lastName:  { contains: q, mode: "insensitive" } },
-          { email:     { contains: q, mode: "insensitive" } },
-          { company:   { contains: q, mode: "insensitive" } },
-        ],
-      } : {}),
-      ...(tag ? { tags: { has: tag } } : {}),
-    },
-    include: {
-      _count: { select: { activities: true } },
-      enrolledUser: { select: { id: true, name: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  const where = {
+    deletedAt: null as null,
+    // Merge stage equality + exclusion so they don't overwrite each other
+    ...(stage || excludeStages.length ? {
+      stage: {
+        ...(stage ? { equals: stage } : {}),
+        ...(excludeStages.length ? { notIn: excludeStages } : {}),
+      },
+    } : {}),
+    ...(source     ? { source }     : {}),
+    ...(subSource  ? { subSource }  : {}),
+    ...(priority   ? { priority }   : {}),
+    ...(assignedTo ? { assignedTo } : {}),
+    // When no leadType filter is set, exclude CONTACT — they live in Partnerships → Contacts
+    // "ALL" is a special sentinel meaning no filter (used by deal participant search)
+    ...(leadType === "ALL" ? {} : leadType ? { leadType } : { leadType: { not: "CONTACT" } }),
+    ...(q ? {
+      OR: [
+        { firstName: { contains: q, mode: "insensitive" as const } },
+        { lastName:  { contains: q, mode: "insensitive" as const } },
+        { email:     { contains: q, mode: "insensitive" as const } },
+        { company:   { contains: q, mode: "insensitive" as const } },
+      ],
+    } : {}),
+    ...(tag ? { tags: { has: tag } } : {}),
+  };
+
+  const [leads, total] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      include: {
+        _count: { select: { activities: true } },
+        enrolledUser: { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      ...(all ? {} : { skip: (page - 1) * pageSize, take: pageSize }),
+    }),
+    prisma.lead.count({ where }),
+  ]);
 
   // Attach computed score to each lead
   const withScores = leads.map(lead => ({
@@ -59,7 +83,17 @@ export async function GET(req: NextRequest) {
     }),
   }));
 
-  return NextResponse.json(withScores);
+  if (all) {
+    return NextResponse.json(withScores);
+  }
+
+  return NextResponse.json({
+    leads: withScores,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  });
 }
 
 // POST /api/crm/leads
@@ -69,7 +103,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { firstName, lastName, email, phone, company, jobTitle, linkedinUrl,
-          stage, source, priority, paymentStatus, dealValue, assignedTo, tags, notes } = body;
+          stage, source, leadType, priority, paymentStatus, dealValue, assignedTo, tags, notes } = body;
 
   if (!firstName || !lastName || !email) {
     return NextResponse.json({ error: "First name, last name and email are required" }, { status: 400 });
@@ -84,6 +118,7 @@ export async function POST(req: NextRequest) {
       linkedinUrl:   linkedinUrl   || null,
       stage:         stage         || "LEAD",
       source:        source        || null,
+      leadType:      leadType      || "WAITLIST",
       priority:      priority      || "NORMAL",
       paymentStatus: paymentStatus || "UNPAID",
       dealValue:     typeof dealValue === "number" ? dealValue : 0,

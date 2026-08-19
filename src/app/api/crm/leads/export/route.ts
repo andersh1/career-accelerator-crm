@@ -9,7 +9,9 @@ import { prisma } from "@/lib/prisma";
 
 function esc(v: string | null | undefined): string {
   if (v == null || v === "") return "";
-  const s = String(v);
+  let s = String(v);
+  // Prefix formula-injection characters so spreadsheets don't execute them
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   // Wrap in quotes if contains comma, quote, or newline
   if (s.includes(",") || s.includes('"') || s.includes("\n")) {
     return `"${s.replace(/"/g, '""')}"`;
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest) {
   const stage    = searchParams.get("stage");
   const source   = searchParams.get("source");
   const priority = searchParams.get("priority");
+  const q        = searchParams.get("q")?.trim();
 
   const leads = await prisma.lead.findMany({
     where: {
@@ -34,6 +37,14 @@ export async function GET(req: NextRequest) {
       ...(stage    ? { stage }    : {}),
       ...(source   ? { source }   : {}),
       ...(priority ? { priority } : {}),
+      ...(q ? {
+        OR: [
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName:  { contains: q, mode: "insensitive" } },
+          { email:     { contains: q, mode: "insensitive" } },
+          { company:   { contains: q, mode: "insensitive" } },
+        ],
+      } : {}),
     },
     include: {
       enrolledUser: { select: { id: true, name: true, email: true } },

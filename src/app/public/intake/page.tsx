@@ -58,7 +58,7 @@ function IntakeForm() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re all set!</h2>
           <p className="text-gray-500 text-base">Thanks! We&apos;ll be in touch soon.</p>
-          <p className="mt-8 text-xs text-gray-400">Powered by 10x Career Accelerator</p>
+          <p className="mt-8 text-xs text-gray-400">Powered by Vantage Career Accelerator</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ function IntakeForm() {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900 to-indigo-800 px-8 py-7">
-          <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">10x Career Accelerator</p>
+          <p className="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Vantage Career Accelerator</p>
           <h1 className="text-white text-2xl font-extrabold leading-snug">Get in Touch</h1>
           <p className="text-blue-200 text-sm mt-1">Fill out the form and we&apos;ll reach out shortly.</p>
         </div>
@@ -188,7 +188,7 @@ function IntakeForm() {
 
         {/* Footer */}
         <div className="px-8 py-4 border-t border-gray-100 bg-gray-50 text-center">
-          <p className="text-xs text-gray-400">Powered by 10x Career Accelerator</p>
+          <p className="text-xs text-gray-400">Powered by Vantage Career Accelerator</p>
         </div>
       </div>
     </div>

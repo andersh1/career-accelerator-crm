@@ -39,6 +39,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const session = await getServerSession(authOptions);
   if (requireAdmin(session)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  // Delete enrollments first (no cascade defined on the FK)
+  await prisma.emailSequenceEnrollment.deleteMany({ where: { sequenceId: params.id } });
   await prisma.emailSequence.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }

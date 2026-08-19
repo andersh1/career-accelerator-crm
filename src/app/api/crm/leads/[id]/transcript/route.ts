@@ -35,7 +35,7 @@ export async function POST(
   });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const STAGES = ["LEAD", "CONTACTED", "QUALIFIED", "PROPOSAL", "ENROLLED", "LOST"];
+  const STAGES = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED", "LOST"];
 
   const prompt = `You are a sales intelligence assistant analyzing a call transcript from a career coaching sales conversation.
 
@@ -59,7 +59,7 @@ Analyze this transcript and return a JSON object with exactly these fields:
   "nextSteps": [
     { "title": "specific follow-up action", "dueInDays": 1 }
   ],
-  "recommendedStage": "one of: LEAD | CONTACTED | QUALIFIED | PROPOSAL | ENROLLED | LOST",
+  "recommendedStage": "one of: LEAD | CONTACTED | STRATEGY_CALL | OFFER_SENT | ENROLLED | LOST",
   "recommendedPriority": "one of: LOW | NORMAL | HIGH | URGENT",
   "stageReason": "1 sentence explaining why you recommend this stage",
   "enrollmentReadiness": "one of: NOT_READY | WARMING | INTERESTED | VERY_INTERESTED | READY_TO_ENROLL",

@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle2, Circle, Plus, Trash2, Loader2, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle2, Circle, Plus, Trash2, Loader2, AlertCircle, Clock, UserCircle2, Pencil, X, Check } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 interface Task {
   id: string; leadId: string; title: string; notes: string | null;
   dueAt: string | null; completedAt: string | null; createdAt: string;
+  assignedTo: string | null;
 }
+
+interface AdminUser { id: string; name: string | null; email: string; }
 
 function dueBadge(dueAt: string | null) {
   if (!dueAt) return null;
@@ -19,14 +22,23 @@ function dueBadge(dueAt: string | null) {
   return <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Clock size={9}/>{d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>;
 }
 
+function toDateInput(iso: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toISOString().split("T")[0];
+}
+
 export default function TaskPanel({ leadId }: { leadId: string }) {
   const { success, error: toastError } = useToast();
-  const [tasks,   setTasks]   = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [adding,  setAdding]  = useState(false);
-  const [title,   setTitle]   = useState("");
-  const [dueAt,   setDueAt]   = useState("");
-  const [saving,  setSaving]  = useState(false);
+  const [tasks,      setTasks]      = useState<Task[]>([]);
+  const [admins,     setAdmins]     = useState<AdminUser[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [adding,     setAdding]     = useState(false);
+  const [title,      setTitle]      = useState("");
+  const [dueAt,      setDueAt]      = useState("");
+  const [notes,      setNotes]      = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [saving,     setSaving]     = useState(false);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res  = await fetch(`/api/crm/leads/${leadId}/tasks`);
@@ -37,19 +49,37 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    fetch("/api/crm/users").then(r => r.json()).then((d) => {
+      if (Array.isArray(d)) setAdmins(d);
+    }).catch(() => {});
+  }, []);
+
   async function addTask() {
     if (!title.trim()) return;
     setSaving(true);
     const res = await fetch(`/api/crm/leads/${leadId}/tasks`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title.trim(), dueAt: dueAt || null }),
+      body: JSON.stringify({ title: title.trim(), dueAt: dueAt || null, notes: notes || null, assignedTo: assignedTo || null }),
     });
     if (res.ok) {
-      setTitle(""); setDueAt(""); setAdding(false);
+      setTitle(""); setDueAt(""); setNotes(""); setAssignedTo(""); setAdding(false);
       await load();
       success("Task added.");
     } else { toastError("Failed to add task"); }
     setSaving(false);
+  }
+
+  async function saveEdit(id: string, patch: Partial<Pick<Task, "title" | "notes" | "dueAt" | "assignedTo">>) {
+    const res = await fetch(`/api/crm/tasks/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      await load();
+      success("Task updated.");
+    } else { toastError("Failed to update task"); }
   }
 
   async function toggleComplete(task: Task) {
@@ -67,6 +97,12 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
     setTasks(t => t.filter(x => x.id !== id));
   }
 
+  function adminName(email: string | null) {
+    if (!email) return null;
+    const u = admins.find(a => a.email === email);
+    return u?.name ?? email;
+  }
+
   const open   = tasks.filter(t => !t.completedAt);
   const closed = tasks.filter(t =>  t.completedAt);
 
@@ -80,7 +116,7 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
             <span className="text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full">{open.length}</span>
           )}
         </div>
-        <button onClick={() => setAdding(v => !v)}
+        <button onClick={() => { setAdding(v => !v); setEditingId(null); }}
           className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
           <Plus size={13} /> Add
         </button>
@@ -94,12 +130,31 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
             placeholder="Task title…"
             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
+          <input
+            value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder="Notes (optional)…"
+            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 flex-1">
               <Clock size={12} className="text-slate-400" />
               <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
                 className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
             </div>
+            {admins.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-1">
+                <UserCircle2 size={12} className="text-slate-400 flex-shrink-0" />
+                <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-full">
+                  <option value="">Unassigned</option>
+                  {admins.map(u => (
+                    <option key={u.id} value={u.email}>{u.name ?? u.email}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <button onClick={addTask} disabled={saving || !title.trim()}
               className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
               {saving ? <Loader2 size={12} className="animate-spin" /> : null}
@@ -123,7 +178,14 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
           </div>
         )}
         {open.map(task => (
-          <TaskRow key={task.id} task={task} onToggle={toggleComplete} onDelete={deleteTask} />
+          <TaskRow
+            key={task.id} task={task} admins={admins} adminName={adminName}
+            isEditing={editingId === task.id}
+            onEdit={() => setEditingId(task.id)}
+            onCancelEdit={() => setEditingId(null)}
+            onSaveEdit={(patch) => saveEdit(task.id, patch)}
+            onToggle={toggleComplete} onDelete={deleteTask}
+          />
         ))}
         {closed.length > 0 && (
           <details className="group">
@@ -131,7 +193,14 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
               {closed.length} completed
             </summary>
             {closed.map(task => (
-              <TaskRow key={task.id} task={task} onToggle={toggleComplete} onDelete={deleteTask} />
+              <TaskRow
+                key={task.id} task={task} admins={admins} adminName={adminName}
+                isEditing={editingId === task.id}
+                onEdit={() => setEditingId(task.id)}
+                onCancelEdit={() => setEditingId(null)}
+                onSaveEdit={(patch) => saveEdit(task.id, patch)}
+                onToggle={toggleComplete} onDelete={deleteTask}
+              />
             ))}
           </details>
         )}
@@ -140,12 +209,95 @@ export default function TaskPanel({ leadId }: { leadId: string }) {
   );
 }
 
-function TaskRow({ task, onToggle, onDelete }: {
+function TaskRow({ task, admins, adminName, isEditing, onEdit, onCancelEdit, onSaveEdit, onToggle, onDelete }: {
   task: Task;
+  admins: AdminUser[];
+  adminName: (email: string | null) => string | null;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (patch: Partial<Pick<Task, "title" | "notes" | "dueAt" | "assignedTo">>) => void;
   onToggle: (t: Task) => void;
   onDelete: (id: string) => void;
 }) {
-  const done = !!task.completedAt;
+  const done     = !!task.completedAt;
+  const assignee = adminName(task.assignedTo);
+
+  const [eTitle,      setETitle]      = useState(task.title);
+  const [eNotes,      setENotes]      = useState(task.notes ?? "");
+  const [eDueAt,      setEDueAt]      = useState(toDateInput(task.dueAt));
+  const [eAssignedTo, setEAssignedTo] = useState(task.assignedTo ?? "");
+  const [saving,      setSaving]      = useState(false);
+
+  // Reset fields when edit mode opens
+  useEffect(() => {
+    if (isEditing) {
+      setETitle(task.title);
+      setENotes(task.notes ?? "");
+      setEDueAt(toDateInput(task.dueAt));
+      setEAssignedTo(task.assignedTo ?? "");
+    }
+  }, [isEditing, task]);
+
+  async function handleSave() {
+    if (!eTitle.trim()) return;
+    setSaving(true);
+    await onSaveEdit({
+      title:      eTitle.trim(),
+      notes:      eNotes || null,
+      dueAt:      eDueAt || null,
+      assignedTo: eAssignedTo || null,
+    });
+    setSaving(false);
+  }
+
+  if (isEditing) {
+    return (
+      <div className="px-5 py-4 bg-blue-50/40 border-l-2 border-blue-500 space-y-2.5">
+        <input
+          autoFocus value={eTitle} onChange={e => setETitle(e.target.value)}
+          onKeyDown={e => { if (e.key === "Escape") onCancelEdit(); }}
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        />
+        <input
+          value={eNotes} onChange={e => setENotes(e.target.value)}
+          placeholder="Notes (optional)…"
+          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-1">
+            <Clock size={12} className="text-slate-400" />
+            <input type="date" value={eDueAt} onChange={e => setEDueAt(e.target.value)}
+              className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+          </div>
+          {admins.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-1">
+              <UserCircle2 size={12} className="text-slate-400 flex-shrink-0" />
+              <select value={eAssignedTo} onChange={e => setEAssignedTo(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-full">
+                <option value="">Unassigned</option>
+                {admins.map(u => (
+                  <option key={u.id} value={u.email}>{u.name ?? u.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleSave} disabled={saving || !eTitle.trim()}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+            Save
+          </button>
+          <button onClick={onCancelEdit}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 transition">
+            <X size={12} /> Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex items-center gap-3 px-5 py-3 group ${done ? "opacity-50" : ""}`}>
       <button onClick={() => onToggle(task)} className="flex-shrink-0 text-slate-300 hover:text-blue-500 transition">
@@ -158,9 +310,20 @@ function TaskRow({ task, onToggle, onDelete }: {
         <p className={`text-sm font-medium ${done ? "line-through text-slate-400" : "text-slate-800"}`}>
           {task.title}
         </p>
-        {task.notes && <p className="text-xs text-slate-400 truncate">{task.notes}</p>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {task.notes && <p className="text-xs text-slate-400 truncate" title={task.notes}>{task.notes}</p>}
+          {assignee && (
+            <span className="text-[10px] text-slate-400 flex items-center gap-0.5 flex-shrink-0">
+              <UserCircle2 size={9} /> {assignee}
+            </span>
+          )}
+        </div>
       </div>
       {!done && dueBadge(task.dueAt)}
+      <button onClick={onEdit}
+        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-blue-500 transition flex-shrink-0">
+        <Pencil size={13} />
+      </button>
       <button onClick={() => onDelete(task.id)}
         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition flex-shrink-0">
         <Trash2 size={13} />

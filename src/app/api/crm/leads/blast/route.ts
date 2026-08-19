@@ -34,10 +34,17 @@ export async function POST(req: NextRequest) {
 
   // Build filter
   const where: Record<string, unknown> = {
-    deletedAt: null,
-    stage: { notIn: ["ENROLLED", "LOST"] },
+    deletedAt:    null,
+    unsubscribed: false,
+    stage:    { notIn: ["ENROLLED", "LOST"] },
+    leadType: { notIn: ["CONTACT", "PARTNER"] },
   };
-  if (body.stage)    where.stage    = body.stage;
+  if (body.stage) {
+    if (["ENROLLED", "LOST"].includes(body.stage)) {
+      return NextResponse.json({ error: "Cannot blast ENROLLED or LOST leads" }, { status: 400 });
+    }
+    where.stage = body.stage;
+  }
   if (body.source)   where.source   = body.source;
   if (body.priority) where.priority = body.priority;
   if (body.tags?.length) where.tags = { hasSome: body.tags };
@@ -62,20 +69,15 @@ export async function POST(req: NextRequest) {
   for (const lead of leads) {
     try {
       // Personalize: replace {{firstName}} etc.
+      const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/api/crm/unsubscribe?email=${encodeURIComponent(lead.email)}`;
       const personalizedBody = body.body
-        .replace(/\{\{firstName\}\}/gi, lead.firstName)
-        .replace(/\{\{lastName\}\}/gi,  lead.lastName)
-        .replace(/\{\{fullName\}\}/gi,  `${lead.firstName} ${lead.lastName}`);
+        .replace(/\{\{firstName\}\}/gi,       lead.firstName)
+        .replace(/\{\{lastName\}\}/gi,        lead.lastName)
+        .replace(/\{\{fullName\}\}/gi,        `${lead.firstName} ${lead.lastName}`)
+        .replace(/\{\{unsubscribeLink\}\}/gi, unsubUrl);
 
-      await sendSequenceEmail({
-        to:       lead.email,
-        subject:  body.subject,
-        body:     personalizedBody + `\n\n---\nYou're receiving this because you expressed interest in 10x Career Accelerator. [Unsubscribe](${process.env.NEXTAUTH_URL ?? "https://career-accelerator-lms.vercel.app"}/api/crm/unsubscribe?email=${encodeURIComponent(lead.email)})`,
-        leadName: `${lead.firstName} ${lead.lastName}`,
-      });
-
-      // Log as EMAIL activity
-      await prisma.leadActivity.create({
+      // Create activity FIRST so we have its ID for open-rate tracking pixel
+      const activity = await prisma.leadActivity.create({
         data: {
           leadId:    lead.id,
           type:      "EMAIL",
@@ -87,6 +89,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const unsubHtml = `<p style="margin:24px 0 0;font-size:12px;color:#94a3b8;text-align:center;">You're receiving this because you expressed interest in Vantage Career Accelerator. <a href="${unsubUrl}" style="color:#94a3b8;">Unsubscribe</a></p>`;
+      const result = await sendSequenceEmail({
+        to:         lead.email,
+        subject:    body.subject,
+        body:       personalizedBody,
+        leadName:   `${lead.firstName} ${lead.lastName}`,
+        activityId: activity.id,
+        unsubHtml,
+      });
+
+      if (!result.ok) throw new Error(result.error ?? "Send failed");
       sent++;
     } catch (e) {
       console.error(`Blast email failed for ${lead.email}:`, e);

@@ -73,12 +73,14 @@ export async function POST(req: NextRequest) {
   if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const userId = (session as { user: { id: string } }).user.id;
+  const sessionUser = (session as { user: { id: string; email?: string } }).user;
+  const userId    = sessionUser.id;
+  const userEmail = sessionUser.email ?? "";
 
   // ── Load this admin's Gmail refresh token ───────────────────────────────
-  const user = await prisma.user.findUnique({
-    where:  { id: userId },
-    select: { gmailRefreshToken: true, gmailSyncedAt: true, gmailEmail: true },
+  const user = await prisma.user.findFirst({
+    where:  { OR: [{ id: userId }, { email: userEmail }] },
+    select: { id: true, gmailRefreshToken: true, gmailSyncedAt: true, gmailEmail: true },
   });
 
   if (!user?.gmailRefreshToken) {
@@ -89,6 +91,10 @@ export async function POST(req: NextRequest) {
   if (!accessToken) {
     return NextResponse.json({ error: "Could not refresh Gmail access token. Reconnect in Settings." }, { status: 401 });
   }
+
+  // Record the sync start time — use this as the new watermark so any messages
+  // that fail mid-loop are retried next time (dedup prevents double-counting successes).
+  const syncStart = new Date();
 
   // ── Build query: sent mail after the last sync (or last 30 days if first sync) ──
   const after = user.gmailSyncedAt
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
   const messageIds = listData.messages ?? [];
 
   if (messageIds.length === 0) {
-    await prisma.user.update({ where: { id: userId }, data: { gmailSyncedAt: new Date() } });
+    await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
     return NextResponse.json({ synced: 0, skipped: 0 });
   }
 
@@ -180,7 +186,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { gmailSyncedAt: new Date() } });
+  await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
 
   return NextResponse.json({ synced, skipped });
 }

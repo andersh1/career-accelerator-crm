@@ -6,30 +6,30 @@ export const TEMPLATES = [
   {
     key: "intro",
     label: "First Touch",
-    subject: "Interested in the 10x Career Accelerator?",
+    subject: "Interested in the Vantage Career Accelerator?",
     body: (name: string) =>
-      `Hi ${name},\n\nI came across your profile and wanted to reach out — we're running the 10x Career Accelerator program and I thought it might be a great fit for where you are in your career.\n\nThe program is an intensive 8-module coaching experience designed to help professionals land their next big role or make a meaningful career pivot.\n\nWould love to set up a quick 20-minute call to see if it's a good fit. Are you open to connecting this week?\n\nLooking forward to hearing from you!`,
+      `Hi ${name},\n\nI came across your profile and wanted to reach out — we're running the Vantage Career Accelerator program and I thought it might be a great fit for where you are in your career.\n\nThe program is an intensive 8-module coaching experience designed to help professionals land their next big role or make a meaningful career pivot.\n\nWould love to set up a quick 20-minute call to see if it's a good fit. Are you open to connecting this week?\n\nLooking forward to hearing from you!`,
   },
   {
     key: "followup",
     label: "Follow-up",
-    subject: "Following up — 10x Career Accelerator",
+    subject: "Following up — Vantage Career Accelerator",
     body: (name: string) =>
-      `Hi ${name},\n\nJust wanted to follow up on my previous message about the 10x Career Accelerator program.\n\nI know things get busy — I wanted to make sure this didn't get lost. If now isn't the right time, no worries at all. But if you're open to a quick conversation, I'd love to connect.\n\nHappy to work around your schedule — just let me know what works best.`,
+      `Hi ${name},\n\nJust wanted to follow up on my previous message about the Vantage Career Accelerator program.\n\nI know things get busy — I wanted to make sure this didn't get lost. If now isn't the right time, no worries at all. But if you're open to a quick conversation, I'd love to connect.\n\nHappy to work around your schedule — just let me know what works best.`,
   },
   {
     key: "proposal",
     label: "Program Overview",
-    subject: "10x Career Accelerator — Program Details",
+    subject: "Vantage Career Accelerator — Program Details",
     body: (name: string) =>
-      `Hi ${name},\n\nGreat connecting with you! As promised, here's a quick overview of the 10x Career Accelerator:\n\n📌 8 modules of 1:1 coaching and structured curriculum\n📌 Live sessions + pre-work to build real momentum\n📌 Focus on positioning, networking, interviews, and offers\n📌 Cohort-based so you're learning alongside peers\n\nInvestment and next cohort dates are included in the attached overview.\n\nWould love to hear your thoughts — feel free to reply with any questions or we can jump on a call if easier.`,
+      `Hi ${name},\n\nGreat connecting with you! As promised, here's a quick overview of the Vantage Career Accelerator:\n\n📌 8 modules of 1:1 coaching and structured curriculum\n📌 Live sessions + pre-work to build real momentum\n📌 Focus on positioning, networking, interviews, and offers\n📌 Cohort-based so you're learning alongside peers\n\nInvestment and next cohort dates are included in the attached overview.\n\nWould love to hear your thoughts — feel free to reply with any questions or we can jump on a call if easier.`,
   },
   {
     key: "acceptance",
     label: "Welcome / Accepted",
-    subject: "Welcome to the 10x Career Accelerator 🎉",
+    subject: "Welcome to the Vantage Career Accelerator 🎉",
     body: (name: string) =>
-      `Hi ${name},\n\nWelcome to the 10x Career Accelerator! We're so excited to have you.\n\nYou'll be receiving a separate email shortly with your login credentials to access the student portal, where you'll find your pre-work and cohort schedule.\n\nIf you have any questions before your first session, don't hesitate to reach out. We're here to make sure you get the most out of this experience.\n\nSee you soon!`,
+      `Hi ${name},\n\nWelcome to the Vantage Career Accelerator! We're so excited to have you.\n\nYou'll be receiving a separate email shortly with your login credentials to access the student portal, where you'll find your pre-work and cohort schedule.\n\nIf you have any questions before your first session, don't hesitate to reach out. We're here to make sure you get the most out of this experience.\n\nSee you soon!`,
   },
   {
     key: "checkin",

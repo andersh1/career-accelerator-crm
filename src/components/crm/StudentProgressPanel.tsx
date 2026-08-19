@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   Loader2, BookOpen, CheckCircle2, Clock, BarChart3,
   Calendar, ClipboardList, ChevronDown, ChevronUp, ExternalLink,
+  Star,
 } from "lucide-react";
 
 interface PreworkAnswer { question: string; answer: string }
@@ -16,10 +17,24 @@ interface ModuleRow {
   sections:   number;
   completed:  number;
   pct:        number;
-  submission: { status: string; submittedAt: string } | null;
+  submission: { status: string; submittedAt: string; feedback: string | null; content: string | null } | null;
   attended:   boolean | null;
   prework:    Prework | null;
   booking:    Booking | null;
+}
+
+interface SurveyResponse {
+  id:                string;
+  moduleId:          string;
+  submittedAt:       string;
+  overallRating:     number | null;
+  contentRating:     number | null;
+  facilitatorRating: number | null;
+  practicalRating:   number | null;
+  wouldRecommend:    boolean | null;
+  biggestTakeaway:   string | null;
+  improveSuggestion: string | null;
+  additionalComments: string | null;
 }
 
 interface LMSData {
@@ -32,6 +47,7 @@ interface LMSData {
   bookingSummary:    { booked: number; total: number };
   moduleBreakdown:   ModuleRow[];
   lastActive:        string | null;
+  surveyResponses:   SurveyResponse[];
 }
 
 const SUB_COLOR: Record<string, string> = {
@@ -52,11 +68,13 @@ function fmtDateTime(iso: string | Date) {
 }
 
 export default function StudentProgressPanel({ leadId }: { leadId: string }) {
-  const [data,        setData]        = useState<LMSData | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState("");
-  const [expandedMod, setExpandedMod] = useState<string | null>(null);
-  const [activeTab,   setActiveTab]   = useState<"progress" | "prework" | "1on1">("progress");
+  const [data,            setData]           = useState<LMSData | null>(null);
+  const [loading,         setLoading]        = useState(true);
+  const [error,           setError]          = useState("");
+  const [expandedMod,     setExpandedMod]    = useState<string | null>(null);
+  const [expandedSurvey,  setExpandedSurvey] = useState<string | null>(null);
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
+  const [activeTab,       setActiveTab]      = useState<"progress" | "prework" | "1on1" | "surveys">("progress");
 
   useEffect(() => {
     fetch(`/api/crm/leads/${leadId}/lms-progress`)
@@ -77,7 +95,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
   const {
     completionPct, doneSections, totalSections,
     submissionSummary, preworkSummary, bookingSummary,
-    moduleBreakdown, lastActive,
+    moduleBreakdown, lastActive, surveyResponses,
   } = data;
 
   const ringColor = completionPct >= 75 ? "#16a34a" : completionPct >= 40 ? "#2563eb" : "#f59e0b";
@@ -137,6 +155,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
             ["progress", "Progress",  BookOpen],
             ["prework",  "Prework",   ClipboardList],
             ["1on1",     "1-on-1s",   Calendar],
+            ["surveys",  "Surveys",   Star],
           ] as const).map(([key, label, Icon]) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition ${
@@ -162,9 +181,18 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     {mod.submission && (
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${SUB_COLOR[mod.submission.status] ?? "bg-slate-100 text-slate-600"}`}>
+                      <button
+                        onClick={() => mod.submission?.feedback
+                          ? setExpandedFeedback(expandedFeedback === mod.moduleId ? null : mod.moduleId)
+                          : undefined
+                        }
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${SUB_COLOR[mod.submission.status] ?? "bg-slate-100 text-slate-600"} ${mod.submission.feedback ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
+                      >
                         {mod.submission.status === "NEEDS_REVISION" ? "REVISION" : mod.submission.status}
-                      </span>
+                        {mod.submission.feedback && (
+                          <span className="ml-1">{expandedFeedback === mod.moduleId ? "▲" : "▼"}</span>
+                        )}
+                      </button>
                     )}
                     {mod.attended === true  && <span title="Attended session"><Calendar size={10} className="text-emerald-500" /></span>}
                     {mod.attended === false && <span title="Absent"><Calendar size={10} className="text-red-400" /></span>}
@@ -179,6 +207,18 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                     style={{ width: `${mod.pct}%` }}
                   />
                 </div>
+                {/* Coach feedback collapsible */}
+                {expandedFeedback === mod.moduleId && mod.submission?.feedback && (
+                  <div className="mt-2 rounded-xl overflow-hidden"
+                    style={{ borderLeft: "3px solid #0a6b64", background: "#f1efe8" }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wide px-3 pt-2 pb-1"
+                      style={{ color: "#0a6b64" }}>Coach Feedback</p>
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap px-3 pb-3"
+                      style={{ color: "#14211f" }}>
+                      {mod.submission.feedback}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
             <div className="pt-2 grid grid-cols-4 gap-1.5 text-center">
@@ -291,6 +331,110 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                 {bookingSummary.booked === bookingSummary.total ? "All booked ✓" : `${bookingSummary.total - bookingSummary.booked} remaining`}
               </span>
             </div>
+          </div>
+        )}
+
+        {/* ── Surveys tab ── */}
+        {activeTab === "surveys" && (
+          <div className="space-y-3">
+            {(!surveyResponses || surveyResponses.length === 0) ? (
+              <div className="text-center py-8">
+                <p className="text-2xl mb-2">📋</p>
+                <p className="text-sm font-semibold" style={{ color: "#5a6663" }}>No survey responses yet.</p>
+              </div>
+            ) : surveyResponses.map(sr => {
+              const mod = moduleBreakdown.find(m => m.moduleId === sr.moduleId);
+              const isOpen = expandedSurvey === sr.id;
+              const ratingColor = (r: number | null) => {
+                if (!r) return "#8a938f";
+                if (r >= 4) return "#0a6b64";
+                if (r === 3) return "#d97706";
+                return "#dc2626";
+              };
+
+              return (
+                <div key={sr.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "#e4e0d6" }}>
+                  {/* Header row */}
+                  <div className="px-4 py-3 flex items-center gap-3" style={{ background: "#f8f6f1" }}>
+                    <div className="flex-1 min-w-0">
+                      {mod && (
+                        <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#0a6b64" }}>
+                          Module {mod.number} — {mod.title}
+                        </p>
+                      )}
+                      <p className="text-[11px]" style={{ color: "#8a938f" }}>{fmtDate(sr.submittedAt)}</p>
+                    </div>
+                    {/* Would recommend badge */}
+                    {sr.wouldRecommend !== null && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        sr.wouldRecommend
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                      }`}>
+                        {sr.wouldRecommend ? "Would recommend" : "Wouldn't recommend"}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setExpandedSurvey(isOpen ? null : sr.id)}
+                      className="flex-shrink-0 transition"
+                      style={{ color: "#8a938f" }}
+                    >
+                      {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  </div>
+
+                  {/* Ratings row */}
+                  <div className="px-4 py-2 grid grid-cols-4 gap-2 border-t" style={{ borderColor: "#e4e0d6" }}>
+                    {[
+                      { label: "Overall",     val: sr.overallRating },
+                      { label: "Content",     val: sr.contentRating },
+                      { label: "Facilitator", val: sr.facilitatorRating },
+                      { label: "Practical",   val: sr.practicalRating },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="text-center">
+                        <p className="text-sm font-extrabold" style={{ color: ratingColor(val) }}>
+                          {val !== null ? `${val}/5` : "—"}
+                        </p>
+                        <p className="text-[9px] uppercase tracking-wide" style={{ color: "#8a938f" }}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Expandable text sections */}
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-2 space-y-3 border-t" style={{ borderColor: "#e4e0d6", background: "#f1efe8" }}>
+                      {sr.biggestTakeaway && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#0a6b64" }}>
+                            Biggest Takeaway
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.biggestTakeaway}</p>
+                        </div>
+                      )}
+                      {sr.improveSuggestion && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>
+                            Suggested Improvement
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.improveSuggestion}</p>
+                        </div>
+                      )}
+                      {sr.additionalComments && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>
+                            Additional Comments
+                          </p>
+                          <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.additionalComments}</p>
+                        </div>
+                      )}
+                      {!sr.biggestTakeaway && !sr.improveSuggestion && !sr.additionalComments && (
+                        <p className="text-xs italic" style={{ color: "#8a938f" }}>No written feedback provided.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

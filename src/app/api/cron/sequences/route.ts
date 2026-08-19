@@ -43,11 +43,18 @@ export async function GET(req: NextRequest) {
     const fullName = `${enrollment.lead.firstName} ${enrollment.lead.lastName}`;
 
     // ── Smart skip logic ────────────────────────────────────────────────────
-    // 1. If lead is already ENROLLED, remaining outreach is moot — complete the sequence.
+    // 1. If lead is already ENROLLED or has unsubscribed, stop the sequence.
     const leadFull = await prisma.lead.findUnique({
       where: { id: enrollment.lead.id },
-      select: { stage: true },
+      select: { stage: true, unsubscribed: true },
     });
+    if (leadFull?.unsubscribed) {
+      await prisma.emailSequenceEnrollment.update({
+        where: { id: enrollment.id },
+        data: { status: "CANCELLED", completedAt: now },
+      });
+      continue;
+    }
     if (leadFull?.stage === "ENROLLED") {
       await prisma.emailSequenceEnrollment.update({
         where: { id: enrollment.id },
@@ -61,7 +68,7 @@ export async function GET(req: NextRequest) {
           source:  "SEQUENCE",
         },
       });
-      sent++;
+      // auto-complete is not a sent email — don't increment sent
       continue;
     }
 
@@ -103,7 +110,7 @@ export async function GET(req: NextRequest) {
             data: { status: "COMPLETED", completedAt: now },
           });
         }
-        sent++;
+        // step skipped — not a sent email
         continue;
       }
     }
@@ -161,6 +168,19 @@ export async function GET(req: NextRequest) {
       sent++;
     } else {
       errors++;
+      // Log the failure and pause the enrollment so it doesn't retry forever
+      await prisma.leadActivity.create({
+        data: {
+          leadId:  enrollment.lead.id,
+          type:    "NOTE",
+          content: `Sequence "${enrollment.sequence.name}" step ${step.stepNumber} failed to send — enrollment paused`,
+          source:  "SEQUENCE",
+        },
+      });
+      await prisma.emailSequenceEnrollment.update({
+        where: { id: enrollment.id },
+        data:  { status: "PAUSED" },
+      });
     }
   }
 

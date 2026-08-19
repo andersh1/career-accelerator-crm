@@ -4,7 +4,8 @@ import { useState } from "react";
 import {
   Search, Users, Kanban, TrendingUp, Mail, Zap, CheckSquare, LifeBuoy,
   Settings, Download, Upload, Merge, Trash2, Bookmark, Filter, Sparkles,
-  ChevronDown, ChevronUp, Keyboard, Globe, Clock, Shield,
+  ChevronDown, ChevronUp, Keyboard, Globe, Clock, Shield, Tag, Share2, Calendar,
+  Trophy, AlertCircle, Briefcase, Building2, Bot,
 } from "lucide-react";
 
 interface Section {
@@ -40,6 +41,8 @@ const sections: Section[] = [
     items: [
       { title: "Kanban board", desc: "Drag-and-drop leads across stages: Lead → Contacted → Qualified → Proposal → Enrolled (or Lost). Each column shows count and total deal value." },
       { title: "Stage order", desc: "Stages represent your enrollment funnel. Moving a lead right means progress; moving left means re-engagement." },
+      { title: "Source filter", desc: "Use the Source dropdown in the Pipeline toolbar to view only Event leads, Referral leads, LinkedIn leads, etc. — perfect for comparing which channel is moving fastest." },
+      { title: "Color-coded source badges", desc: "Each lead card shows a colored badge for its acquisition channel: amber = Event, blue = Referral, indigo = LinkedIn. Spot the source at a glance without opening the lead." },
     ],
   },
   {
@@ -103,6 +106,8 @@ const sections: Section[] = [
       { title: "Funnel report", desc: "See how many leads are at each stage and how they convert. Spot where leads are stalling." },
       { title: "Source breakdown", desc: "Which channels (Website, Referral, LinkedIn, etc.) produce the most leads and the most enrollments." },
       { title: "Email open rates", desc: "Open rate, unique opens, 30-day snapshot, and 6-month bar chart — all in the Email tab." },
+      { title: "Growth tab", desc: "The 📈 Growth tab compares all acquisition channels side-by-side: Events, Referrals, Promo Codes, and Website/Direct. Each channel card shows total leads, apply rate, and enroll rate. Sub-tabs break down individual event performance, referral leaderboard, and promo code conversion — the same view you'd find in Salesforce or HubSpot.", tip: "Admin only" },
+      { title: "Events sub-tab", desc: "See every event ranked by enrollment efficiency: Registered → Attended → Applied → Enrolled with conversion percentages. Identify which dinners and webinars are your best pipeline sources." },
       { title: "Weekly leadership report", desc: "Every Monday at 8 AM UTC an automated digest email goes to all Admins. It covers new leads, enrollments, funnel health, and the top 5 leads to focus on that week." },
     ],
   },
@@ -151,6 +156,118 @@ const sections: Section[] = [
     ],
   },
   {
+    id: "events",
+    icon: Calendar,
+    title: "Events",
+    color: "text-indigo-600 bg-indigo-50",
+    items: [
+      { title: "Events dashboard", desc: "Growth → Events is your Events home page — shows KPI cards (Total Registered, Attendance Rate, Applied, Enrolled), upcoming events list with inline copy-link and manage buttons, an aggregate registration pipeline funnel with conversion rates, and a past-events log. It's your single glance to see everything in motion." },
+      { title: "Create an event", desc: "Go to Growth → Events → New event. Choose In-Person or Zoom, fill in the title, slug, date/time, and optional speaker info. The public registration page lives at crm.vantagecareer.co/public/events/your-slug.", tip: "Admin only: create/edit/delete" },
+      { title: "In-Person vs. Zoom", desc: "In-Person events show venue name + address. Zoom events show 'Join link sent in confirmation email' on the public page — the actual link is only revealed after registration." },
+      { title: "Speaker card", desc: "Add a speaker name, title, bio, and headshot URL to display a speaker card on the public event page. Great for Dan speaking at dinners or webinars." },
+      { title: "Parent / Student toggle", desc: "The registration form has a Student / Parent toggle. Parents are tracked separately in the registrant list — open any event to see the Parents and Students tabs and a breakdown count." },
+      { title: "Lead capture", desc: "Every new registrant is automatically added to the CRM as a lead (source: EVENT). If the email already exists, a note is logged on the existing lead instead. leadId links the registration to the lead for funnel tracking." },
+      { title: "UTM capture", desc: "UTM parameters (utm_source, utm_medium, utm_campaign) are captured from the registration page URL and stored on both the EventRegistration and the Lead. Use tagged links to track which ad or email drove attendance." },
+      { title: "Funnel analytics", desc: "Each event card shows a live funnel: Registered → Attended → Applied → Enrolled with conversion percentages. Open the event detail page for a full funnel panel with attendance %, apply rate, and enroll rate." },
+      { title: "Post-create success screen", desc: "After saving a new event, you land on a 'Your event is live!' screen with the shareable registration link front and center. Click 'Show QR code for printing' to get a scannable QR code — perfect for placing at a dinner table so guests can register on the spot.", tip: "Print the QR at the event" },
+      { title: "Bulk attendance marking", desc: "On the event detail page, the registrant table has a 'Mark all attended' button. Use it after the dinner is over to check everyone in at once. You can still toggle individuals on or off row-by-row." },
+      { title: "Auto-enroll in sequence", desc: "The 'Auto-Enroll in Sequence' panel on the event detail page lets you pick any email sequence and enroll all attendees (or all registrants) in one click. Leads already in the sequence are skipped. This closes the loop from event → follow-up without manual work." },
+      { title: "Reminder emails", desc: "From the event detail page, click Send on any of the three reminder cards: 7-Day Reminder, 24-Hour Reminder, or Post-Event Follow-Up. Reminders are also sent automatically by the daily cron (7d and 24h). Post-event emails go only to attendees." },
+      { title: "Confirmation email + calendar", desc: "Every registrant gets an automatic confirmation email with event details and a .ics calendar file attached — works with Google Calendar, Apple Calendar, and Outlook." },
+      { title: "Capacity", desc: "Set a max capacity to cap registrations. The form blocks new sign-ups when full." },
+      { title: "View page / share", desc: "Click the external link icon on any event card to open the public registration page. Click the copy icon to copy the link directly to clipboard." },
+      { title: "Activate / deactivate", desc: "Toggle an event inactive to hide it from the public page without deleting. Registrations already collected are preserved." },
+    ],
+  },
+  {
+    id: "referrals",
+    icon: Share2,
+    title: "Student Referrals",
+    color: "text-orange-600 bg-orange-50",
+    items: [
+      { title: "How it works", desc: "Each student has a unique referral link (e.g. ?ref=ABCD1234). When someone applies using that link, the lead is tagged with the student's referral code and the referral is tracked here.", tip: "Admin only: view leaderboard" },
+      { title: "Where students find their link", desc: "Students copy their link from LMS → Settings → Refer a Classmate. The code is generated automatically the first time they visit that page." },
+      { title: "Referrals leaderboard", desc: "Go to Growth → Referrals to see a ranked table of all students who have referred applicants — plus how many have converted to enrolled. The Analytics → Growth tab shows referral conversion rate vs. other channels.", tip: "Admin only" },
+      { title: "Seeing it on a lead", desc: "Open any lead and look for the 'Referred By' badge above the UTM section. The badge shows the student's referral code. Leads without a referral won't show the section." },
+      { title: "Unknown student codes", desc: "If a code appears on a lead but has no student attached, it means the code was shared before that student's account was fully created, or the account was deleted. The referral is still recorded." },
+    ],
+  },
+  {
+    id: "promo-codes",
+    icon: Tag,
+    title: "Promo Codes",
+    color: "text-teal-600 bg-teal-50",
+    items: [
+      { title: "What promo codes do", desc: "Codes let you track applicants from specific campaigns, partners, or events — and optionally attach a discount percentage. When a code is applied, it shows on the lead detail page in the CRM.", tip: "Admin only" },
+      { title: "Create a code", desc: "Go to Admin → Promo Codes → New Code. Enter the code (auto-uppercased), an optional internal label, discount %, max uses, and expiry date. Most fields are optional — a code with no discount is useful for tracking only.", tip: "Admin only" },
+      { title: "Share a code", desc: "Click the copy icon next to any code to get the pre-filled landing page URL (e.g. ?promo=EARLYBIRD). Share that link in an email, social post, or partner page — the code is captured automatically when someone applies.", tip: "Admin only" },
+      { title: "Activate / deactivate", desc: "Toggle a code on or off at any time. Deactivated codes still show on leads that used them, but new intake submissions won't increment the usage count.", tip: "Admin only" },
+      { title: "Usage tracking", desc: "The Uses column shows how many times a code has been used vs. its max (if set). When max is hit, the code is automatically treated as inactive — no further increments.", tip: "Admin only" },
+      { title: "Seeing it on a lead", desc: "Open any lead and look for the Promo Code badge above the UTM section. Leads without a code won't show the section at all." },
+    ],
+  },
+  {
+    id: "outcomes",
+    icon: Trophy,
+    title: "Outcomes",
+    color: "text-yellow-600 bg-yellow-50",
+    items: [
+      { title: "What it tracks", desc: "Outcomes captures post-enrollment results — where students landed their jobs, their salary, and which cohort they came from. It's your proof-of-concept dashboard and what feeds public success stats." },
+      { title: "Viewing outcomes", desc: "Go to Admin → Outcomes to see a list of all enrolled students with their outcome status. Filter by cohort to compare results across program generations.", tip: "Admin only" },
+      { title: "Outcome statuses", desc: "Students move through statuses: Enrolled → Job Searching → Employed. An Employed outcome records company, role, salary, and start date." },
+      { title: "Editing an outcome", desc: "Click any row to open the outcome form. Update job info, salary, and company as students report back. Notes field is for anything that doesn't fit a structured field." },
+    ],
+  },
+  {
+    id: "issues",
+    icon: AlertCircle,
+    title: "Issues",
+    color: "text-red-600 bg-red-50",
+    items: [
+      { title: "What issues are", desc: "Issues are internal flags or bugs raised by the CRM team — not student support tickets (those are in Support Tickets). Use Issues to track CRM data problems, process gaps, or integration failures.", tip: "Admin only" },
+      { title: "Creating an issue", desc: "Go to Admin → Issues → New Issue. Set a title, priority, and optional assignee. Describe the problem and attach any relevant lead IDs or notes." },
+      { title: "Issue lifecycle", desc: "Issues move from Open → In Progress → Resolved. Resolved issues are hidden from the default view but can be shown by toggling 'Show resolved'." },
+      { title: "Assigning issues", desc: "Assign an issue to any Admin team member. Assigned issues show on the assignee's Home dashboard in the 'Your open issues' card." },
+    ],
+  },
+  {
+    id: "automation",
+    icon: Bot,
+    title: "Automation Rules",
+    color: "text-purple-600 bg-purple-50",
+    items: [
+      { title: "What automation rules do", desc: "Automation rules are background jobs that trigger on CRM events (like a lead moving to Applied) or run on a daily cron. They remove the most repetitive manual tasks.", tip: "Admin only" },
+      { title: "Accessing rules", desc: "Go to Admin → Automation. Rules are pre-built and listed with an on/off toggle — flip the toggle to pause any rule without losing its config. Changes take effect immediately." },
+      { title: "Rule triggers", desc: "Stage-change rules fire the moment a lead is updated (e.g. 'Move to Enrolled → send welcome email'). Cron rules fire once daily at 8 AM UTC (e.g. 'Cold lead nudge → ping in Slack')." },
+      { title: "Outbound webhooks", desc: "The Webhooks section lets you register any HTTPS endpoint to receive a POST payload when CRM events happen — new lead, stage change, enrollment. Use this to connect the CRM to Zapier, Make, or your own backend." },
+      { title: "Webhook payload", desc: "Each webhook POST sends { event, timestamp, data } with the full lead or enrollment object in data. Verify the X-CRM-Secret header against your secret to confirm the source." },
+    ],
+  },
+  {
+    id: "partnerships-deals",
+    icon: Briefcase,
+    title: "Partnerships — Deals",
+    color: "text-teal-700 bg-teal-50",
+    items: [
+      { title: "What Deals tracks", desc: "Deals are partnership opportunities — university relationships, corporate sponsors, co-marketing agreements. Each deal has a stage, value, and contact. It's a lightweight CRM within the CRM for B2B.", tip: "Admin only" },
+      { title: "Deal stages", desc: "Stages mirror the lead pipeline: Prospect → Outreach → Proposal → Negotiation → Closed Won / Closed Lost. Move a deal by editing it and changing the stage." },
+      { title: "Creating a deal", desc: "Go to Partnerships → Deals → New Deal. Set a title, partner company, deal value, expected close date, and link to a partnership contact." },
+      { title: "Deal notes & activity", desc: "Add notes to a deal after every touchpoint — a call, email, or meeting. Notes timestamp automatically and form a running log." },
+    ],
+  },
+  {
+    id: "partnerships-contacts",
+    icon: Building2,
+    title: "Partnerships — Contacts",
+    color: "text-teal-700 bg-teal-50",
+    items: [
+      { title: "What Partnership Contacts are", desc: "Partnership contacts are external people at universities, companies, or organizations — not students or leads. They're linked to Deals to track who you're working with at each partner org.", tip: "Admin only" },
+      { title: "Creating a contact", desc: "Go to Partnerships → Contacts → New Contact. Add their name, title, org, email, phone, and LinkedIn URL. You can link them to any Deal from the contact detail page." },
+      { title: "Linked deals", desc: "Each contact shows which deals they're tied to. Open a contact to see the full list and navigate directly to any linked deal." },
+      { title: "Notes", desc: "Add contact-level notes for relationship context that doesn't belong on a specific deal — like their communication style or org role." },
+    ],
+  },
+  {
     id: "shortcuts",
     icon: Keyboard,
     title: "Keyboard Shortcuts",
@@ -169,6 +286,7 @@ const sections: Section[] = [
     items: [
       { title: "Daily sequences", desc: "Runs at 1 PM UTC — sends the next pending email in each active sequence enrollment." },
       { title: "Daily notifications", desc: "Runs at 12 PM UTC — checks for cold leads (14+ days inactive) and queues CRM notifications." },
+      { title: "Event reminders", desc: "Runs at 2 PM UTC daily — finds events 7 days out (sends 7-day reminder) and events 24 hours out (sends 24-hour reminder). Each reminder is sent once and flagged so it doesn't duplicate. Requires CRON_SECRET env var on Vercel.", tip: "Vercel cron" },
       { title: "Weekly report", desc: "Runs Monday at 8 AM UTC — sends the leadership digest to all Admins via email." },
     ],
   },
@@ -200,7 +318,7 @@ export default function HelpPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Help & Features</h1>
-        <p className="text-sm text-slate-500 mt-1">Everything you can do in the 10x Career Accelerator CRM.</p>
+        <p className="text-sm text-slate-500 mt-1">Everything you can do in the Vantage Career Accelerator CRM.</p>
       </div>
 
       {/* Search */}
@@ -261,7 +379,7 @@ export default function HelpPage() {
         )}
       </div>
 
-      <p className="text-center text-xs text-slate-300 mt-10">10x Career Accelerator CRM · Built for your team</p>
+      <p className="text-center text-xs text-slate-300 mt-10">Vantage Career Accelerator CRM · Built for your team</p>
     </div>
   );
 }

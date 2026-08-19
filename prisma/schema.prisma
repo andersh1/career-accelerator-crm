@@ -13,6 +13,7 @@ model Cohort {
   name      String
   isActive  Boolean          @default(true)
   capacity  Int?
+  startDate DateTime?
   createdAt DateTime         @default(now())
   users     User[]
   schedules CohortSchedule[]
@@ -24,7 +25,6 @@ model CohortSchedule {
   cohort          Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   moduleId        String
   module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  startDate       DateTime?
   preworkDue      DateTime?
   sessionDate     DateTime?
   sessionLocation String?
@@ -54,6 +54,7 @@ model User {
   gmailEmail           String?
   gmailSyncedAt        DateTime?
   crmRole              String?   // ADMIN | MEMBER — only set for CRM users; null = LMS-only
+  referralCode         String?   @unique
   submissions          Submission[]
   progress             Progress[]
   notes                Note[]
@@ -63,6 +64,7 @@ model User {
   notifications        Notification[]
   supportTickets       SupportTicket[]
   passwordResetTokens  PasswordResetToken[]
+  bridgeTokens         CrmBridgeToken[]
   attendanceRecords    AttendanceRecord[]
   crmLead              Lead?
   preworkSubmissions   PreworkSubmission[]
@@ -81,7 +83,7 @@ model Lead {
   id          String   @id @default(cuid())
   firstName   String
   lastName    String
-  email       String
+  email       String   @unique
   phone       String?
   company     String?
   jobTitle    String?
@@ -89,10 +91,22 @@ model Lead {
 
   // Pipeline
   stage       String   @default("LEAD")
-  // LEAD | CONTACTED | QUALIFIED | PROPOSAL | ENROLLED | LOST
+  // LEAD | CONTACTED | APPLIED | STRATEGY_CALL | ADMITTED | OFFER_SENT | COMPLETED | ENROLLED | LOST
 
   source      String?
   // REFERRAL | LINKEDIN | WEBSITE | INSTAGRAM | COLD_EMAIL | EVENT | OTHER
+  subSource   String?
+  // For 3I_NEXTGEN source: MEMBER | NON_MEMBER_REFERRAL
+
+  // UTM attribution — captured from landing page URL params
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+
+  leadType    String?  @default("WAITLIST")
+  // WAITLIST | APPLICATION | STUDENT | PARTNER | CONTACT
 
   lostReason    String?
   assignedTo    String?  // admin user email
@@ -100,8 +114,22 @@ model Lead {
   paymentStatus String?  @default("UNPAID")
   // UNPAID | PAID_FULL | PAYMENT_PLAN | SCHOLARSHIP | OUTSTANDING
   dealValue   Int?     @default(0) // USD, whole dollars
+  programType   String?  @default("STANDARD")
+  // STANDARD | PAID_PILOT | PARTNER_COMPED
+  cohortPartner String?  // "3i" | "Northwestern SPS" etc.
   tags        String[] @default([])
   notes       String?
+
+  // Outcome tracking (post-graduation)
+  outcomeStatus      String?   // PENDING | PLACED | STILL_SEARCHING | NOT_LOOKING
+  outcomeCompany     String?
+  outcomeRole        String?
+  outcomeSalary      Int?      // annual USD, whole dollars
+  outcomeStartDate   DateTime?
+  outcomeNotes       String?
+  outcomeUpdatedAt   DateTime?
+  outcomeToken       String?   @unique // one-time token for the self-report form
+  outcomeEmailSentAt DateTime?         // when we sent the follow-up email
 
   // Link to LMS user when converted to student
   enrolledUserId String? @unique
@@ -112,14 +140,36 @@ model Lead {
   sequenceEnrollments EmailSequenceEnrollment[]
   paymentRecords      PaymentRecord[]
 
-  deletedAt   DateTime? // soft delete — null = active, non-null = in recycle bin
+  // Deals / Partnerships
+  dealId          String?  // FK to Deal (participant in a deal)
+  dealRef         Deal?    @relation("DealParticipants", fields: [dealId], references: [id])
+  contactForDeals Deal[]   @relation("DealContact")
+
+  promoCode    String?   // promo code applied at intake
+  referralCode String?   // student referral code used at intake
+
+  deletedAt    DateTime? // soft delete — null = active, non-null = in recycle bin
+  unsubscribed Boolean   @default(false)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([stage])
-  @@index([email])
   @@index([deletedAt])
+  @@index([deletedAt, updatedAt])
+}
+
+model PromoCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  label       String?
+  discountPct Int?      // 0–100 percent off; null = tracking-only / access code
+  maxUses     Int?      // null = unlimited
+  usedCount   Int       @default(0)
+  active      Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Task {
@@ -131,6 +181,7 @@ model Task {
   dueAt       DateTime?
   completedAt DateTime?
   createdBy   String?
+  assignedTo  String?
   createdAt   DateTime  @default(now())
 
   @@index([leadId])
@@ -210,6 +261,7 @@ model LeadActivity {
   createdAt DateTime  @default(now())
 
   @@index([leadId])
+  @@index([type, createdAt])
 }
 
 model Notification {
@@ -235,7 +287,6 @@ model Module {
   week        Int
   icon        String?
   unlocked    Boolean      @default(true)
-  startDate       DateTime?
   preworkDue      DateTime?
   sessionDate     DateTime?
   sessionLocation String?
@@ -347,6 +398,16 @@ model SurveyResponse {
   answers     Json
   submittedAt DateTime @default(now())
 
+  // Individual rating fields (populated alongside answers Json)
+  overallRating      Int?
+  contentRating      Int?
+  facilitatorRating  Int?
+  practicalRating    Int?
+  wouldRecommend     Boolean?
+  biggestTakeaway    String?
+  improveSuggestion  String?
+  additionalComments String?
+
   @@unique([userId, moduleId])
 }
 
@@ -370,6 +431,17 @@ model PasswordResetToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
+}
+
+model CrmBridgeToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  targetUrl String    @default("/admin")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model AttendanceRecord {
@@ -589,6 +661,9 @@ model HelpArticle {
   @@index([category, published])
 }
 
+// ─── Internal Course Issues ──────────────────────────────────────────────────
+
+
 // ─── Payment Records ─────────────────────────────────────────────────────────
 
 model PaymentRecord {
@@ -601,6 +676,50 @@ model PaymentRecord {
   createdBy String?
 
   @@index([leadId])
+}
+
+// ─── Deals / Partnerships ─────────────────────────────────────────────────────
+
+model Deal {
+  id           String   @id @default(cuid())
+  title        String   // e.g. "Northwestern SPS — Fall 2026"
+  orgName      String   // university / firm name
+  status       String   @default("PROSPECTING")
+  // PROSPECTING | PROPOSAL_SENT | NEGOTIATING | SIGNED | ACTIVE | CLOSED_WON | CLOSED_LOST
+
+  contactLeadId String?  // FK to Lead (a CONTACT type lead — the person at the org)
+  contactLead   Lead?    @relation("DealContact", fields: [contactLeadId], references: [id])
+
+  seats        Int?     // number of seats being sold
+  pricePerSeat Int?     // USD, whole dollars
+  totalValue   Int?     // USD — can override seats×price for flat-fee deals
+  paymentType  String?  @default("ORG_INVOICE") // ORG_INVOICE | INDIVIDUAL | MIXED
+
+  assignedTo   String?  // admin user email
+  notes        String?
+  proposalSentAt DateTime?
+  signedAt     DateTime?
+  startDate    DateTime?
+
+  participants Lead[]   @relation("DealParticipants")
+  activities   DealActivity[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+}
+
+model DealActivity {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  type      String   // NOTE | EMAIL | CALL | MEETING | STATUS_CHANGE
+  content   String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
 }
 
 model VideoProgress {
@@ -636,4 +755,79 @@ model SectionComment {
 
   @@index([sectionId])
   @@index([moduleId])
+}
+
+model Event {
+  id                  String              @id @default(cuid())
+  slug                String              @unique
+  title               String
+  description         String?
+  eventType           String              @default("IN_PERSON")  // IN_PERSON | ZOOM
+  speakerName         String?
+  speakerBio          String?
+  speakerTitle        String?
+  speakerImageUrl     String?
+  location            String?
+  venueAddress        String?
+  meetingUrl          String?
+  startsAt            DateTime
+  endsAt              DateTime?
+  timezone            String              @default("America/New_York")
+  maxCapacity         Int?
+  visibility          String              @default("PUBLIC")
+  active              Boolean             @default(true)
+  reminderSent7d      Boolean             @default(false)
+  reminderSent24h     Boolean             @default(false)
+  followUpSent        Boolean             @default(false)
+  confirmationMessage String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  registrations       EventRegistration[]
+
+  @@index([slug])
+  @@index([startsAt])
+  @@index([active, startsAt])
+}
+
+model EventRegistration {
+  id           String   @id @default(cuid())
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+  leadId       String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  referralCode String?
+  contactType  String   @default("STUDENT")  // STUDENT | PARENT
+  attendedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@unique([eventId, email])
+  @@index([eventId])
+}
+
+// ─── CRM Internal Issues ──────────────────────────────────────────────────────
+// Separate from LMS student support tickets — used by Dan, David, and Caleb
+// to track CRM data problems, ops flags, and feature requests.
+
+model CrmIssue {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   @default("BUG")      // BUG | DATA | OPS | FEATURE | OTHER
+  status      String   @default("BACKLOG")  // BACKLOG | TODO | IN_PROGRESS | DONE
+  priority    String   @default("NORMAL")   // LOW | NORMAL | HIGH | URGENT
+  assignee    String?                        // CRM user email
+  createdBy   String?                        // CRM user email
+  tags        String[]
+  linkedLeadId String?                       // optional link to a lead record
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([assignee])
 }

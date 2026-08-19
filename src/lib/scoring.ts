@@ -13,7 +13,7 @@ export function computeScore(lead: {
 
   // Stage weight
   const stageScore: Record<string, number> = {
-    LEAD: 5, CONTACTED: 15, QUALIFIED: 30, PROPOSAL: 50, ENROLLED: 0, LOST: 0,
+    LEAD: 5, CONTACTED: 15, STRATEGY_CALL: 30, OFFER_SENT: 50, ENROLLED: 0, LOST: 0,
   };
   score += stageScore[lead.stage] ?? 5;
 

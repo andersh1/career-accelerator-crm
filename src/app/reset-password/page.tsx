@@ -2,16 +2,17 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 
 function ResetForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") ?? "";
 
-  const [password,  setPassword]  = useState("");
-  const [confirm,   setConfirm]   = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm,  setConfirm]  = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,46 +38,60 @@ function ResetForm() {
 
   if (!token) {
     return (
-      <div className="text-center space-y-3">
-        <p className="text-red-300 text-sm">Invalid reset link.</p>
-        <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300 text-sm">Request a new one →</Link>
+      <div className="space-y-3">
+        <p className="text-sm" style={{ color: "#5a6663" }}>Invalid or expired reset link.</p>
+        <Link href="/forgot-password" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "#0a6b64" }}>
+          Request a new one <ArrowRight size={14} />
+        </Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <p className="text-slate-300 text-sm">Choose a new password for your account.</p>
-
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">New Password</label>
+        <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>New password</label>
         <input
           type="password" required autoFocus
           value={password} onChange={e => setPassword(e.target.value)}
-          className="w-full bg-white/10 border border-white/20 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="At least 8 characters"
+          className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
+          style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+          onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
+        <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>Confirm password</label>
         <input
           type="password" required
           value={confirm} onChange={e => setConfirm(e.target.value)}
-          className="w-full bg-white/10 border border-white/20 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Repeat new password"
+          className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
+          style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+          onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
         />
       </div>
 
-      <button type="submit" disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
-        {loading ? "Saving…" : "Set new password"}
+      <button
+        type="submit" disabled={loading}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50"
+        style={{ background: "#0a6b64" }}
+        onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#084f4a"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "#0a6b64"; }}
+      >
+        {loading
+          ? <><Loader2 size={15} className="animate-spin" /> Saving…</>
+          : <>Set new password <ArrowRight size={15} /></>
+        }
       </button>
     </form>
   );
@@ -84,23 +99,21 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f8f6f1" }}>
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 shadow-lg mb-4">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">New Password</h1>
-          <p className="text-blue-300 text-sm mt-1">CRM — Admin access only</p>
-        </div>
-        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-          <Suspense fallback={<p className="text-slate-400 text-sm text-center">Loading…</p>}>
-            <ResetForm />
-          </Suspense>
-        </div>
+        <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-7 w-auto object-contain mb-8" />
+        <h1 className="text-2xl font-extrabold mb-1" style={{ color: "#14211f" }}>Set new password</h1>
+        <p className="text-sm mb-8" style={{ color: "#5a6663" }}>Choose a new password for your CRM account.</p>
+        <Suspense fallback={<p className="text-sm" style={{ color: "#5a6663" }}>Loading…</p>}>
+          <ResetForm />
+        </Suspense>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1.5 text-sm font-medium mt-6 transition-colors"
+          style={{ color: "#8a938f" }}
+        >
+          <ArrowLeft size={14} /> Back to login
+        </Link>
       </div>
     </div>
   );

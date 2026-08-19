@@ -20,12 +20,12 @@ function toHtml(text: string, subject: string) {
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
       <tr><td style="background:linear-gradient(135deg,#0a1628,#1e3a8a);padding:28px 32px;">
-        <p style="margin:0;color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">10x Career Accelerator</p>
+        <p style="margin:0;color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Vantage Career Accelerator</p>
         <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.3;">${subject}</h1>
       </td></tr>
       <tr><td style="padding:32px;">${htmlBody}</td></tr>
       <tr><td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#f8fafc;">
-        <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">10x Career Accelerator Program</p>
+        <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">Vantage Career Accelerator Program</p>
       </td></tr>
     </table>
   </td></tr>
@@ -83,7 +83,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (sendError) {
     // Clean up the activity record if sending failed
-    await prisma.leadActivity.delete({ where: { id: activity.id } }).catch(() => {});
+    await prisma.leadActivity.delete({ where: { id: activity.id } }).catch((cleanupErr) => {
+      console.error("[send-email] Failed to clean up orphaned activity:", activity.id, cleanupErr);
+    });
     return NextResponse.json({ error: sendError.message }, { status: 500 });
   }
 

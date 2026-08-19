@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { sendStudentInviteEmail } from "@/lib/email";
+import { sendSlack, enrolledBlocks } from "@/lib/slack";
+import { fireWebhook } from "@/lib/webhooks";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -18,12 +20,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!lead)               return NextResponse.json({ error: "Lead not found" },    { status: 404 });
   if (lead.enrolledUserId) return NextResponse.json({ error: "Already enrolled" }, { status: 400 });
 
-  const existing = await prisma.user.findUnique({ where: { email: lead.email } });
+  const existing = await prisma.user.findUnique({
+    where: { email: lead.email },
+    select: { id: true, name: true, email: true, role: true, cohort: true },
+  });
   if (existing) {
     await prisma.lead.update({
       where: { id: params.id },
       data: { stage: "ENROLLED", enrolledUserId: existing.id, updatedAt: new Date() },
     });
+    // Update cohort on existing user if provided
+    if (cohortId) {
+      const cohort = await prisma.cohort.findUnique({ where: { id: cohortId }, select: { name: true } });
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { cohortId, cohort: cohortName ?? cohort?.name ?? existing.cohort },
+      });
+    }
     await prisma.leadActivity.create({
       data: {
         leadId:    params.id,
@@ -32,6 +45,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         createdBy: (session as { user: { id: string } }).user.id,
       },
     });
+    // Fire Slack + webhook
+    const name = `${lead.firstName} ${lead.lastName}`;
+    const { text, blocks } = enrolledBlocks(name, params.id, lead.dealValue ?? null);
+    sendSlack(text, blocks).catch(() => {});
+    fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
     return NextResponse.json({ user: existing, alreadyExisted: true });
   }
 
@@ -87,5 +105,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }).catch(() => {});
   }
 
-  return NextResponse.json({ user, alreadyExisted: false });
+  // Fire Slack + webhook for new user enrollment
+  const name = `${lead.firstName} ${lead.lastName}`;
+  const { text, blocks } = enrolledBlocks(name, params.id, lead.dealValue ?? null);
+  sendSlack(text, blocks).catch(() => {});
+  fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
+
+  const { password: _pw, ...safeUser } = user as typeof user & { password?: string };
+  return NextResponse.json({ user: safeUser, alreadyExisted: false });
 }

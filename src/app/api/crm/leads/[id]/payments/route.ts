@@ -68,11 +68,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const u = (session as { user?: { role?: string; crmRole?: string } } | null)?.user;
+  if (!u || u.role !== "ADMIN" || u.crmRole !== "ADMIN")
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await params;
+  const { id } = await params;
   const recordId = new URL(req.url).searchParams.get("recordId");
   if (!recordId) return NextResponse.json({ error: "recordId required" }, { status: 400 });
+
+  const record = await prisma.paymentRecord.findUnique({ where: { id: recordId } });
+  if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (record.leadId !== id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await prisma.paymentRecord.delete({ where: { id: recordId } });
   return NextResponse.json({ ok: true });

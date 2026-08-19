@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { sendStudentInviteEmail } from "@/lib/email";
+import crypto from "crypto";
+
+const LMS_URL = process.env.LMS_URL ?? "https://career-accelerator-lms.vercel.app";
+
+// POST /api/crm/cohorts/[id]/publish
+// Publishes all unpublished students in the cohort to the LMS:
+//   - New students (no onboardedAt): creates a PasswordResetToken + sends invite email
+//   - Returning students (already onboarded): marks published without re-emailing
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as { crmRole?: string } | undefined)?.crmRole;
+  if (!session || role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const cohort = await prisma.cohort.findUnique({
+    where: { id: params.id },
+    include: {
+      users: {
+        where: { role: "STUDENT" },
+        select: {
+          id: true, name: true, email: true,
+          onboardedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!cohort) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const toPublish = cohort.users;
+
+  let invitesSent = 0;
+  const errors: string[] = [];
+
+  for (const student of toPublish) {
+    try {
+      const isNewStudent = !student.onboardedAt;
+
+      if (isNewStudent) {
+        const token = crypto.randomBytes(32).toString("hex");
+        await prisma.passwordResetToken.create({
+          data: {
+            userId: student.id,
+            token,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+        const resetUrl = `${LMS_URL}/reset-password?token=${token}`;
+        await sendStudentInviteEmail({
+          to: student.email,
+          studentName: student.name,
+          resetUrl,
+          cohort: cohort.name,
+        });
+        invitesSent++;
+      }
+
+      await prisma.user.update({
+        where: { id: student.id },
+        data: { onboardedAt: student.onboardedAt ?? new Date() },
+      });
+    } catch (err) {
+      errors.push(`${student.email}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (toPublish.length > 0) {
+    await prisma.cRMNotification.create({
+      data: {
+        type: "LEAD_ENROLLED",
+        title: `${toPublish.length} student${toPublish.length !== 1 ? "s" : ""} published to LMS`,
+        body: `${invitesSent} invite${invitesSent !== 1 ? "s" : ""} sent · ${cohort.name}`,
+        href: "/cohorts",
+      },
+    });
+  }
+
+  return NextResponse.json({
+    published: toPublish.length,
+    invitesSent,
+    errors,
+  });
+}

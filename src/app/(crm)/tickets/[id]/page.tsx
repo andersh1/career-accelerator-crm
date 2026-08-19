@@ -9,6 +9,7 @@ import {
   ExternalLink, LifeBuoy, MessageSquare, StickyNote,
   ChevronDown, TicketIcon,
 } from "lucide-react";
+import NoteContent from "@/components/crm/NoteContent";
 
 interface Message {
   id:         string;
@@ -203,7 +204,7 @@ export default function TicketDetailPage() {
                       <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Internal Note</span>
                       <span className="text-[10px] text-amber-500">· {msg.authorName} · {fmtDateTime(msg.createdAt)}</span>
                     </div>
-                    <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <NoteContent text={msg.content} linkColor="text-amber-700" clamp={6} />
                   </div>
                 </div>
               );
@@ -227,9 +228,11 @@ export default function TicketDetailPage() {
                     <p className={`text-xs font-semibold mb-1.5 ${isAdmin ? "text-blue-100" : "text-slate-500"}`}>
                       {isAdmin ? `${msg.authorName} (Support)` : ticket.user.name}
                     </p>
-                    <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isAdmin ? "text-white" : "text-slate-800"}`}>
-                      {msg.content}
-                    </p>
+                    <NoteContent
+                      text={msg.content}
+                      linkColor={isAdmin ? "text-blue-200" : "text-teal-700"}
+                      clamp={6}
+                    />
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1 px-1">{fmtDateTime(msg.createdAt)}</p>
                 </div>

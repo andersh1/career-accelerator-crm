@@ -48,7 +48,7 @@ export default function EmbedPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-blue-700 text-xs font-bold uppercase tracking-widest mb-1">10x Career Accelerator CRM</p>
+          <p className="text-blue-700 text-xs font-bold uppercase tracking-widest mb-1">Vantage Career Accelerator CRM</p>
           <h1 className="text-2xl font-extrabold text-gray-900">Embed Lead Capture Form</h1>
           <p className="text-gray-500 text-sm mt-2">
             Copy one of the snippets below and paste it into any website to start capturing leads.
@@ -100,7 +100,7 @@ export default function EmbedPage() {
           </div>
         </div>
 
-        <p className="mt-10 text-xs text-gray-400 text-center">10x Career Accelerator CRM — Admin Tool</p>
+        <p className="mt-10 text-xs text-gray-400 text-center">Vantage Career Accelerator CRM — Admin Tool</p>
       </div>
     </div>
   );

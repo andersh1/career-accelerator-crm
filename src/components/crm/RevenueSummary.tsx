@@ -17,8 +17,8 @@ export default function RevenueSummary() {
 
   useEffect(() => {
     fetch("/api/crm/revenue")
-      .then(r => r.json())
-      .then((d: RevenueData) => { setData(d); setLoading(false); })
+      .then(r => r.ok ? r.json() : null)
+      .then((d: RevenueData | null) => { if (d) setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 

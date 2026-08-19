@@ -2,111 +2,238 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Loader2, ArrowRight, Filter, ChevronDown, Sparkles } from "lucide-react";
-import { STAGES, stageInfo, sourceLabel } from "./constants";
+import { Plus, Search, Loader2, ArrowRight, Filter, ChevronDown, Sparkles, Mail, Phone, DollarSign } from "lucide-react";
+import { STAGES, stageInfo, sourceLabel, leadTypeInfo } from "./constants";
 import LeadForm from "./LeadForm";
 import { scoreColor } from "@/lib/scoring";
 import { useToast } from "@/lib/toast";
 
 interface Lead {
-  id:         string;
-  firstName:  string;
-  lastName:   string;
-  email:      string;
-  company:    string | null;
-  jobTitle:   string | null;
-  stage:      string;
-  source:     string | null;
-  priority:   string;
-  tags:       string[];
-  score?:     number;
-  createdAt:  string;
-  updatedAt:  string;
-  enrolledUser: { id: string; name: string } | null;
-  _count:     { activities: number };
+  id:            string;
+  firstName:     string;
+  lastName:      string;
+  email:         string;
+  phone:         string | null;
+  company:       string | null;
+  jobTitle:      string | null;
+  stage:         string;
+  source:        string | null;
+  leadType:      string | null;
+  priority:      string;
+  tags:          string[];
+  score?:        number;
+  dealValue:     number | null;
+  paymentStatus: string | null;
+  createdAt:     string;
+  updatedAt:     string;
+  enrolledUser:  { id: string; name: string } | null;
+  _count:        { activities: number };
 }
 
 type StageEntry = typeof STAGES[number];
 
-const DRAGGABLE_STAGES = ["LEAD", "CONTACTED", "QUALIFIED", "PROPOSAL"];
+const DRAGGABLE_STAGES = ["LEAD", "CONTACTED", "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "COMPLETED"];
 
 export default function KanbanBoard() {
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
   const [leads,         setLeads]         = useState<Lead[]>([]);
   const [loading,       setLoading]       = useState(true);
   const [showForm,      setShowForm]      = useState(false);
   const [search,        setSearch]        = useState("");
   const [movingId,      setMovingId]      = useState<string | null>(null);
   const [showLost,      setShowLost]      = useState(false);
+  const [pendingLost,   setPendingLost]   = useState<string | null>(null);
+  const [lostReason,    setLostReason]    = useState("");
   const [draggingId,    setDraggingId]    = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [mobileStage,   setMobileStage]   = useState("LEAD");
+  const [sourceFilter,  setSourceFilter]  = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res  = await fetch("/api/crm/leads");
-    const data = await res.json();
-    if (Array.isArray(data)) setLeads(data);
-    setLoading(false);
+    try {
+      const res  = await fetch("/api/crm/leads?all=true");
+      const data = await res.json();
+      if (Array.isArray(data)) setLeads(data);
+    } catch {
+      // network or parse error — leave leads as-is
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = search.trim()
-    ? leads.filter(l =>
-        `${l.firstName} ${l.lastName} ${l.email} ${l.company ?? ""}`.toLowerCase()
-          .includes(search.toLowerCase()))
-    : leads;
+  const filtered = leads.filter(l => {
+    const matchesSearch = !search.trim() || `${l.firstName} ${l.lastName} ${l.email} ${l.company ?? ""}`.toLowerCase().includes(search.toLowerCase());
+    const matchesSource = !sourceFilter || l.source === sourceFilter;
+    return matchesSearch && matchesSource;
+  });
 
-  const kanbanStages = STAGES.filter(s => showLost ? true : s.key !== "LOST");
+  const kanbanStages = STAGES.filter(s => s.key !== "ENROLLED" && (showLost || s.key !== "LOST"));
 
-  async function moveStage(leadId: string, newStage: string) {
-    setMovingId(leadId);
-    const res = await fetch(`/api/crm/leads/${leadId}`, {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ stage: newStage }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: updated.stage } : l));
-      success(`Moved to ${stageInfo(newStage).label}`);
+  async function moveStage(leadId: string, newStage: string, lostReason?: string) {
+    if (newStage === "LOST" && lostReason === undefined) {
+      setPendingLost(leadId);
+      return;
     }
-    setMovingId(null);
+    setMovingId(leadId);
+    try {
+      const res = await fetch(`/api/crm/leads/${leadId}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ stage: newStage, ...(lostReason ? { lostReason } : {}) }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: updated.stage } : l));
+        success(`Moved to ${stageInfo(newStage).label}`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toastError(`Failed to move lead: ${data.error ?? "server error"}`);
+      }
+    } catch {
+      toastError("Failed to move lead — check your connection and try again.");
+    } finally {
+      setMovingId(null);
+    }
   }
 
   return (
     <div className="flex flex-col h-full">
+      {/* Lost reason prompt modal */}
+      {pendingLost && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-base font-bold mb-1" style={{ color: "#14211f" }}>Why did this lead go cold?</h3>
+            <p className="text-xs mb-4" style={{ color: "#8a938f" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
+            <textarea
+              autoFocus
+              value={lostReason}
+              onChange={e => setLostReason(e.target.value)}
+              rows={3}
+              placeholder="e.g. Price too high, timing not right, chose competitor…"
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-4"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  moveStage(pendingLost, "LOST", lostReason.trim() || "Not specified");
+                  setPendingLost(null);
+                  setLostReason("");
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              >
+                Mark as Lost
+              </button>
+              <button
+                onClick={() => { setPendingLost(null); setLostReason(""); }}
+                className="px-4 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+                style={{ color: "#5a6663" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-white flex-shrink-0">
+      <div className="flex items-center gap-3 px-6 py-4 bg-white flex-shrink-0" style={{ borderBottom: "1px solid #e4e0d6" }}>
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search leads…"
-            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white"
+            style={{ border: "1px solid #e4e0d6", background: "#f8f6f1", color: "#14211f" }}
           />
         </div>
         <button
           onClick={() => setShowLost(v => !v)}
           className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition ${
-            showLost ? "bg-red-50 text-red-700 border-red-200" : "text-slate-500 border-slate-200 hover:bg-slate-50"
+            showLost ? "bg-red-50 text-red-700 border-red-200" : "border-[#e4e0d6] hover:bg-[#f8f6f1]"
           }`}
         >
           <Filter size={12} /> {showLost ? "Hide Lost" : "Show Lost"}
         </button>
+        <select
+          value={sourceFilter ?? ""}
+          onChange={e => setSourceFilter(e.target.value || null)}
+          className="text-xs font-semibold px-3 py-2 rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+          style={{ border: "1px solid #e4e0d6", background: sourceFilter ? "#edf5f4" : "#f8f6f1", color: sourceFilter ? "#0a6b64" : "#5a6663" }}
+        >
+          <option value="">All sources</option>
+          <option value="EVENT">Event</option>
+          <option value="REFERRAL">Referral</option>
+          <option value="LINKEDIN">LinkedIn</option>
+          <option value="WEBSITE">Website</option>
+          <option value="INSTAGRAM">Instagram</option>
+          <option value="COLD_OUTREACH">Cold Outreach</option>
+          <option value="PAID_AD">Paid Ad</option>
+        </select>
         <div className="flex-1" />
         <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm">
+          className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm" style={{ background: "#0a6b64" }} onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")} onMouseLeave={e => (e.currentTarget.style.background = "#0a6b64")}>
           <Plus size={15} /> Add Lead
         </button>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={24} className="animate-spin text-slate-300" />
+          <Loader2 size={24} className="animate-spin" style={{ color: "#c9c4b8" }} />
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto p-6">
+        <>
+        {/* ── Mobile view (< md) ─────────────────────────────────────────── */}
+        <div className="flex flex-col flex-1 md:hidden overflow-hidden">
+          {/* Stage tabs */}
+          <div className="flex gap-1 px-3 py-2 overflow-x-auto flex-shrink-0" style={{ borderBottom: "1px solid #e4e0d6", background: "#f8f6f1" }}>
+            {kanbanStages.map(stg => {
+              const cnt = filtered.filter(l => l.stage === stg.key).length;
+              const active = mobileStage === stg.key;
+              return (
+                <button key={stg.key}
+                  onClick={() => setMobileStage(stg.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0 transition"
+                  style={{
+                    background: active ? "#0a6b64" : "transparent",
+                    color: active ? "#fff" : "#5a6663",
+                  }}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${stg.dot}`} />
+                  {stg.label}
+                  <span className={`ml-0.5 px-1 py-0.5 rounded-full text-[10px] font-bold ${active ? "bg-white/20" : "bg-[#e4e0d6]"}`}
+                    style={{ color: active ? "#fff" : "#8a938f" }}>{cnt}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Cards */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+            {filtered.filter(l => l.stage === mobileStage).length === 0 ? (
+              <div className="border-2 border-dashed rounded-2xl p-8 text-center" style={{ borderColor: "#e4e0d6" }}>
+                <p className="text-sm" style={{ color: "#8a938f" }}>No leads in this stage</p>
+              </div>
+            ) : (
+              filtered.filter(l => l.stage === mobileStage).map(lead => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  stages={[...kanbanStages]}
+                  moving={movingId === lead.id}
+                  dragging={false}
+                  draggable={false}
+                  onMove={moveStage}
+                  onDragStart={() => {}}
+                  onDragEnd={() => {}}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Desktop kanban (≥ md) ───────────────────────────────────────── */}
+        <div className="flex-1 overflow-x-auto p-6 hidden md:block">
           <div className="flex gap-4 h-full min-h-[600px]" style={{ minWidth: `${kanbanStages.length * 280}px` }}>
             {kanbanStages.map(stg => {
               const stageLeads = filtered.filter(l => l.stage === stg.key);
@@ -139,29 +266,29 @@ export default function KanbanBoard() {
                     setDragOverStage(null);
                     setDraggingId(null);
                     if (leadId && fromStage !== stg.key) moveStage(leadId, stg.key);
+                    // LOST drag: moveStage will intercept and show the prompt
                   }}
                 >
                   <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl mb-3 transition-colors ${
-                    isDropTarget ? "ring-2 ring-blue-400 ring-offset-1 " + stg.color : stg.color
+                    isDropTarget ? "ring-2 ring-[#0a6b64] ring-offset-1 " + stg.color : stg.color
                   }`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${stg.dot}`} />
-                      <span className="text-sm font-bold text-slate-700">{stg.label}</span>
-                      {isDraggable && <span className="text-[9px] text-slate-400 font-normal">drag to move</span>}
+                      <span className="text-sm font-bold" style={{ color: "#14211f" }}>{stg.label}</span>
+                      {isDraggable && <span className="text-[9px] font-normal" style={{ color: "#8a938f" }}>drag to move</span>}
                     </div>
-                    <span className="text-xs font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded-full">
+                    <span className="text-xs font-bold bg-white px-1.5 py-0.5 rounded-full" style={{ color: "#8a938f" }}>
                       {stageLeads.length}
                     </span>
                   </div>
 
                   <div className={`flex-1 space-y-2.5 overflow-y-auto pr-0.5 scrollbar-thin rounded-2xl transition-colors ${
-                    isDropTarget ? "bg-blue-50/60 outline-2 outline-dashed outline-blue-300 outline-offset-2" : ""
-                  }`}>
+                    isDropTarget ? "outline-2 outline-dashed outline-offset-2" : ""
+                  }`} style={isDropTarget ? { background: "#edf5f4", outlineColor: "#0a6b64" } : {}}>
                     {stageLeads.length === 0 && (
-                      <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${
-                        isDropTarget ? "border-blue-300 bg-blue-50" : "border-slate-200"
-                      }`}>
-                        <p className="text-xs text-slate-400">{isDropTarget ? "Drop here" : "No leads here"}</p>
+                      <div className="border-2 border-dashed rounded-2xl p-6 text-center transition-colors"
+                        style={isDropTarget ? { borderColor: "#0a6b64", background: "#edf5f4" } : { borderColor: "#e4e0d6" }}>
+                        <p className="text-xs" style={{ color: "#8a938f" }}>{isDropTarget ? "Drop here" : "No leads here"}</p>
                       </div>
                     )}
                     {stageLeads.map(lead => (
@@ -183,6 +310,7 @@ export default function KanbanBoard() {
             })}
           </div>
         </div>
+        </>
       )}
 
       {showForm && (
@@ -210,12 +338,21 @@ function LeadCard({
   const [showMenu, setShowMenu] = useState(false);
   const initials  = `${lead.firstName[0] ?? ""}${lead.lastName[0] ?? ""}`.toUpperCase();
   const daysSince = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
+  const typeInfo  = leadTypeInfo(lead.leadType);
 
   const priorityColor: Record<string, string> = {
     HIGH:   "bg-red-100 text-red-700",
-    NORMAL: "bg-blue-50 text-blue-600",
-    LOW:    "bg-slate-100 text-slate-500",
+    NORMAL: "bg-[#f1efe8] text-[#5a6663]",
+    LOW:    "bg-[#f8f6f1] text-[#8a938f]",
     URGENT: "bg-red-200 text-red-800",
+  };
+
+  const paymentColor: Record<string, string> = {
+    PAID_FULL:    "text-emerald-600",
+    PAYMENT_PLAN: "text-amber-600",
+    SCHOLARSHIP:  "text-violet-600",
+    OUTSTANDING:  "text-red-600",
+    UNPAID:       "text-slate-400",
   };
 
   return (
@@ -228,44 +365,82 @@ function LeadCard({
         onDragStart(lead.id);
       }}
       onDragEnd={onDragEnd}
-      className={`bg-white rounded-2xl border shadow-sm transition-all p-4 relative select-none ${
+      className={`bg-white rounded-2xl border shadow-sm transition-all p-4 relative select-none card-hover ${
         draggable ? "cursor-grab active:cursor-grabbing" : ""
-      } ${
-        dragging
-          ? "opacity-40 scale-95 border-blue-300"
-          : "border-slate-200 hover:shadow-md hover:border-slate-300"
-      }`}
+      } ${dragging ? "opacity-40 scale-95" : ""}`}
+      style={{ borderColor: dragging ? "#bfe6e2" : "#e4e0d6" }}
     >
-      <div className="flex items-start justify-between gap-2 mb-3">
+      {/* Header: avatar + name + type + priority */}
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: "#0a6b64" }}>
             <span className="text-white text-[11px] font-bold">{initials}</span>
           </div>
           <div>
             <Link href={`/leads/${lead.id}`}
-              className="text-sm font-bold text-slate-900 hover:text-blue-600 transition leading-tight block">
+              className="text-sm font-bold transition leading-tight block hover:underline" style={{ color: "#14211f" }}>
               {lead.firstName} {lead.lastName}
             </Link>
             {(lead.jobTitle || lead.company) && (
-              <p className="text-[11px] text-slate-400 leading-tight mt-0.5 truncate max-w-[130px]">
+              <p className="text-[11px] leading-tight mt-0.5 truncate max-w-[130px]" style={{ color: "#8a938f" }}>
                 {lead.jobTitle}{lead.jobTitle && lead.company ? " · " : ""}{lead.company}
               </p>
             )}
           </div>
         </div>
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${priorityColor[lead.priority] ?? priorityColor.NORMAL}`}>
-          {lead.priority}
-        </span>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${priorityColor[lead.priority] ?? priorityColor.NORMAL}`}>
+            {lead.priority}
+          </span>
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
+            {typeInfo.label}
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap mb-3">
+      {/* Contact info */}
+      <div className="space-y-1 mb-2.5">
+        <a href={`mailto:${lead.email}`}
+          onClick={e => e.stopPropagation()}
+          className="flex items-center gap-1.5 text-[11px] transition truncate hover:underline" style={{ color: "#5a6663" }}>
+          <Mail size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+          <span className="truncate">{lead.email}</span>
+        </a>
+        {lead.phone && (
+          <a href={`tel:${lead.phone}`}
+            onClick={e => e.stopPropagation()}
+            className="flex items-center gap-1.5 text-[11px] transition hover:underline" style={{ color: "#5a6663" }}>
+            <Phone size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+            {lead.phone}
+          </a>
+        )}
+        {(lead.dealValue ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <DollarSign size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+            <span className="font-semibold" style={{ color: "#14211f" }}>${lead.dealValue!.toLocaleString()}</span>
+            {lead.paymentStatus && lead.paymentStatus !== "UNPAID" && (
+              <span className={`font-medium ${paymentColor[lead.paymentStatus] ?? ""}`}>
+                · {lead.paymentStatus.replace("_", " ")}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Tags row */}
+      <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
         {lead.source && (
-          <span className="text-[10px] font-medium bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded">
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+            lead.source === "EVENT"    ? "bg-amber-50 text-amber-700" :
+            lead.source === "REFERRAL" ? "bg-blue-50 text-blue-700"  :
+            lead.source === "LINKEDIN" ? "bg-indigo-50 text-indigo-700" :
+            "bg-[#f1efe8] text-[#5a6663]"
+          }`}>
             {sourceLabel(lead.source)}
           </span>
         )}
         {lead.tags.slice(0, 2).map(tag => (
-          <span key={tag} className="text-[10px] font-medium bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded">
+          <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "#edf5f4", color: "#0a6b64" }}>
             {tag}
           </span>
         ))}
@@ -276,19 +451,23 @@ function LeadCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+      {/* Footer: activity + move */}
+      <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: "1px solid #e4e0d6" }}>
+        <div className="flex items-center gap-2 text-[11px]" style={{ color: "#8a938f" }}>
           <span>{lead._count.activities} {lead._count.activities === 1 ? "activity" : "activities"}</span>
           <span>·</span>
           <span>{daysSince === 0 ? "Today" : `${daysSince}d ago`}</span>
-          {lead.enrolledUser && <span className="text-green-600 font-semibold">✓ Student</span>}
+          {lead.enrolledUser && <span className="text-green-600 font-semibold">✓ Enrolled</span>}
         </div>
 
         <div className="relative">
           <button
             onClick={() => setShowMenu(v => !v)}
             disabled={moving}
-            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-blue-600 px-2 py-1 rounded-lg hover:bg-blue-50 transition disabled:opacity-40"
+            className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition disabled:opacity-40"
+            style={{ color: "#5a6663" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#5a6663"; }}
           >
             {moving ? <Loader2 size={11} className="animate-spin" /> : <ArrowRight size={11} />}
             Move
@@ -298,11 +477,14 @@ function LeadCard({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 bottom-full mb-1 z-20 bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[140px]">
+              <div className="absolute right-0 bottom-full mb-1 z-20 bg-white rounded-xl shadow-lg py-1 min-w-[140px]" style={{ border: "1px solid #e4e0d6" }}>
                 {stages.filter(s => s.key !== lead.stage).map(s => (
                   <button key={s.key}
                     onClick={() => { onMove(lead.id, s.key); setShowMenu(false); }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium hover:bg-slate-50 transition flex items-center gap-2">
+                    className="w-full text-left px-3 py-2 text-xs font-medium transition flex items-center gap-2"
+                    style={{ color: "#5a6663" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f8f6f1")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <div className={`w-2 h-2 rounded-full ${s.dot}`} />
                     {s.label}
                   </button>

@@ -16,8 +16,7 @@ export async function GET(req: NextRequest) {
   const aid = req.nextUrl.searchParams.get("aid");
 
   if (aid) {
-    // Fire-and-forget: mark the activity as opened
-    prisma.leadActivity.updateMany({
+    await prisma.leadActivity.updateMany({
       where: { id: aid, openedAt: null },
       data:  { openedAt: new Date() },
     }).catch(() => {});

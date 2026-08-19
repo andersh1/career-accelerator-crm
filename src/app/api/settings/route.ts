@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs";
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN") {
+  const crmRole = (session?.user as { crmRole?: string } | undefined)?.crmRole;
+  if (!session || (crmRole !== "ADMIN" && crmRole !== "MEMBER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

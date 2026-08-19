@@ -56,7 +56,7 @@ export default function ApplyPage() {
               d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <p className="text-[11px] text-blue-400 font-bold tracking-widest uppercase mb-2">10x Career Accelerator</p>
+        <p className="text-[11px] text-blue-400 font-bold tracking-widest uppercase mb-2">Vantage Career Accelerator</p>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
           Take the next step<br className="hidden sm:block" /> in your career.
         </h1>
@@ -163,7 +163,7 @@ export default function ApplyPage() {
           </button>
 
           <p className="text-center text-[11px] text-slate-500 leading-relaxed">
-            By submitting you agree to be contacted about the 10x Career Accelerator program.
+            By submitting you agree to be contacted about the Vantage Career Accelerator program.
             We&apos;ll never share your information.
           </p>
         </form>

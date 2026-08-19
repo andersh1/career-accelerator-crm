@@ -15,6 +15,12 @@ function authOk(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!authOk(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Load automation toggle settings once — default to enabled if not set
+  const settingKeys = ["automation.stale-escalation", "automation.stale-notification", "automation.proposal-followup"];
+  const settingRows = await prisma.appSetting.findMany({ where: { key: { in: settingKeys } } });
+  const settingMap  = Object.fromEntries(settingRows.map(s => [s.key, s.value]));
+  const isOn = (key: string) => settingMap[key] !== "false";
+
   const now          = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const yesterday    = new Date(now.getTime() - 86400000);
@@ -74,62 +80,69 @@ export async function GET(req: NextRequest) {
     const daysStale = Math.floor((now.getTime() - lead.updatedAt.getTime()) / 86400000);
     const name = `${lead.firstName} ${lead.lastName}`;
 
-    // Auto-escalate to URGENT and log an activity
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: { priority: "URGENT" },
-    });
-    await prisma.leadActivity.create({
-      data: {
-        leadId:  lead.id,
-        type:    "NOTE",
-        content: "⚠️ Auto-escalated to URGENT: 7+ days without contact",
-      },
-    });
+    // Auto-escalate to URGENT only if not already URGENT (prevents duplicate notes)
+    if (isOn("automation.stale-escalation") && lead.priority !== "URGENT") {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { priority: "URGENT" },
+      });
+      await prisma.leadActivity.create({
+        data: {
+          leadId:  lead.id,
+          type:    "NOTE",
+          content: "⚠️ Auto-escalated to URGENT: 7+ days without contact",
+        },
+      });
+    }
 
-    await prisma.cRMNotification.create({
-      data: {
-        type:   "LEAD_COLD",
-        title:  `${name} hasn't been touched in ${daysStale} days`,
-        body:   `High-priority lead — auto-escalated to URGENT`,
-        leadId: lead.id,
-        href:   `/leads/${lead.id}`,
-      },
-    });
-    const { text, blocks } = coldLeadBlocks(name, lead.id, daysStale);
-    await sendSlack(text, blocks);
+    // CRM notification + Slack (gated by stale-notification toggle)
+    if (isOn("automation.stale-notification")) {
+      await prisma.cRMNotification.create({
+        data: {
+          type:   "LEAD_COLD",
+          title:  `${name} hasn't been touched in ${daysStale} days`,
+          body:   `High-priority lead — auto-escalated to URGENT`,
+          leadId: lead.id,
+          href:   `/leads/${lead.id}`,
+        },
+      });
+      const { text, blocks } = coldLeadBlocks(name, lead.id, daysStale);
+      await sendSlack(text, blocks);
+    }
     created++;
   }
 
-  // 3. PROPOSAL-stage leads untouched for 5+ days
-  const fiveDaysAgo = new Date(now.getTime() - 5 * 86400000);
-  const staleProposals = await prisma.lead.findMany({
-    where: {
-      stage:     "PROPOSAL",
-      updatedAt: { lt: fiveDaysAgo },
-    },
-    select: { id: true, firstName: true, lastName: true, updatedAt: true },
-    take: 10,
-  });
-
-  for (const lead of staleProposals) {
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const existing   = await prisma.cRMNotification.findFirst({
-      where: { type: "PROPOSAL_STALE", leadId: lead.id, createdAt: { gte: todayStart } },
-    });
-    if (existing) continue;
-
-    const name = `${lead.firstName} ${lead.lastName}`;
-    await prisma.cRMNotification.create({
-      data: {
-        type:   "PROPOSAL_STALE",
-        title:  `Follow up with ${name} — proposal has been open for 5 days`,
-        body:   `Proposal sent but no movement — check in to keep momentum`,
-        leadId: lead.id,
-        href:   `/leads/${lead.id}`,
+  // 3. OFFER_SENT-stage leads untouched for 5+ days (gated by proposal-followup toggle)
+  if (isOn("automation.proposal-followup")) {
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 86400000);
+    const staleOffers = await prisma.lead.findMany({
+      where: {
+        stage:     "OFFER_SENT",
+        updatedAt: { lt: fiveDaysAgo },
       },
+      select: { id: true, firstName: true, lastName: true, updatedAt: true },
+      take: 10,
     });
-    created++;
+
+    for (const lead of staleOffers) {
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const existing   = await prisma.cRMNotification.findFirst({
+        where: { type: "OFFER_STALE", leadId: lead.id, createdAt: { gte: todayStart } },
+      });
+      if (existing) continue;
+
+      const name = `${lead.firstName} ${lead.lastName}`;
+      await prisma.cRMNotification.create({
+        data: {
+          type:   "OFFER_STALE",
+          title:  `Follow up with ${name} — offer has been out for 5 days`,
+          body:   `Offer sent but no movement — check in to keep momentum`,
+          leadId: lead.id,
+          href:   `/leads/${lead.id}`,
+        },
+      });
+      created++;
+    }
   }
 
   return NextResponse.json({ created });

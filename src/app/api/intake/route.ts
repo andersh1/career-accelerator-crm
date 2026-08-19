@@ -11,14 +11,30 @@ import { prisma } from "@/lib/prisma";
 import { enrichFromEmail } from "@/lib/enrichment";
 import { sendIntakeConfirmationEmail } from "@/lib/email";
 import { sendSlack, newIntakeBlocks } from "@/lib/slack";
+import { rateLimit } from "@/lib/rate-limit";
+
+const CORS = {
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+function cors(body: unknown, status: number) {
+  return NextResponse.json(body, { status, headers: CORS });
+}
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 submissions per IP per hour (guards open-endpoint spam)
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const { limited } = await rateLimit(`intake:${ip}`, 5, 60 * 60 * 1000);
+  if (limited) return cors({ error: "Too many submissions. Please try again later." }, 429);
+
   // Optional API key check
   const apiKey = process.env.INTAKE_API_KEY;
   if (apiKey) {
     const auth = req.headers.get("authorization") ?? "";
     if (auth !== `Bearer ${apiKey}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return cors({ error: "Unauthorized" }, 401);
     }
   }
 
@@ -31,7 +47,7 @@ export async function POST(req: NextRequest) {
     tags,
   } = body;
 
-  if (!email) return NextResponse.json({ error: "email is required" }, { status: 400 });
+  if (!email) return cors({ error: "email is required" }, 400);
 
   // Derive name parts from a single `name` field if firstName/lastName not provided
   let first = firstName ?? "";
@@ -41,13 +57,28 @@ export async function POST(req: NextRequest) {
     first = parts[0] ?? "";
     last  = parts.slice(1).join(" ") || "-";
   }
-  if (!first) return NextResponse.json({ error: "name or firstName required" }, { status: 400 });
+  if (!first) return cors({ error: "name or firstName required" }, 400);
 
-  // Deduplicate — if lead with this email already exists, just update it
+  // Deduplicate — check for existing lead (active or soft-deleted)
   const existing = await prisma.lead.findFirst({ where: { email: email.toLowerCase().trim() } });
 
   if (existing) {
-    // Don't overwrite data — just log an activity so you know they came back
+    if (existing.deletedAt) {
+      // Soft-deleted lead came back — restore them and treat as new
+      await prisma.lead.update({
+        where: { id: existing.id },
+        data: { deletedAt: null, stage: "LEAD" },
+      });
+      await prisma.leadActivity.create({
+        data: {
+          leadId:  existing.id,
+          type:    "NOTE",
+          content: `Re-submitted interest form after being archived (source: ${source}) — lead restored`,
+        },
+      });
+      return cors({ id: existing.id, created: true }, 201);
+    }
+    // Active lead re-submitted — just log an activity
     await prisma.leadActivity.create({
       data: {
         leadId:  existing.id,
@@ -55,7 +86,7 @@ export async function POST(req: NextRequest) {
         content: `Re-submitted interest form (source: ${source})`,
       },
     });
-    return NextResponse.json({ id: existing.id, created: false }, { status: 200 });
+    return cors({ id: existing.id, created: false }, 200);
   }
 
   // Auto-enrich from email domain if no company provided
@@ -113,17 +144,10 @@ export async function POST(req: NextRequest) {
     ),
   ]);
 
-  return NextResponse.json({ id: lead.id, created: true }, { status: 201 });
+  return cors({ id: lead.id, created: true }, 201);
 }
 
 // Allow your website to hit this from a different domain
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin":  "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
-  });
+  return new NextResponse(null, { status: 200, headers: CORS });
 }

@@ -12,14 +12,14 @@ export async function GET() {
 
   // Total pipeline value (all non-lost leads with dealValue)
   const pipeline = await prisma.lead.aggregate({
-    where: { stage: { not: "LOST" }, dealValue: { gt: 0 } },
+    where: { deletedAt: null, stage: { not: "LOST" }, dealValue: { gt: 0 } },
     _sum: { dealValue: true },
     _count: { id: true },
   });
 
   // Enrolled only
   const enrolled = await prisma.lead.aggregate({
-    where: { stage: "ENROLLED", dealValue: { gt: 0 } },
+    where: { deletedAt: null, stage: "ENROLLED", dealValue: { gt: 0 } },
     _sum: { dealValue: true },
     _count: { id: true },
   });

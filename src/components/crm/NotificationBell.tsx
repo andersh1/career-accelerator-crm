@@ -3,6 +3,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, AlertCircle, UserCheck, Mail, Flame, Loader2 } from "lucide-react";
 
+interface DropdownPos { top: number; left: number; }
+
 interface Notification {
   id: string; type: string; title: string; body: string | null;
   leadId: string | null; href: string | null; read: boolean; createdAt: string;
@@ -27,10 +29,12 @@ function timeAgo(iso: string) {
 export default function NotificationBell() {
   const router    = useRouter();
   const [open,    setOpen]    = useState(false);
+  const [pos,     setPos]     = useState<DropdownPos>({ top: 0, left: 0 });
   const [notifs,  setNotifs]  = useState<Notification[]>([]);
   const [unread,  setUnread]  = useState(0);
   const [loading, setLoading] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref    = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(async () => {
     const res  = await fetch("/api/crm/notifications");
@@ -67,11 +71,20 @@ export default function NotificationBell() {
     if (notif.href) { router.push(notif.href); setOpen(false); }
   }
 
+  function toggleOpen() {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 8, left: r.left });
+    }
+    setOpen(v => !v);
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
-        className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition"
+        ref={btnRef}
+        onClick={toggleOpen}
+        className="relative p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition"
         title="Notifications"
       >
         <Bell size={16} />
@@ -83,7 +96,10 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+        <div
+          className="fixed w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-[9999]"
+          style={{ top: pos.top, left: pos.left }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <span className="text-sm font-bold text-slate-900">Notifications</span>

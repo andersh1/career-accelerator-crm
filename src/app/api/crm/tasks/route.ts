@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   const tasks = await prisma.task.findMany({
-    where:   { completedAt: null },
+    where:   { completedAt: null, lead: { deletedAt: null } },
     include: { lead: { select: { id: true, firstName: true, lastName: true, stage: true } } },
     orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
   });

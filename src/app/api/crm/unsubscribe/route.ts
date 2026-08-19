@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Pause all active sequence enrollments
+  // Mark lead as unsubscribed and cancel all active sequences
+  await prisma.lead.update({
+    where: { id: lead.id },
+    data: { unsubscribed: true },
+  });
   await prisma.emailSequenceEnrollment.updateMany({
     where: { leadId: lead.id, status: "ACTIVE" },
     data: { status: "CANCELLED" },

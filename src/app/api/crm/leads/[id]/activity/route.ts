@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { type, content } = await req.json();
+  const { type, content, metadata } = await req.json();
 
   if (!VALID_TYPES.includes(type)) {
     return NextResponse.json({ error: "Invalid activity type" }, { status: 400 });
@@ -20,11 +20,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Content is required" }, { status: 400 });
   }
 
+  const lead = await prisma.lead.findUnique({ where: { id: params.id }, select: { id: true } });
+  if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+
   const activity = await prisma.leadActivity.create({
     data: {
       leadId:    params.id,
       type,
       content:   content.trim(),
+      metadata:  metadata ?? null,
       createdBy: (session as { user: { id: string } }).user.id,
     },
   });

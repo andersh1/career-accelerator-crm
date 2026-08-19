@@ -18,12 +18,12 @@ interface GmailStatus {
   gmailSyncedAt: string | null;
 }
 
-const inputCls = "w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white";
+const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white" ;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
-      <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+    <div className="card shadow-sm p-6 space-y-4">
+      <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>{title}</h2>
       {children}
     </div>
   );
@@ -32,8 +32,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      {hint && <p className="text-xs text-slate-400 mb-1.5">{hint}</p>}
+      <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>{label}</label>
+      {hint && <p className="text-xs mb-1.5" style={{ color: "#8a938f" }}>{hint}</p>}
       {children}
     </div>
   );
@@ -89,14 +89,21 @@ export default function SettingsPage() {
   const [gmailBanner,     setGmailBanner]     = useState<"connected" | "disconnected" | "error" | null>(null);
 
   // Handle OAuth redirect query params
+  const [gmailErrorReason, setGmailErrorReason] = useState<string | null>(null);
+
   useEffect(() => {
     const gmail = searchParams.get("gmail") as "connected" | "disconnected" | "error" | null;
     if (gmail) {
       setGmailBanner(gmail);
-      setTimeout(() => setGmailBanner(null), 6000);
+      setActiveTab("integrations");
+      if (gmail === "error") {
+        setGmailErrorReason(searchParams.get("reason") ?? null);
+      }
+      setTimeout(() => setGmailBanner(null), 10000);
       // Remove query param from URL without reload
       const url = new URL(window.location.href);
       url.searchParams.delete("gmail");
+      url.searchParams.delete("reason");
       window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams]);
@@ -222,7 +229,7 @@ export default function SettingsPage() {
 
   async function saveAppSettings() {
     setAppSaving(true); setAppSaved(false);
-    await fetch("/api/crm/app-settings", {
+    const res = await fetch("/api/crm/app-settings", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         slack_webhook_url:     slackUrl,
@@ -231,8 +238,13 @@ export default function SettingsPage() {
         proposal_footer:       footer,
       }),
     });
-    setAppSaved(true); setAppSaving(false);
-    setTimeout(() => setAppSaved(false), 3000);
+    setAppSaving(false);
+    if (res.ok) {
+      setAppSaved(true);
+      setTimeout(() => setAppSaved(false), 3000);
+    } else {
+      setError("Failed to save settings. You may not have permission.");
+    }
   }
 
   async function testSlack() {
@@ -240,12 +252,14 @@ export default function SettingsPage() {
     const url = slackUrl || undefined;
     if (!url) { setSlackResult("❌ Enter a webhook URL first"); setTestingSlack(false); return; }
     try {
-      const res = await fetch(url, {
+      // Route through server — browser can't call Slack webhooks directly (CORS)
+      const res = await fetch("/api/crm/admin/webhook-test", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "✅ 10x Career Accelerator CRM — Slack integration is working!" }),
+        body: JSON.stringify({ url }),
       });
-      setSlackResult(res.ok ? "✅ Message sent! Check your Slack channel." : `❌ Slack returned ${res.status}`);
-    } catch { setSlackResult("❌ Could not reach Slack. Check the URL."); }
+      const data = await res.json() as { success?: boolean; error?: string };
+      setSlackResult(data.success ? "✅ Message sent! Check your Slack channel." : `❌ ${data.error ?? "Slack returned an error"}`);
+    } catch { setSlackResult("❌ Could not reach the server. Try again."); }
     setTestingSlack(false);
   }
 
@@ -297,11 +311,12 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6 animate-fade-up">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Manage your account, team, and integrations.</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+        <h1 className="text-2xl font-semibold font-display" style={{ color: "#14211f" }}>Settings</h1>
+        <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>Manage your account, team, and integrations.</p>
       </div>
 
       {/* Gmail OAuth banner */}
@@ -312,27 +327,33 @@ export default function SettingsPage() {
         </div>
       )}
       {gmailBanner === "disconnected" && (
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 mb-4">
-          <CheckCircle2 size={16} className="text-slate-500 shrink-0" />
-          <p className="text-sm text-slate-700 font-medium">Gmail disconnected.</p>
+        <div className="flex items-center gap-3 border border-[#e4e0d6] rounded-2xl px-4 py-3 mb-4" style={{ background: "#f8f6f1" }}>
+          <CheckCircle2 size={16} style={{ color: "#8a938f" }} className="shrink-0" />
+          <p className="text-sm font-medium" style={{ color: "#5a6663" }}>Gmail disconnected.</p>
         </div>
       )}
       {gmailBanner === "error" && (
-        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-4">
-          <AlertCircle size={16} className="text-red-600 shrink-0" />
-          <p className="text-sm text-red-800 font-medium">Gmail connection failed. Please try again or check your Google Cloud credentials.</p>
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-4">
+          <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-red-800 font-medium">Gmail connection failed.</p>
+            {gmailErrorReason && <p className="text-xs text-red-700 mt-0.5 font-mono">{gmailErrorReason}</p>}
+          </div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 mb-6">
+      <div className="flex gap-1 border-b border-[#e4e0d6] mb-6">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${
               activeTab === t.key
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-            }`}>
+                ? "border-[#0a6b64] text-[#0a6b64]"
+                : "border-transparent hover:border-[#e4e0d6]"
+            }`}
+            style={activeTab === t.key ? {} : { color: "#8a938f" }}
+            onMouseEnter={e => { if (activeTab !== t.key) (e.currentTarget as HTMLButtonElement).style.color = "#5a6663"; }}
+            onMouseLeave={e => { if (activeTab !== t.key) (e.currentTarget as HTMLButtonElement).style.color = "#8a938f"; }}>
             {t.icon}{t.label}
           </button>
         ))}
@@ -344,15 +365,19 @@ export default function SettingsPage() {
           <Section title="Your Profile">
             <form onSubmit={saveProfile} className="space-y-4">
               <Field label="Display Name">
-                <input value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+                <input value={name} onChange={e => setName(e.target.value)} className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
               </Field>
               <Field label="Email">
                 <input value={session?.user?.email ?? ""} disabled
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-100 text-slate-500 cursor-not-allowed" />
+                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm cursor-not-allowed"
+                  style={{ background: "#e4e0d6", color: "#8a938f" }} />
               </Field>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button type="submit" disabled={saving}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                style={{ background: "#0a6b64" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
               </button>
@@ -363,19 +388,22 @@ export default function SettingsPage() {
             <form onSubmit={changePassword} className="space-y-4">
               <Field label="Current Password">
                 <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)}
-                  placeholder="Enter your current password" className={inputCls} />
+                  placeholder="Enter your current password" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
               </Field>
               <Field label="New Password">
                 <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
-                  placeholder="At least 8 characters" className={inputCls} />
+                  placeholder="At least 8 characters" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
               </Field>
               <Field label="Confirm New Password">
                 <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
-                  placeholder="Repeat new password" className={inputCls} />
+                  placeholder="Repeat new password" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
               </Field>
               {pwError && <p className="text-sm text-red-600">{pwError}</p>}
               <button type="submit" disabled={pwSaving || !currentPw || !newPw || !confirmPw}
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                style={{ background: "#14211f" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0d1816"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#14211f"; }}>
                 {pwSaving ? <Loader2 size={14} className="animate-spin" /> : pwSaved ? <CheckCircle2 size={14} /> : <Lock size={14} />}
                 {pwSaving ? "Saving…" : pwSaved ? "Password Updated!" : "Update Password"}
               </button>
@@ -388,21 +416,24 @@ export default function SettingsPage() {
       {activeTab === "organization" && (
         <div className="space-y-5">
           <Section title="Proposal Defaults">
-            <p className="text-xs text-slate-500 -mt-2">These appear on every generated proposal. Customize to match your brand.</p>
+            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>These appear on every generated proposal. Customize to match your brand.</p>
             <Field label="Program Name">
               <input value={progName} onChange={e => setProgName(e.target.value)}
-                placeholder="10x Career Accelerator Program" className={inputCls} />
+                placeholder="Vantage Career Accelerator Program" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
             </Field>
             <Field label="Tagline">
               <input value={tagline} onChange={e => setTagline(e.target.value)}
-                placeholder="Land your next role. Faster." className={inputCls} />
+                placeholder="Land your next role. Faster." className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
             </Field>
             <Field label="Footer Text">
               <input value={footer} onChange={e => setFooter(e.target.value)}
-                placeholder="Questions? Reply to this proposal or book a call." className={inputCls} />
+                placeholder="Questions? Reply to this proposal or book a call." className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
             </Field>
             <button onClick={saveAppSettings} disabled={appSaving}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+              className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              style={{ background: "#0a6b64" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
               {appSaving ? <Loader2 size={14} className="animate-spin" /> : appSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
               {appSaving ? "Saving…" : appSaved ? "Saved!" : "Save"}
             </button>
@@ -414,46 +445,53 @@ export default function SettingsPage() {
       {activeTab === "team" && (
         <div className="space-y-5">
           <Section title="Team">
-            <p className="text-xs text-slate-500 -mt-2">
+            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
               Invite other admins to access the CRM. They&apos;ll receive an email with a temporary password.
             </p>
 
             {adminUsers.length > 0 && (
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="border border-[#e4e0d6] rounded-xl overflow-hidden">
                 {adminUsers.map((u, i) => (
-                  <div key={u.id} className={i > 0 ? "border-t border-slate-100" : ""}>
+                  <div key={u.id} className={i > 0 ? "border-t border-[#e4e0d6]" : ""}>
                     <div className="flex items-center gap-3 px-4 py-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                         {(u.name ?? u.email)[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{u.name ?? "—"}</p>
-                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                        <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{u.name ?? "—"}</p>
+                        <p className="text-xs truncate" style={{ color: "#8a938f" }}>{u.email}</p>
                       </div>
                       {u.id === (session as { user?: { id?: string } })?.user?.id ? (
-                        <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">You</span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>You</span>
                       ) : (
                         <div className="flex items-center gap-1">
                           <button onClick={() => { setResetTargetId(resetTargetId === u.id ? null : u.id); setResetPw(""); setResetResult(null); }}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition" title="Reset password">
+                            className="p-1.5 rounded-lg transition hover:bg-[#edf5f4]" style={{ color: "#c9c4b8" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#c9c4b8"; }}
+                            title="Reset password">
                             <Lock size={14} />
                           </button>
                           <button onClick={() => removeAdmin(u.id)} disabled={removingId === u.id}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-50">
+                            className="p-1.5 rounded-lg transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50" style={{ color: "#c9c4b8" }}>
                             {removingId === u.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                           </button>
                         </div>
                       )}
                     </div>
                     {resetTargetId === u.id && (
-                      <form onSubmit={resetAdminPassword} className="px-4 pb-3 pt-1 border-t border-slate-100 bg-slate-50">
-                        <p className="text-xs text-slate-500 mb-2">Set a new password for {u.name ?? u.email}</p>
+                      <form onSubmit={resetAdminPassword} className="px-4 pb-3 pt-1 border-t border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
+                        <p className="text-xs mb-2" style={{ color: "#8a938f" }}>Set a new password for {u.name ?? u.email}</p>
                         <div className="flex gap-2">
                           <input type="password" value={resetPw} onChange={e => setResetPw(e.target.value)}
                             placeholder="New password (8+ chars)" minLength={8}
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+                            style={{ color: "#14211f" }} />
                           <button type="submit" disabled={resetSaving || resetPw.length < 8}
-                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+                            className="px-3 py-2 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
+                            style={{ background: "#0a6b64" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
                             {resetSaving ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />}
                             {resetSaving ? "Saving…" : "Save"}
                           </button>
@@ -469,16 +507,17 @@ export default function SettingsPage() {
             )}
 
             <form onSubmit={inviteAdmin} className="space-y-3 pt-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+              <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#8a938f" }}>
                 <UserPlus size={12} /> Invite New Admin
               </p>
               <div className="flex gap-2">
                 <input value={inviteName} onChange={e => setInviteName(e.target.value)}
-                  placeholder="Full name" className={inputCls} />
+                  placeholder="Full name" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
                 <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                  type="email" placeholder="Email address" className={inputCls} />
+                  type="email" placeholder="Email address" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
                 <select value={inviteRole} onChange={e => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
-                  className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0">
+                  className="px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] shrink-0"
+                  style={{ background: "#f8f6f1", color: "#14211f" }}>
                   <option value="MEMBER">Member</option>
                   <option value="ADMIN">Admin</option>
                 </select>
@@ -495,7 +534,10 @@ export default function SettingsPage() {
                 </div>
               )}
               <button type="submit" disabled={inviting || !inviteName.trim() || !inviteEmail.trim()}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                style={{ background: "#0a6b64" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
                 {inviting ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
                 {inviting ? "Inviting…" : "Send Invite"}
               </button>
@@ -508,7 +550,7 @@ export default function SettingsPage() {
       {activeTab === "integrations" && (
         <div className="space-y-5">
           <Section title="Gmail Integration">
-            <p className="text-xs text-slate-500 -mt-2">
+            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
               Connect your Gmail account to automatically log sent emails to lead timelines.
             </p>
             {gmailStatus?.connected ? (
@@ -521,30 +563,35 @@ export default function SettingsPage() {
                   </div>
                   <Mail size={16} className="text-green-600 shrink-0" />
                 </div>
-                <div className="text-xs text-slate-400">Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
+                <div className="text-xs" style={{ color: "#8a938f" }}>Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
                 {gmailSyncResult && (
-                  <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">{gmailSyncResult}</p>
+                  <p className="text-sm border border-[#e4e0d6] rounded-xl px-4 py-2.5" style={{ color: "#5a6663", background: "#f8f6f1" }}>{gmailSyncResult}</p>
                 )}
                 <div className="flex gap-2">
                   <button onClick={syncGmail} disabled={gmailSyncing}
-                    className="flex items-center gap-2 text-sm font-semibold text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 px-4 py-2 rounded-xl transition">
+                    className="flex items-center gap-2 text-sm font-semibold border disabled:opacity-50 px-4 py-2 rounded-xl transition"
+                    style={{ color: "#0a6b64", borderColor: "#0a6b64", background: "#edf5f4" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d6ecea"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; }}>
                     {gmailSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                     {gmailSyncing ? "Syncing…" : "Sync Now"}
                   </button>
                   <button onClick={disconnectGmail}
-                    className="flex items-center gap-2 text-sm font-semibold text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-xl transition">
+                    className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-xl transition"
+                    style={{ color: "#5a6663" }}>
                     <Unlink size={14} /> Disconnect
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-                  <div className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
-                  <p className="text-sm text-slate-500">Not connected</p>
+                <div className="flex items-center gap-3 border border-[#e4e0d6] rounded-xl px-4 py-3" style={{ background: "#f8f6f1" }}>
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "#c9c4b8" }} />
+                  <p className="text-sm" style={{ color: "#8a938f" }}>Not connected</p>
                 </div>
                 <button onClick={connectGmail} disabled={gmailConnecting}
-                  className="flex items-center gap-2 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 border border-slate-200 text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm">
+                  className="flex items-center gap-2 bg-white hover:bg-[#f8f6f1] disabled:opacity-50 border border-[#e4e0d6] text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
+                  style={{ color: "#5a6663" }}>
                   {gmailConnecting
                     ? <Loader2 size={14} className="animate-spin" />
                     : <svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
@@ -556,36 +603,40 @@ export default function SettingsPage() {
                   }
                   {gmailConnecting ? "Redirecting…" : "Connect Gmail"}
                 </button>
-                <p className="text-xs text-slate-400">
-                  Requires <code className="bg-slate-100 px-1 rounded">GOOGLE_CLIENT_ID</code> and{" "}
-                  <code className="bg-slate-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code> in your environment.
+                <p className="text-xs" style={{ color: "#8a938f" }}>
+                  Requires <code className="px-1 rounded" style={{ background: "#e4e0d6" }}>GOOGLE_CLIENT_ID</code> and{" "}
+                  <code className="px-1 rounded" style={{ background: "#e4e0d6" }}>GOOGLE_CLIENT_SECRET</code> in your environment.
                 </p>
               </div>
             )}
           </Section>
 
           <Section title="Slack Integration">
-            <p className="text-xs text-slate-500 -mt-2">
+            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
               Get notified in Slack when a lead enrolls or goes cold.{" "}
               <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noreferrer"
-                className="text-blue-600 hover:underline">How to create a webhook →</a>
+                style={{ color: "#0a6b64" }} className="hover:underline">How to create a webhook →</a>
             </p>
             <Field label="Webhook URL" hint="Paste your Slack Incoming Webhook URL">
               <input value={slackUrl} onChange={e => setSlackUrl(e.target.value)}
                 placeholder="https://hooks.slack.com/services/..."
-                className={inputCls} />
+                className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
             </Field>
             {slackResult && (
-              <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">{slackResult}</p>
+              <p className="text-sm border border-[#e4e0d6] rounded-xl px-4 py-2.5" style={{ color: "#5a6663", background: "#f8f6f1" }}>{slackResult}</p>
             )}
             <div className="flex gap-2">
               <button onClick={testSlack} disabled={testingSlack}
-                className="flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition">
+                className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] px-4 py-2 rounded-xl hover:bg-[#f8f6f1] disabled:opacity-50 transition"
+                style={{ color: "#5a6663" }}>
                 {testingSlack ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Send test message
               </button>
               <button onClick={saveAppSettings} disabled={appSaving}
-                className="flex items-center gap-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl transition">
+                className="flex items-center gap-2 text-sm font-semibold disabled:opacity-50 text-white px-4 py-2 rounded-xl transition"
+                style={{ background: "#0a6b64" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
                 {appSaving ? <Loader2 size={14} className="animate-spin" /> : appSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {appSaving ? "Saving…" : appSaved ? "Saved!" : "Save"}
               </button>

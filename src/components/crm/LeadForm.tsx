@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, Tag, DollarSign, UserCircle2 } from "lucide-react";
-import { STAGES, SOURCES, PRIORITIES } from "./constants";
+import { STAGES, SOURCES, PRIORITIES, LEAD_TYPES } from "./constants";
 import { useToast } from "@/lib/toast";
 
 export interface LeadFormData {
@@ -15,6 +15,7 @@ export interface LeadFormData {
   linkedinUrl:   string;
   stage:         string;
   source:        string;
+  leadType:      string;
   priority:      string;
   paymentStatus: string;
   dealValue:     string;
@@ -33,8 +34,8 @@ const PAYMENT_OPTIONS = [
 
 const EMPTY: LeadFormData = {
   firstName: "", lastName: "", email: "", phone: "", company: "",
-  jobTitle: "", linkedinUrl: "", stage: "LEAD", source: "", priority: "NORMAL",
-  paymentStatus: "UNPAID", dealValue: "", assignedTo: "", tags: "", notes: "",
+  jobTitle: "", linkedinUrl: "", stage: "LEAD", source: "", leadType: "WAITLIST",
+  priority: "NORMAL", paymentStatus: "UNPAID", dealValue: "", assignedTo: "", tags: "", notes: "",
 };
 
 interface Props {
@@ -174,7 +175,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Stage</label>
               <select value={form.stage} onChange={e => set("stage", e.target.value)}
@@ -184,6 +185,16 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Contact Type</label>
+              <select value={form.leadType} onChange={e => set("leadType", e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+                {LEAD_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Source</label>
               <select value={form.source} onChange={e => set("source", e.target.value)}
@@ -229,7 +240,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
                 <option value="">— Unassigned —</option>
                 {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                  <option key={u.id} value={u.email}>{u.name ?? u.email}</option>
                 ))}
               </select>
             </div>

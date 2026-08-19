@@ -43,9 +43,10 @@ export default function GlobalSearch() {
   const search = useCallback(async (q: string) => {
     if (!q.trim()) { setResults([]); setLoading(false); return; }
     setLoading(true);
-    const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q)}`);
+    const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q)}&all=true`);
     const data = await res.json();
-    if (Array.isArray(data)) setResults(data.slice(0, 8));
+    const arr  = Array.isArray(data) ? data : (data.leads ?? []);
+    setResults(arr.slice(0, 8));
     setLoading(false);
   }, []);
 

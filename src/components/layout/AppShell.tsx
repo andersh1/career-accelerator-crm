@@ -5,22 +5,42 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   Kanban, TrendingUp, Settings, LogOut, Menu, X,
-  Users, ChevronRight, CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap, UserRound, HelpCircle, UsersRound,
+  CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap,
+  UserRound, UsersRound, GraduationCap, AlertCircle, BookOpen,
+  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar,
 } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
 import NotificationBell from "@/components/crm/NotificationBell";
+import HelpBeacon from "@/components/crm/HelpBeacon";
 
 const baseNav = [
-  { href: "/home",      label: "Home",        icon: LayoutDashboard, adminOnly: false },
-  { href: "/pipeline",  label: "Pipeline",    icon: Kanban,          adminOnly: false },
-  { href: "/leads",     label: "Contacts",    icon: UserRound,       adminOnly: false },
-  { href: "/tickets",   label: "Support",     icon: LifeBuoy,        adminOnly: false },
-  { href: "/tasks",     label: "Tasks",       icon: CheckSquare,     adminOnly: false },
-  { href: "/sequences", label: "Sequences",   icon: Mail,            adminOnly: false },
-  { href: "/blast",     label: "Email Blast", icon: Zap,             adminOnly: false },
-  { href: "/analytics",  label: "Analytics",   icon: TrendingUp,      adminOnly: true  },
-  { href: "/team",       label: "Team",        icon: UsersRound,      adminOnly: true  },
-  { href: "/automation", label: "Automation",  icon: Zap,             adminOnly: true  },
+  { href: "/home",       label: "Home",        icon: LayoutDashboard, adminOnly: false },
+  { href: "/pipeline",   label: "Pipeline",    icon: Kanban,          adminOnly: false },
+  { href: "/students",   label: "Students",    icon: GraduationCap,   adminOnly: false },
+  { href: "/cohorts",   label: "Cohorts",     icon: BookOpen,        adminOnly: false },
+  { href: "/leads",      label: "Leads",       icon: UserRound,       adminOnly: false },
+  { href: "/tickets",    label: "Support",     icon: LifeBuoy,        adminOnly: false },
+  { href: "/tasks",      label: "Tasks",       icon: CheckSquare,     adminOnly: false },
+  { href: "/sequences",  label: "Sequences",   icon: Mail,            adminOnly: false },
+  { href: "/blast",      label: "Email Blast", icon: Zap,             adminOnly: false },
+  { href: "/events",            label: "Events",       icon: Calendar,    adminOnly: false },
+  { href: "/outcomes",          label: "Outcomes",     icon: Trophy,      adminOnly: true  },
+  { href: "/analytics",         label: "Analytics",    icon: TrendingUp,  adminOnly: true  },
+  { href: "/promo-codes",       label: "Promo Codes",  icon: Tag,         adminOnly: true  },
+  { href: "/referrals",         label: "Referrals",    icon: Share2,      adminOnly: true  },
+  { href: "/issues",            label: "Issues",       icon: AlertCircle, adminOnly: true  },
+  { href: "/team",              label: "Team",         icon: UsersRound,  adminOnly: true  },
+  { href: "/automation",        label: "Automation",   icon: Zap,         adminOnly: true  },
+  { href: "/partnerships/deals",    label: "Deals",    icon: Handshake,   adminOnly: false },
+  { href: "/partnerships/contacts", label: "Contacts", icon: UserRound,   adminOnly: false },
+];
+
+const NAV_SECTIONS = [
+  { label: "CRM",          keys: ["/home", "/pipeline", "/students", "/cohorts", "/leads", "/tickets"] },
+  { label: "Outreach",    keys: ["/tasks", "/sequences", "/blast"] },
+  { label: "Growth",      keys: ["/events", "/referrals", "/promo-codes"] },
+  { label: "Partnerships", keys: ["/partnerships/deals", "/partnerships/contacts"] },
+  { label: "Admin",       keys: ["/outcomes", "/analytics", "/issues", "/team", "/automation"], adminOnly: true },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -30,122 +50,164 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = (session?.user as { crmRole?: string } | undefined)?.crmRole === "ADMIN";
   const nav = baseNav.filter(item => !item.adminOnly || isAdmin);
 
+  function isActive(href: string) {
+    if (href === "/pipeline" || href === "/home" || href === "/team") return pathname === href;
+    return pathname.startsWith(href);
+  }
+
+  const userName  = (session?.user as { name?: string } | undefined)?.name ?? "";
+  const userEmail = session?.user?.email ?? "";
+  const userInitial = (userName[0] ?? userEmail[0] ?? "A").toUpperCase();
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-slate-800/60">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-white" />
+      <div className="px-6 pt-6 pb-5">
+        <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-7 w-auto object-contain" />
+      </div>
+
+      {/* User chip */}
+      {session?.user && (
+        <div className="mx-3 mb-3 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div className="flex items-center gap-3 px-3 py-3">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-display font-bold"
+              style={{ background: "rgba(255,255,255,0.15)", color: "white", fontSize: "0.9375rem" }}
+            >
+              {userInitial}
+            </div>
+            <div className="min-w-0 flex-1">
+              {userName && (
+                <p className="text-[13px] font-semibold truncate leading-tight text-white">{userName}</p>
+              )}
+              <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
+                {userEmail}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <NotificationBell />
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                style={{ color: "rgba(255,255,255,0.35)" }}
+                title="Sign out"
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.8)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}
+              >
+                <LogOut size={13} />
+              </button>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] text-blue-400 font-bold tracking-widest uppercase leading-none">10x Career Accelerator</p>
-            <p className="text-sm font-bold text-white leading-tight mt-0.5">CRM</p>
+          <div className="px-3 pb-2.5 -mt-1">
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.38)", letterSpacing: "0.12em" }}
+            >
+              {isAdmin ? "CRM Admin" : "Member"}
+            </span>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Search trigger */}
       <div className="px-3 pb-3">
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition text-xs"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.45)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.75)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.45)"; }}
         >
           <Search size={12} />
-          <span className="flex-1 text-left">Search leads…</span>
-          <kbd className="font-mono text-[10px] bg-slate-700 px-1.5 py-0.5 rounded opacity-70">⌘K</kbd>
+          <span className="flex-1 text-left">Search contacts…</span>
+          <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.08)", opacity: 0.7 }}>⌘K</kbd>
         </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto scrollbar-thin">
-        {nav.map(({ href, label, icon: Icon }) => {
-          const active = (href === "/pipeline" || href === "/home" || href === "/team")
-            ? pathname === href
-            : pathname.startsWith(href);
+      <nav className="flex-1 px-3 py-1 overflow-y-auto scrollbar-thin space-y-4">
+        {NAV_SECTIONS.filter(sec => !sec.adminOnly || isAdmin).map(section => {
+          const sectionNav = nav.filter(item => section.keys.includes(item.href));
+          if (!sectionNav.length) return null;
           return (
-            <Link
-              key={href} href={href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-                ${active
-                  ? "bg-blue-600/20 text-blue-300 border border-blue-600/30"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-              {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />}
-            </Link>
+            <div key={section.label}>
+              <p className="text-[9px] font-bold uppercase px-3 mb-1" style={{ color: "rgba(255,255,255,0.28)", letterSpacing: "0.14em" }}>
+                {section.label}
+              </p>
+              <div className="space-y-0.5">
+                {sectionNav.map(({ href, label, icon: Icon }) => {
+                  const active = isActive(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setOpen(false)}
+                      className={`sidebar-link ${active ? "active" : "inactive"}`}
+                    >
+                      <Icon size={15} className="flex-shrink-0" style={{ opacity: active ? 1 : 0.7 }} />
+                      <span>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 py-3 border-t border-slate-800/60 space-y-0.5">
+      {/* Bottom: LMS + Settings */}
+      <div className="px-3 py-3 border-t border-white/10 space-y-0.5">
+        <button
+          onClick={async () => {
+            const win = window.open("", "_blank");
+            try {
+              const res = await fetch("/api/crm/lms-bridge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetUrl: "/admin" }) });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                win?.close();
+                alert(`LMS bridge error (${res.status}): ${data.error ?? "unknown"}`);
+                return;
+              }
+              const { url } = data;
+              if (win && url) win.location.href = url;
+              else { win?.close(); alert(`No URL returned. Data: ${JSON.stringify(data)}`); }
+            } catch (e) { win?.close(); alert(`LMS bridge failed: ${e}`); }
+          }}
+          className="sidebar-link inactive w-full text-left"
+        >
+          <ExternalLink size={15} className="flex-shrink-0" style={{ opacity: 0.7 }} />
+          Open LMS
+        </button>
+        <a
+          href="https://crm.vantagecareer.co"
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => setOpen(false)}
+          className="sidebar-link inactive w-full text-left"
+        >
+          <ExternalLink size={15} className="flex-shrink-0" style={{ opacity: 0.7 }} />
+          Open Networking CRM
+        </a>
         <Link
           href="/settings"
           onClick={() => setOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-            ${pathname === "/settings"
-              ? "bg-blue-600/20 text-blue-300 border border-blue-600/30"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
+          className={`sidebar-link ${isActive("/settings") ? "active" : "inactive"}`}
         >
-          <Settings className="w-4 h-4 shrink-0" />
+          <Settings size={15} className="flex-shrink-0" style={{ opacity: isActive("/settings") ? 1 : 0.7 }} />
           Settings
         </Link>
-        <Link
-          href="/help"
-          onClick={() => setOpen(false)}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-            ${pathname === "/help"
-              ? "bg-blue-600/20 text-blue-300 border border-blue-600/30"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-        >
-          <HelpCircle className="w-4 h-4 shrink-0" />
-          Help
-        </Link>
-
-        <div className="flex items-center justify-between px-1 pt-1">
-          <NotificationBell />
-        </div>
-
-        {/* Signed-in user card */}
-        {session?.user && (
-          <div className="mt-1 mx-0 p-3 rounded-xl bg-slate-800/60 border border-slate-700/40 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {((session.user as { name?: string }).name ?? session.user.email ?? "A")[0].toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              {(session.user as { name?: string }).name && (
-                <p className="text-xs font-semibold text-white truncate leading-tight">
-                  {(session.user as { name?: string }).name}
-                </p>
-              )}
-              <p className="text-[11px] text-slate-400 truncate leading-tight">
-                {session.user.email}
-              </p>
-            </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              title="Sign out"
-              className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden" style={{ background: "#f8f6f1" }}>
       <GlobalSearch />
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-[240px] shrink-0 bg-slate-900 border-r border-slate-800/60">
+      <aside
+        className="hidden md:flex flex-col w-[240px] shrink-0"
+        style={{ background: "linear-gradient(180deg, #0a6b64 0%, #063b37 100%)" }}
+      >
         <SidebarContent />
       </aside>
 
@@ -153,20 +215,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-[240px] bg-slate-900 z-50">
+          <aside
+            className="absolute left-0 top-0 bottom-0 w-[240px] z-50"
+            style={{ background: "linear-gradient(180deg, #0a6b64 0%, #063b37 100%)" }}
+          >
             <SidebarContent />
           </aside>
         </div>
       )}
 
-      {/* Main area */}
+      <HelpBeacon />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile topbar */}
-        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-200">
-          <button onClick={() => setOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b" style={{ borderColor: "#e4e0d6" }}>
+          <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#5a6663" }}>
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <span className="font-bold text-slate-900">10x Career Accelerator CRM</span>
+          <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-6 w-auto object-contain" />
         </header>
         <main className="flex-1 overflow-y-auto scrollbar-thin">
           {children}

@@ -3,6 +3,7 @@ import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,64 +34,115 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo / brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 shadow-lg mb-4">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">10x Career Accelerator</h1>
-          <p className="text-blue-300 text-sm mt-1">CRM — Admin access only</p>
+    <div className="min-h-screen flex" style={{ background: "#f8f6f1" }}>
+      {/* Left brand panel */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10"
+        style={{ background: "linear-gradient(180deg, #0a6b64 0%, #084f4a 100%)" }}
+      >
+        <div>
+          <img src="/10ximpact-logo.webp" alt="Vantage Career" className="h-8 w-auto object-contain" />
         </div>
+        <div>
+          <p className="text-white/90 text-2xl font-bold leading-snug mb-3">
+            Build experiences that give people skills, confidence, and agency.
+          </p>
+          <p className="text-white/50 text-sm leading-relaxed">
+            CRM · Admin access only
+          </p>
+        </div>
+        <p className="text-white/30 text-xs">
+          © {new Date().getFullYear()} Vantage Career Accelerator
+        </p>
+      </div>
 
-        <form onSubmit={handleSubmit}
-          className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 space-y-5">
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+
+          {/* Mobile logo */}
+          <div className="lg:hidden mb-8 flex flex-col items-center gap-1">
+            <div style={{ background: "#0a6b64", borderRadius: 8, padding: "7px 12px", display: "inline-flex", alignItems: "center" }}>
+              <img src="/10ximpact-logo.webp" alt="Vantage Career" style={{ height: 26, display: "block" }} />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#0a6b64", letterSpacing: "0.8px", textTransform: "uppercase" }}>
+              Career Accelerator
+            </span>
+          </div>
+
+          <h1 className="text-2xl font-extrabold mb-1" style={{ color: "#14211f" }}>
+            Welcome back
+          </h1>
+          <p className="text-sm mb-8" style={{ color: "#5a6663" }}>
+            Sign in to your admin account
+          </p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
               {error}
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
-            <input
-              type="email" required autoComplete="email" autoFocus
-              value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 text-white placeholder-slate-500
-                         rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="admin@example.com"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-medium text-slate-300">Password</label>
-              <Link href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition">
-                Forgot password?
-              </Link>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>
+                Email address
+              </label>
+              <input
+                type="email" required autoComplete="email" autoFocus
+                value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
+                style={{
+                  background: "#fff",
+                  border: "1.5px solid #e4e0d6",
+                  color: "#14211f",
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+                onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
+              />
             </div>
-            <input
-              type="password" required autoComplete="current-password"
-              value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 text-white placeholder-slate-500
-                         rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="••••••••"
-            />
-          </div>
 
-          <button
-            type="submit" disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed
-                       text-white font-semibold py-3 rounded-xl transition-colors text-sm"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-semibold" style={{ color: "#14211f" }}>Password</label>
+                <Link href="/forgot-password" className="text-xs font-medium transition-colors" style={{ color: "#0a6b64" }}>
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                type="password" required autoComplete="current-password"
+                value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
+                style={{
+                  background: "#fff",
+                  border: "1.5px solid #e4e0d6",
+                  color: "#14211f",
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+                onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
+              />
+            </div>
+
+            <button
+              type="submit" disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50"
+              style={{ background: "#0a6b64" }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#084f4a"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#0a6b64"; }}
+            >
+              {loading
+                ? <><Loader2 size={15} className="animate-spin" /> Signing in…</>
+                : <>Sign in <ArrowRight size={15} /></>
+              }
+            </button>
+          </form>
+
+          <p className="text-xs text-center mt-8" style={{ color: "#8a938f" }}>
+            Access is managed by your program administrator.
+          </p>
+        </div>
       </div>
     </div>
   );
