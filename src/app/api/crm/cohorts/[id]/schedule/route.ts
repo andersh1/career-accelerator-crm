@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { fromEasternNaive } from "@/lib/timezone";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -53,14 +54,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     create: {
       cohortId: params.id,
       moduleId,
-      preworkDue:      preworkDue      ? new Date(preworkDue)      : null,
-      sessionDate:     sessionDate     ? new Date(sessionDate)     : null,
+      preworkDue:      preworkDue      ? fromEasternNaive(preworkDue)  : null,
+      sessionDate:     sessionDate     ? fromEasternNaive(sessionDate) : null,
       sessionLocation: sessionLocation || null,
       sessionZoomLink: sessionZoomLink || null,
     },
     update: {
-      preworkDue:      preworkDue      ? new Date(preworkDue)      : null,
-      sessionDate:     sessionDate     ? new Date(sessionDate)     : null,
+      preworkDue:      preworkDue      ? fromEasternNaive(preworkDue)  : null,
+      sessionDate:     sessionDate     ? fromEasternNaive(sessionDate) : null,
       sessionLocation: sessionLocation || null,
       sessionZoomLink: sessionZoomLink || null,
     },

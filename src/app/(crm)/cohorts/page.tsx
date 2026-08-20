@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { toEasternInput } from "@/lib/timezone";
 import {
   Plus, Edit2, Check, X, Loader2, Power, GraduationCap,
   ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen,
@@ -939,8 +940,8 @@ function CohortCard({
                               onClick={() => {
                                 setEditingRow(row.moduleId);
                                 setRowDraft({
-                                  preworkDue:      row.preworkDue      ? row.preworkDue.slice(0, 16)  : "",
-                                  sessionDate:     row.sessionDate     ? row.sessionDate.slice(0, 16) : "",
+                                  preworkDue:      toEasternInput(row.preworkDue),
+                                  sessionDate:     toEasternInput(row.sessionDate),
                                   sessionLocation: row.sessionLocation ?? "",
                                   sessionZoomLink: row.sessionZoomLink ?? "",
                                 });
