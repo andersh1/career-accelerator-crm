@@ -54,6 +54,8 @@ model User {
   gmailEmail           String?
   gmailSyncedAt        DateTime?
   crmRole              String?   // ADMIN | MEMBER — only set for CRM users; null = LMS-only
+  calendlyUrl          String?   // 1-on-1 coaching Calendly link — shown on the LMS 1-on-1 page
+  officeHoursUrl       String?   // office-hours Calendly link — shown on the LMS Office Hours page
   referralCode         String?   @unique
   submissions          Submission[]
   progress             Progress[]

@@ -60,6 +60,13 @@ export default function SettingsPage() {
   const [testingSlack, setTestingSlack] = useState(false);
   const [slackResult,  setSlackResult]  = useState<string | null>(null);
 
+  // Booking links (Calendly)
+  const [coachingLink,    setCoachingLink]    = useState("");
+  const [officeHoursLink, setOfficeHoursLink] = useState("");
+  const [linksSaving,     setLinksSaving]     = useState(false);
+  const [linksSaved,      setLinksSaved]      = useState(false);
+  const [linksError,      setLinksError]      = useState("");
+
   // Password change
   const [currentPw,   setCurrentPw]   = useState("");
   const [newPw,       setNewPw]       = useState("");
@@ -209,6 +216,28 @@ export default function SettingsPage() {
       setTimeout(() => setPwSaved(false), 3000);
     } catch (err: unknown) { setPwError(err instanceof Error ? err.message : "Failed"); }
     finally { setPwSaving(false); }
+  }
+
+  useEffect(() => {
+    fetch("/api/settings").then(r => r.ok ? r.json() : null).then((d: { calendlyUrl?: string | null; officeHoursUrl?: string | null } | null) => {
+      if (!d) return;
+      setCoachingLink(d.calendlyUrl ?? "");
+      setOfficeHoursLink(d.officeHoursUrl ?? "");
+    }).catch(() => {});
+  }, []);
+
+  async function saveBookingLinks(e: FormEvent) {
+    e.preventDefault();
+    setLinksSaving(true); setLinksError(""); setLinksSaved(false);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calendlyUrl: coachingLink, officeHoursUrl: officeHoursLink }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      setLinksSaved(true); setTimeout(() => setLinksSaved(false), 3000);
+    } catch (err: unknown) { setLinksError(err instanceof Error ? err.message : "Failed"); }
+    finally { setLinksSaving(false); }
   }
 
   async function saveProfile(e: FormEvent) {
@@ -380,6 +409,29 @@ export default function SettingsPage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
+              </button>
+            </form>
+          </Section>
+
+          <Section title="Booking Links">
+            <form onSubmit={saveBookingLinks} className="space-y-4">
+              <Field label="1-on-1 Coaching Calendly link" hint="Shown to students on the LMS 1-on-1 Sessions page — module coaching bookings.">
+                <input value={coachingLink} onChange={e => setCoachingLink(e.target.value)}
+                  placeholder="https://calendly.com/you/coaching-session" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
+              </Field>
+              <Field label="Office Hours Calendly link" hint="Shown on the LMS Office Hours page — quick 15–20 min unsticks when students hit a wall.">
+                <input value={officeHoursLink} onChange={e => setOfficeHoursLink(e.target.value)}
+                  placeholder="https://calendly.com/you/office-hours" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
+              </Field>
+              <p className="text-xs" style={{ color: "#8a938f" }}>Leave a field blank to remove that booking option from the LMS.</p>
+              {linksError && <p className="text-sm text-red-600">{linksError}</p>}
+              <button type="submit" disabled={linksSaving}
+                className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                style={{ background: "#0a6b64" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                {linksSaving ? <Loader2 size={14} className="animate-spin" /> : linksSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
+                {linksSaving ? "Saving…" : linksSaved ? "Saved!" : "Save Booking Links"}
               </button>
             </form>
           </Section>
