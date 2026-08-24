@@ -109,6 +109,16 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string | null>(null);
   const [showDeniedBanner, setShowDeniedBanner] = useState(false);
+  const [mySessions, setMySessions] = useState<{
+    id: string; startTime: string; student: string; studentEmail: string;
+    moduleNumber: number; moduleTitle: string; moduleId: string;
+  }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/crm/my-sessions").then(r => r.ok ? r.json() : []).then(d => {
+      if (Array.isArray(d)) setMySessions(d);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("denied") === "1") {
@@ -416,6 +426,35 @@ export default function HomePage() {
 
         {/* ── RIGHT column (1/3) ── */}
         <div className="space-y-5">
+
+          {/* My upcoming 1-on-1s (from the LMS) */}
+          {mySessions.length > 0 && (
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock size={15} style={{ color: "#086c64" }} />
+                <h2 className="font-bold" style={{ color: "#14211f" }}>My 1-on-1s</h2>
+                <a href="https://lms.vantagecareer.co/admin/1on1" target="_blank" rel="noreferrer"
+                  className="ml-auto text-[11px] font-semibold" style={{ color: "#086c64" }}>All →</a>
+              </div>
+              <div className="space-y-2.5">
+                {mySessions.slice(0, 5).map(s => (
+                  <a key={s.id}
+                    href="https://lms.vantagecareer.co/admin/1on1"
+                    target="_blank" rel="noreferrer"
+                    className="block rounded-xl border p-3 hover:shadow-sm transition"
+                    style={{ borderColor: "#e4e0d6", background: "#f8f6f1", textDecoration: "none" }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold truncate" style={{ color: "#14211f" }}>{s.student}</p>
+                      <p className="text-[11px] font-semibold shrink-0" style={{ color: "#086c64" }}>
+                        {new Date(s.startTime).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET
+                      </p>
+                    </div>
+                    <p className="text-[11px] mt-0.5" style={{ color: "#949598" }}>Module {s.moduleNumber} · {s.moduleTitle}</p>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Pipeline snapshot */}
           <div className="card p-5">
