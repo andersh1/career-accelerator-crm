@@ -55,9 +55,15 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6" style={{ background: "#ffffff" }}>
-        <div className="w-full max-w-sm">
+      {/* Right form panel — deep brand green, form floats on a white card */}
+      <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden" style={{ background: "linear-gradient(160deg, #086c64 0%, #06534d 55%, #063f3a 100%)" }}>
+        {/* ghost V watermark */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/vantage-mark-white.svg" alt="" aria-hidden
+          className="absolute pointer-events-none select-none"
+          style={{ width: 620, right: -140, bottom: -120, opacity: 0.06 }} />
+        <div className="w-full max-w-sm relative bg-white rounded-3xl p-8 sm:p-10"
+          style={{ boxShadow: "0 24px 60px rgba(4,42,39,0.45), 0 2px 8px rgba(4,42,39,0.25)" }}>
 
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 flex flex-col items-center gap-1">
