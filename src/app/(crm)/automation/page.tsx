@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { WebhooksSection } from "./WebhooksSection";
 import { AutomationRules } from "./AutomationRules";
+import { EmailPlaybook } from "./EmailPlaybook";
 
 export default async function AutomationPage() {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,15 @@ export default async function AutomationPage() {
         <p className="text-sm" style={{ color: "#949598" }}>
           Smart rules that run in the background. Toggle any rule on or off — changes take effect immediately.
         </p>
+      </div>
+
+      {/* The Email Playbook — every automated email, when it fires, what it looks like */}
+      <div>
+        <h2 className="text-lg font-display font-semibold mb-1" style={{ color: "#14211f" }}>📬 Email Playbook</h2>
+        <p className="text-sm mb-4" style={{ color: "#949598" }}>
+          Every automated email students and coaches receive — who gets it, when it sends, and a preview of each template.
+        </p>
+        <EmailPlaybook />
       </div>
 
       {/* Rules list — client component with toggles + dynamic banner */}
