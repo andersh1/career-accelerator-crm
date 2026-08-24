@@ -31,7 +31,7 @@ interface TeamMember { id: string; name: string | null; email: string; }
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COLUMNS = [
-  { key: "BACKLOG",     label: "Backlog",     color: "#8a938f", bg: "#f8f6f1" },
+  { key: "BACKLOG",     label: "Backlog",     color: "#949598", bg: "#f8f6f1" },
   { key: "TODO",        label: "To Do",       color: "#3b82f6", bg: "#eff6ff" },
   { key: "IN_PROGRESS", label: "In Progress", color: "#d97706", bg: "#fffbeb" },
   { key: "DONE",        label: "Done",        color: "#059669", bg: "#f0fdf4" },
@@ -111,7 +111,7 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
           <button
             onClick={() => setShowMenu(v => !v)}
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded border hover:bg-slate-50 transition flex items-center gap-1"
-            style={{ color: "#8a938f", borderColor: "#e4e0d6" }}
+            style={{ color: "#949598", borderColor: "#e4e0d6" }}
           >
             Move <ChevronDown size={10} />
           </button>
@@ -139,7 +139,7 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
 
       {/* Description snippet */}
       {issue.description && (
-        <p className="text-xs line-clamp-2" style={{ color: "#8a938f" }}>
+        <p className="text-xs line-clamp-2" style={{ color: "#949598" }}>
           {issue.description}
         </p>
       )}
@@ -149,7 +149,7 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
         <div className="flex flex-wrap gap-1">
           {issue.tags.map(tag => (
             <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-              style={{ background: "#edf5f4", color: "#0a6b64" }}>
+              style={{ background: "#edf5f4", color: "#086c64" }}>
               {tag}
             </span>
           ))}
@@ -160,7 +160,7 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
       <div className="flex items-center gap-2 pt-1 border-t border-[#f1efe8]">
         {issue.assignee ? (
           <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
-            style={{ background: "#0a6b64" }}
+            style={{ background: "#086c64" }}
             title={avatarLabel(issue.assignee, team)}>
             {avatarInitials(issue.assignee, team)}
           </div>
@@ -179,13 +179,13 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
           <Link href={`/leads/${issue.linkedLeadId}`}
             className="p-1 rounded hover:bg-[#edf5f4] transition"
             title="View linked lead">
-            <ExternalLink size={11} style={{ color: "#0a6b64" }} />
+            <ExternalLink size={11} style={{ color: "#086c64" }} />
           </Link>
         )}
 
         <button onClick={() => onEdit(issue)}
           className="p-1 rounded hover:bg-[#f1efe8] transition" title="Edit">
-          <Pencil size={11} style={{ color: "#8a938f" }} />
+          <Pencil size={11} style={{ color: "#949598" }} />
         </button>
 
         <button onClick={() => onDelete(issue.id)}
@@ -234,14 +234,14 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#e4e0d6]"
           style={{ background: "#f8f6f1" }}>
           <div className="flex items-center gap-2">
-            <Bug size={16} style={{ color: "#0a6b64" }} />
+            <Bug size={16} style={{ color: "#086c64" }} />
             <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>
               {initial ? "Edit issue" : "New CRM issue"}
             </h2>
           </div>
           <button onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-[#e4e0d6] transition">
-            <X size={14} style={{ color: "#8a938f" }} />
+            <X size={14} style={{ color: "#949598" }} />
           </button>
         </div>
 
@@ -255,7 +255,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="What's the issue?"
-              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
               style={{ color: "#14211f" }}
               autoFocus
             />
@@ -269,7 +269,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
               onChange={e => setDescription(e.target.value)}
               placeholder="Steps to reproduce, context, links…"
               rows={3}
-              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40 resize-none"
+              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40 resize-none"
               style={{ color: "#14211f" }}
             />
           </div>
@@ -313,7 +313,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map(tag => (
                 <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{ background: "#edf5f4", color: "#0a6b64" }}>
+                  style={{ background: "#edf5f4", color: "#086c64" }}>
                   {tag}
                   <button onClick={() => setTags(prev => prev.filter(t => t !== tag))}>
                     <X size={9} />
@@ -326,7 +326,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
               onChange={e => setTagInput(e.target.value)}
               onKeyDown={addTag}
               placeholder="Add a tag…"
-              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
               style={{ color: "#14211f" }}
             />
           </div>
@@ -340,7 +340,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
               value={linkedLeadId}
               onChange={e => setLinkedLeadId(e.target.value)}
               placeholder="cj…"
-              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+              className="w-full px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
               style={{ color: "#14211f" }}
             />
           </div>
@@ -358,7 +358,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             onClick={() => onSave({ title, description: description || null, type, priority, assignee: assignee || null, tags, linkedLeadId: linkedLeadId || null })}
             disabled={!title.trim() || saving}
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 flex items-center gap-2"
-            style={{ background: "#0a6b64" }}>
+            style={{ background: "#086c64" }}>
             {saving && <Loader2 size={13} className="animate-spin" />}
             {initial ? "Save changes" : "Create issue"}
           </button>
@@ -459,9 +459,9 @@ export default function IssuesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <div className="flex items-center gap-2 mb-1">
-            <Bug size={18} style={{ color: "#0a6b64" }} />
+            <Bug size={18} style={{ color: "#086c64" }} />
             <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>CRM Issues</h1>
             {urgent > 0 && (
               <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200">
@@ -469,7 +469,7 @@ export default function IssuesPage() {
               </span>
             )}
           </div>
-          <p className="text-sm" style={{ color: "#8a938f" }}>
+          <p className="text-sm" style={{ color: "#949598" }}>
             Internal issues for Dan, David, and Caleb — separate from student support tickets.
             {!loading && ` ${totalOpen} open`}
           </p>
@@ -477,7 +477,7 @@ export default function IssuesPage() {
         <button
           onClick={() => { setEditTarget(null); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition"
-          style={{ background: "#0a6b64" }}
+          style={{ background: "#086c64" }}
         >
           <Plus size={15} /> New issue
         </button>
@@ -517,7 +517,7 @@ export default function IssuesPage() {
       {/* Kanban board */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 size={24} className="animate-spin" style={{ color: "#8a938f" }} />
+          <Loader2 size={24} className="animate-spin" style={{ color: "#949598" }} />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -561,8 +561,8 @@ export default function IssuesPage() {
                 {col.key === "BACKLOG" && (
                   <button
                     onClick={() => { setEditTarget(null); setShowForm(true); }}
-                    className="mt-2.5 w-full flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border border-dashed border-[#e4e0d6] hover:border-[#0a6b64] hover:bg-[#edf5f4] transition"
-                    style={{ color: "#8a938f" }}>
+                    className="mt-2.5 w-full flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border border-dashed border-[#e4e0d6] hover:border-[#086c64] hover:bg-[#edf5f4] transition"
+                    style={{ color: "#949598" }}>
                     <Plus size={12} /> New issue
                   </button>
                 )}

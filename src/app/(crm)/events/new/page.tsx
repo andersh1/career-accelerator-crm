@@ -74,27 +74,27 @@ export default function NewEventPage() {
     return (
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-16 text-center">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: "#edf5f4" }}>
-          <PartyPopper size={28} style={{ color: "#0a6b64" }} />
+          <PartyPopper size={28} style={{ color: "#086c64" }} />
         </div>
         <h1 className="text-2xl font-bold mb-1" style={{ color: "#14211f" }}>Your event page is live!</h1>
         <p className="text-sm mb-6" style={{ color: "#5a6663" }}>{created.title} — share the link below to start collecting registrations.</p>
 
         {/* URL box */}
         <div className="rounded-2xl border p-4 mb-4 text-left" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "#8a938f" }}>Registration page</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "#949598" }}>Registration page</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs break-all" style={{ color: "#14211f" }}>{publicUrl}</code>
             <button
               onClick={copyUrl}
               className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
-              style={{ background: copied ? "#edf5f4" : "#f1efe8", color: copied ? "#0a6b64" : "#5a6663" }}
+              style={{ background: copied ? "#edf5f4" : "#f1efe8", color: copied ? "#086c64" : "#5a6663" }}
             >
               {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? "Copied!" : "Copy"}
             </button>
             <a href={publicUrl} target="_blank" rel="noreferrer"
               className="shrink-0 p-2 rounded-xl transition-colors hover:bg-slate-100"
-              style={{ color: "#8a938f" }}>
+              style={{ color: "#949598" }}>
               <ExternalLink size={14} />
             </a>
           </div>
@@ -111,9 +111,9 @@ export default function NewEventPage() {
 
         {showQr && (
           <div className="rounded-2xl border p-5 mb-4 inline-block" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-center" style={{ color: "#8a938f" }}>Scan to register</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-center" style={{ color: "#949598" }}>Scan to register</p>
             <img src={qrUrl} alt="QR code for event registration" width={200} height={200} className="rounded-xl mx-auto" />
-            <p className="text-[10px] mt-2 text-center" style={{ color: "#8a938f" }}>Print this at the dinner table</p>
+            <p className="text-[10px] mt-2 text-center" style={{ color: "#949598" }}>Print this at the dinner table</p>
           </div>
         )}
 
@@ -122,7 +122,7 @@ export default function NewEventPage() {
           <button
             onClick={() => router.push(`/events/${created.id}`)}
             className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-colors"
-            style={{ background: "#0a6b64" }}
+            style={{ background: "#086c64" }}
           >
             Open event dashboard →
           </button>
@@ -148,13 +148,13 @@ export default function NewEventPage() {
         <ArrowLeft size={14} /> All events
       </Link>
       <h1 className="text-2xl font-bold mb-1" style={{ color: "#14211f" }}>New Event</h1>
-      <p className="text-sm mb-6" style={{ color: "#8a938f" }}>Spin up a registration page in seconds.</p>
+      <p className="text-sm mb-6" style={{ color: "#949598" }}>Spin up a registration page in seconds.</p>
 
       <form onSubmit={submit} className="space-y-5">
 
         {/* Event Type */}
         <div className="rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Event Type</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Event Type</p>
           <div className="grid grid-cols-2 gap-3">
             {[
               { val: "IN_PERSON", label: "In Person", icon: MapPin, desc: "Dinner, panel, or gathering" },
@@ -165,14 +165,14 @@ export default function NewEventPage() {
                 onClick={() => set("eventType", val)}
                 className="flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all"
                 style={{
-                  borderColor: form.eventType === val ? "#0a6b64" : "#e4e0d6",
+                  borderColor: form.eventType === val ? "#086c64" : "#e4e0d6",
                   background:  form.eventType === val ? "#f0fdf4" : "#faf9f6",
                 }}
               >
-                <Icon size={18} style={{ color: form.eventType === val ? "#0a6b64" : "#8a938f", marginTop: 1, flexShrink: 0 }} />
+                <Icon size={18} style={{ color: form.eventType === val ? "#086c64" : "#949598", marginTop: 1, flexShrink: 0 }} />
                 <div>
                   <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{label}</p>
-                  <p className="text-xs" style={{ color: "#8a938f" }}>{desc}</p>
+                  <p className="text-xs" style={{ color: "#949598" }}>{desc}</p>
                 </div>
               </button>
             ))}
@@ -181,7 +181,7 @@ export default function NewEventPage() {
 
         {/* Event Details */}
         <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Event Details</p>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Event Details</p>
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Title *</label>
             <input required value={form.title} onChange={e => set("title", e.target.value)} placeholder="Atherton Family Dinner — Career Accelerator" className={inp} style={bdr} />
@@ -189,7 +189,7 @@ export default function NewEventPage() {
           <div>
             <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>URL slug *</label>
             <div className="flex items-center rounded-xl border overflow-hidden" style={bdr}>
-              <span className="px-3 py-2.5 text-xs shrink-0 border-r" style={{ color: "#8a938f", borderColor: "#e4e0d6", background: "#f8f6f1" }}>/events/</span>
+              <span className="px-3 py-2.5 text-xs shrink-0 border-r" style={{ color: "#949598", borderColor: "#e4e0d6", background: "#f8f6f1" }}>/events/</span>
               <input required value={form.slug} onChange={e => set("slug", e.target.value)} placeholder="atherton-family-dinner" className="flex-1 px-3 py-2.5 text-sm outline-none" />
             </div>
           </div>
@@ -230,14 +230,14 @@ export default function NewEventPage() {
 
         {/* Location — conditional on type */}
         <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>
             {isZoom ? "Online Event" : "Venue"}
           </p>
           {isZoom ? (
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Zoom link (optional — can add later)</label>
               <input value={form.meetingUrl} onChange={e => set("meetingUrl", e.target.value)} placeholder="https://us02web.zoom.us/j/..." className={inp} style={bdr} />
-              <p className="text-xs mt-1" style={{ color: "#8a938f" }}>If added, included in confirmation and reminder emails.</p>
+              <p className="text-xs mt-1" style={{ color: "#949598" }}>If added, included in confirmation and reminder emails.</p>
             </div>
           ) : (
             <>
@@ -255,7 +255,7 @@ export default function NewEventPage() {
 
         {/* Speaker */}
         <div className="rounded-2xl border p-5 space-y-4" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Speaker (optional)</p>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Speaker (optional)</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Name</label>
@@ -278,12 +278,12 @@ export default function NewEventPage() {
 
         {/* Confirmation message */}
         <div className="rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Confirmation Note (optional)</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Confirmation Note (optional)</p>
           <textarea rows={3} value={form.confirmationMessage} onChange={e => set("confirmationMessage", e.target.value)} placeholder="Any personal note to include in the confirmation email — e.g. parking info, dress code, what to bring…" className={inp} style={bdr} />
         </div>
 
         <div className="flex gap-3">
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "#0a6b64", opacity: saving ? 0.6 : 1 }}>
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "#086c64", opacity: saving ? 0.6 : 1 }}>
             {saving && <Loader2 size={13} className="animate-spin" />}
             Create event
           </button>

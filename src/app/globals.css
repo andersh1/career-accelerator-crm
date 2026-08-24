@@ -11,12 +11,12 @@
     --panel:      #f1efe8;
     --ink:        #14211f;
     --muted:      #5a6663;
-    --faint:      #8a938f;
+    --faint:      #949598;
     --line:       #e4e0d6;
-    --teal:       #0a6b64;
+    --teal:       #086c64;
     --teal-dark:  #084f4a;
     --teal-light: #0f8a80;
-    --accent:       #0a6b64;
+    --accent:       #086c64;
     --accent-light: #d0e8e6;
     --success: #16a34a;
     --warning: #d97706;
@@ -33,7 +33,7 @@
 }
 
 @layer utilities {
-  .font-display { font-family: var(--font-display, Georgia, serif); }
+  .font-display { font-family: var(--font-display, var(--font-display), Montserrat, sans-serif); }
   .font-sans    { font-family: var(--font-inter, system-ui, sans-serif); }
 
   .scrollbar-thin {
@@ -76,7 +76,7 @@
 .card-hover:hover { box-shadow: 0 8px 24px rgba(20,33,31,0.1); transform: translateY(-2px); }
 
 /* ─── Buttons ─── */
-.btn-primary   { background: #0a6b64; color: white; font-weight: 600; font-size: 0.875rem; padding: 0.625rem 1.25rem; border-radius: 10px; transition: background 0.15s ease, box-shadow 0.15s ease; letter-spacing: 0.01em; border: none; cursor: pointer; display: inline-flex; align-items: center; }
+.btn-primary   { background: #086c64; color: white; font-weight: 600; font-size: 0.875rem; padding: 0.625rem 1.25rem; border-radius: 10px; transition: background 0.15s ease, box-shadow 0.15s ease; letter-spacing: 0.01em; border: none; cursor: pointer; display: inline-flex; align-items: center; }
 .btn-primary:hover   { background: #084f4a; box-shadow: 0 4px 12px rgba(10,107,100,0.3); }
 .btn-secondary { background: white; color: #14211f; font-weight: 500; font-size: 0.875rem; padding: 0.625rem 1.25rem; border-radius: 10px; border: 1px solid #e4e0d6; transition: background 0.15s ease, border-color 0.15s ease; cursor: pointer; display: inline-flex; align-items: center; }
 .btn-secondary:hover { background: #f8f6f1; border-color: #c9c4b8; }
@@ -112,7 +112,7 @@
 }
 
 /* ─── Focus rings ─── */
-*:focus-visible { outline: 2px solid #0a6b64; outline-offset: 2px; }
+*:focus-visible { outline: 2px solid #086c64; outline-offset: 2px; }
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }

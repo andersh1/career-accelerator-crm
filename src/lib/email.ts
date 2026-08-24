@@ -6,18 +6,18 @@ const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
-<body style="margin:0;padding:0;background:#f1efe8;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1efe8;padding:40px 20px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e0d6;">
-      <tr><td style="background:linear-gradient(180deg,#0a6b64 0%,#084f4a 100%);padding:28px 32px;">
+      <tr><td style="background:linear-gradient(180deg,#086c64 0%,#084f4a 100%);padding:28px 32px;">
         <p style="margin:0;color:rgba(255,255,255,0.5);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Vantage Career Accelerator</p>
         <h1 style="margin:8px 0 0;color:#ffffff;font-size:20px;font-weight:800;line-height:1.3;">${title}</h1>
       </td></tr>
       <tr><td style="padding:32px;">${body}</td></tr>
       <tr><td style="padding:20px 32px;border-top:1px solid #e4e0d6;background:#f8f6f1;">
-        <p style="margin:0;color:#8a938f;font-size:11px;text-align:center;">
-          Vantage Career Accelerator Program · <a href="${LMS_URL}" style="color:#0a6b64;text-decoration:none;">Open portal</a>
+        <p style="margin:0;color:#949598;font-size:11px;text-align:center;">
+          Vantage Career Accelerator Program · <a href="${LMS_URL}" style="color:#086c64;text-decoration:none;">Open portal</a>
         </p>
       </td></tr>
     </table>
@@ -36,7 +36,7 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
     <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
       We received a request to reset your CRM password. Click below to choose a new one.
     </p>
-    <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Reset my password →
     </a>
     <p style="margin:0 0 8px;color:#94a3b8;font-size:12px;">This link expires in 1 hour. If you didn't request a reset, you can ignore this email.</p>
@@ -123,13 +123,13 @@ export async function sendGraduationEmail({
   const body = `
     <p style="margin:0 0 16px;color:#475569;font-size:15px;">Hi ${studentName.split(" ")[0]},</p>
     <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
-      On behalf of the entire 10x team — <strong>congratulations on completing ${cohortName}!</strong>
+      On behalf of the entire Vantage Career team — <strong>congratulations on completing ${cohortName}!</strong>
       This is a huge milestone and you've put in the work to get here.
     </p>
     <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
       Your certificate of completion is now available in your student portal.
     </p>
-    <a href="${LMS_URL}/certificate" style="display:inline-block;margin:8px 0 24px;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${LMS_URL}/certificate" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       View my certificate →
     </a>
     <p style="margin:0;color:#64748b;font-size:13px;line-height:1.7;">
@@ -155,12 +155,12 @@ export async function sendAdminApplicationAlert({
         const colonIdx = block.indexOf(":\n");
         if (colonIdx === -1) {
           const singleLine = block.indexOf(": ");
-          if (singleLine !== -1) return `<tr><td style="padding:6px 0;color:#8a938f;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${block.slice(0, singleLine)}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${block.slice(singleLine + 2)}</td></tr>`;
+          if (singleLine !== -1) return `<tr><td style="padding:6px 0;color:#949598;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${block.slice(0, singleLine)}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${block.slice(singleLine + 2)}</td></tr>`;
           return "";
         }
         const label = block.slice(0, colonIdx);
         const val = block.slice(colonIdx + 2).trim();
-        return `<tr><td style="padding:6px 0;color:#8a938f;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${label}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${val.replace(/\n/g, "<br/>")}</td></tr>`;
+        return `<tr><td style="padding:6px 0;color:#949598;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${label}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${val.replace(/\n/g, "<br/>")}</td></tr>`;
       }).filter(Boolean).join("")
     : "";
 
@@ -169,16 +169,16 @@ export async function sendAdminApplicationAlert({
       A new application was just submitted through the <strong>3i NextGen</strong> portal.
     </p>
     <div style="background:#f0faf8;border:1px solid #b2e0da;border-radius:12px;padding:20px;margin:0 0 20px;">
-      <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#0a6b64;text-transform:uppercase;letter-spacing:1px;">Applicant</p>
+      <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#086c64;text-transform:uppercase;letter-spacing:1px;">Applicant</p>
       <p style="margin:0;font-size:18px;font-weight:800;color:#14211f;">${firstName} ${lastName}</p>
       <p style="margin:4px 0 0;font-size:13px;color:#5a6663;">${email}${phone ? ` · ${phone}` : ""}</p>
     </div>
     ${notesRows ? `
-    <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#8a938f;text-transform:uppercase;letter-spacing:1px;">Application Answers</p>
+    <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#949598;text-transform:uppercase;letter-spacing:1px;">Application Answers</p>
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
       ${notesRows}
     </table>` : ""}
-    <a href="${leadUrl}" style="display:inline-block;margin:0 0 24px;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${leadUrl}" style="display:inline-block;margin:0 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       View in CRM →
     </a>
   `;
@@ -201,13 +201,13 @@ export async function sendCrmInviteEmail({
   if (!resend) return;
   const subject = "You've been invited to Vantage Career Accelerator CRM";
   const roleLabel = crmRole === "ADMIN" ? "Admin" : "Member";
-  const roleBadgeBg = crmRole === "ADMIN" ? "#0a6b64" : "#5a6663";
+  const roleBadgeBg = crmRole === "ADMIN" ? "#086c64" : "#5a6663";
 
   const credentialsBlock = isNew && tempPassword
     ? `
       <div style="background:#f0faf8;border:1px solid #b2e0da;border-radius:12px;padding:20px;margin:20px 0;">
-        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:#0a6b64;text-transform:uppercase;letter-spacing:1px;">Your login details</p>
-        <p style="margin:0 0 6px;font-size:14px;color:#14211f;"><strong>URL:</strong> <a href="${loginUrl}" style="color:#0a6b64;">${loginUrl}</a></p>
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:#086c64;text-transform:uppercase;letter-spacing:1px;">Your login details</p>
+        <p style="margin:0 0 6px;font-size:14px;color:#14211f;"><strong>URL:</strong> <a href="${loginUrl}" style="color:#086c64;">${loginUrl}</a></p>
         <p style="margin:0 0 6px;font-size:14px;color:#14211f;"><strong>Email:</strong> ${to}</p>
         <p style="margin:0;font-size:14px;color:#14211f;"><strong>Temporary password:</strong> <code style="background:#e4e0d6;color:#14211f;padding:2px 8px;border-radius:6px;font-size:13px;">${tempPassword}</code></p>
       </div>
@@ -216,7 +216,7 @@ export async function sendCrmInviteEmail({
       </p>`
     : `
       <div style="background:#f0faf8;border:1px solid #b2e0da;border-radius:12px;padding:20px;margin:20px 0;">
-        <p style="margin:0 0 6px;font-size:14px;color:#14211f;"><strong>URL:</strong> <a href="${loginUrl}" style="color:#0a6b64;">${loginUrl}</a></p>
+        <p style="margin:0 0 6px;font-size:14px;color:#14211f;"><strong>URL:</strong> <a href="${loginUrl}" style="color:#086c64;">${loginUrl}</a></p>
         <p style="margin:0;font-size:14px;color:#5a6663;">Use your existing password to sign in.</p>
       </div>`;
 
@@ -227,7 +227,7 @@ export async function sendCrmInviteEmail({
       <span style="display:inline-block;background:${roleBadgeBg};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;vertical-align:middle;margin-left:4px;">${roleLabel}</span>.
     </p>
     ${credentialsBlock}
-    <a href="${loginUrl}" style="display:inline-block;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${loginUrl}" style="display:inline-block;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Log in to CRM →
     </a>
   `;
@@ -251,7 +251,7 @@ export async function sendOutcomeFollowUpEmail({
       We'd love to hear where you've landed — whether you've started a new role, are still in your search, or are exploring options.
       Your outcome helps us understand what's working and improve the program for future students.
     </p>
-    <a href="${formUrl}" style="display:inline-block;margin:8px 0 24px;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${formUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Share my outcome →
     </a>
     <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
@@ -282,7 +282,7 @@ export async function sendStudentInviteEmail({
       You've been enrolled in the <strong>Vantage Career Accelerator</strong> program. Click below to set your password and access your student portal.
     </p>
     ${cohortBlock}
-    <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#0a6b64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+    <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Set up my account →
     </a>
     <p style="margin:0;color:#94a3b8;font-size:12px;">This link expires in 7 days. If you didn't expect this email, you can ignore it.</p>

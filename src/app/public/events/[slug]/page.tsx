@@ -86,7 +86,7 @@ function EventPageInner() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#f8f6f1" }}>
-        <Loader2 size={28} className="animate-spin" style={{ color: "#0a6b64" }} />
+        <Loader2 size={28} className="animate-spin" style={{ color: "#086c64" }} />
       </div>
     );
   }
@@ -97,8 +97,8 @@ function EventPageInner() {
         <div className="text-center px-6">
           <p className="text-4xl mb-3">🔍</p>
           <h1 className="text-xl font-bold mb-2" style={{ color: "#14211f" }}>Event not found</h1>
-          <p style={{ color: "#8a938f" }}>This event may have ended or the link may be incorrect.</p>
-          <a href="https://lms.vantagecareer.co" className="inline-block mt-4 text-sm font-semibold" style={{ color: "#0a6b64" }}>← Learn more about the program</a>
+          <p style={{ color: "#949598" }}>This event may have ended or the link may be incorrect.</p>
+          <a href="https://lms.vantagecareer.co" className="inline-block mt-4 text-sm font-semibold" style={{ color: "#086c64" }}>← Learn more about the program</a>
         </div>
       </div>
     );
@@ -110,11 +110,11 @@ function EventPageInner() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, #0a6b64 0%, #063b37 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "linear-gradient(135deg, #086c64 0%, #063b37 100%)" }}>
         <div className="max-w-md w-full">
           <div className="bg-white rounded-3xl p-8 text-center shadow-2xl">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "#f0fdf4" }}>
-              <CheckCircle2 size={32} style={{ color: "#0a6b64" }} />
+              <CheckCircle2 size={32} style={{ color: "#086c64" }} />
             </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: "#14211f" }}>
               {alreadyReg ? "Already registered!" : "You're in!"}
@@ -126,11 +126,11 @@ function EventPageInner() {
             </p>
             <div className="rounded-2xl p-4 mb-5 text-left space-y-2.5" style={{ background: "#f8f6f1" }}>
               <div className="flex items-center gap-2 text-sm">
-                <Calendar size={14} style={{ color: "#0a6b64", flexShrink: 0 }} />
+                <Calendar size={14} style={{ color: "#086c64", flexShrink: 0 }} />
                 <span style={{ color: "#14211f" }}>{fmtDate(event.startsAt, event.timezone)}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Clock size={14} style={{ color: "#0a6b64", flexShrink: 0 }} />
+                <Clock size={14} style={{ color: "#086c64", flexShrink: 0 }} />
                 <span style={{ color: "#14211f" }}>{fmtTime(event.startsAt, event.timezone)}</span>
               </div>
               {isZoom ? (
@@ -148,7 +148,7 @@ function EventPageInner() {
             {event.confirmationMessage && (
               <p className="text-sm mb-4 p-3 rounded-xl text-left" style={{ background: "#f0fdf4", color: "#14211f", border: "1px solid #bbf7d0" }}>{event.confirmationMessage}</p>
             )}
-            <p className="text-xs" style={{ color: "#8a938f" }}>We'll send a reminder before the event. Reply to your confirmation email with any questions.</p>
+            <p className="text-xs" style={{ color: "#949598" }}>We'll send a reminder before the event. Reply to your confirmation email with any questions.</p>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@ function EventPageInner() {
   return (
     <div className="min-h-screen" style={{ background: "#f8f6f1" }}>
       {/* Hero */}
-      <div style={{ background: "linear-gradient(135deg, #0a6b64 0%, #063b37 100%)" }}>
+      <div style={{ background: "linear-gradient(135deg, #086c64 0%, #063b37 100%)" }}>
         <div className="max-w-5xl mx-auto px-6 py-12 md:py-16">
           <a href="https://lms.vantagecareer.co" className="inline-flex items-center gap-1 text-xs font-semibold mb-6 hover:opacity-90 transition-opacity" style={{ color: "rgba(255,255,255,0.55)" }}>
             Vantage Career Accelerator <ChevronRight size={12} /> Events
@@ -217,12 +217,12 @@ function EventPageInner() {
 
             {event.speakerName && (
               <div className="rounded-2xl p-6 border" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-                <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#8a938f" }}>Featured Speaker</p>
+                <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#949598" }}>Featured Speaker</p>
                 <div className="flex items-start gap-4">
                   {event.speakerImageUrl ? (
                     <img src={event.speakerImageUrl} alt={event.speakerName} className="w-16 h-16 rounded-2xl object-cover shrink-0" />
                   ) : (
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 text-2xl font-bold" style={{ background: "linear-gradient(135deg, #0a6b64, #063b37)", color: "white" }}>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 text-2xl font-bold" style={{ background: "linear-gradient(135deg, #086c64, #063b37)", color: "white" }}>
                       {event.speakerName[0]}
                     </div>
                   )}
@@ -236,11 +236,11 @@ function EventPageInner() {
             )}
 
             <div className="rounded-2xl p-6 border" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-              <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#8a938f" }}>Event Details</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#949598" }}>Event Details</p>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#edf5f4" }}>
-                    <Calendar size={14} style={{ color: "#0a6b64" }} />
+                    <Calendar size={14} style={{ color: "#086c64" }} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{fmtDate(event.startsAt, event.timezone)}</p>
@@ -289,11 +289,11 @@ function EventPageInner() {
             </div>
 
             <div className="rounded-2xl p-6 border" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>About Vantage Career Accelerator</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>About Vantage Career Accelerator</p>
               <p className="text-sm leading-relaxed" style={{ color: "#5a6663" }}>
                 The Vantage Career Accelerator is an intensive career development program that helps ambitious students and recent grads land roles at top companies. Our cohort-based model combines live coaching, real-world projects, and a powerful alumni network.
               </p>
-              <a href="https://lms.vantagecareer.co" className="inline-block mt-3 text-sm font-semibold" style={{ color: "#0a6b64" }}>
+              <a href="https://lms.vantagecareer.co" className="inline-block mt-3 text-sm font-semibold" style={{ color: "#086c64" }}>
                 Learn more →
               </a>
             </div>
@@ -302,7 +302,7 @@ function EventPageInner() {
           {/* Right — registration form */}
           <div className="md:col-span-2">
             <div className="rounded-2xl border shadow-sm overflow-hidden sticky top-6" style={{ borderColor: "#e4e0d6" }}>
-              <div className="px-6 py-5" style={{ background: "#0a6b64" }}>
+              <div className="px-6 py-5" style={{ background: "#086c64" }}>
                 <h2 className="font-bold text-base text-white">
                   {isFull ? "This event is full" : "Reserve your spot"}
                 </h2>
@@ -312,7 +312,7 @@ function EventPageInner() {
               {isFull ? (
                 <div className="px-6 py-8 text-center" style={{ background: "#fff" }}>
                   <p className="text-sm" style={{ color: "#5a6663" }}>Registrations for this event are closed. Check back for future events.</p>
-                  <a href="https://lms.vantagecareer.co" className="inline-block mt-3 text-sm font-semibold" style={{ color: "#0a6b64" }}>Learn about the program →</a>
+                  <a href="https://lms.vantagecareer.co" className="inline-block mt-3 text-sm font-semibold" style={{ color: "#086c64" }}>Learn about the program →</a>
                 </div>
               ) : (
                 <form onSubmit={submit} className="px-6 py-5 space-y-4" style={{ background: "#fff" }}>
@@ -349,9 +349,9 @@ function EventPageInner() {
                           onClick={() => set("contactType", val)}
                           className="flex items-center justify-center px-3 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all"
                           style={{
-                            borderColor: form.contactType === val ? "#0a6b64" : "#e4e0d6",
+                            borderColor: form.contactType === val ? "#086c64" : "#e4e0d6",
                             background:  form.contactType === val ? "#f0fdf4" : "#faf9f6",
-                            color:       form.contactType === val ? "#0a6b64" : "#5a6663",
+                            color:       form.contactType === val ? "#086c64" : "#5a6663",
                           }}
                         >
                           {label}
@@ -367,13 +367,13 @@ function EventPageInner() {
                   <button
                     type="submit" disabled={submitting}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-opacity"
-                    style={{ background: "#0a6b64", opacity: submitting ? 0.7 : 1 }}
+                    style={{ background: "#086c64", opacity: submitting ? 0.7 : 1 }}
                   >
                     {submitting && <Loader2 size={15} className="animate-spin" />}
                     {submitting ? "Registering…" : "Register for free →"}
                   </button>
 
-                  <p className="text-[11px] text-center" style={{ color: "#8a938f" }}>
+                  <p className="text-[11px] text-center" style={{ color: "#949598" }}>
                     Confirmation + calendar invite sent to your email.
                   </p>
                 </form>
@@ -385,8 +385,8 @@ function EventPageInner() {
       </div>
 
       <div className="border-t mt-8 py-6 px-6 text-center" style={{ borderColor: "#e4e0d6" }}>
-        <p className="text-xs" style={{ color: "#8a938f" }}>
-          © Vantage Career Accelerator · <a href="https://lms.vantagecareer.co" style={{ color: "#0a6b64" }}>lms.vantagecareer.co</a>
+        <p className="text-xs" style={{ color: "#949598" }}>
+          © Vantage Career Accelerator · <a href="https://lms.vantagecareer.co" style={{ color: "#086c64" }}>lms.vantagecareer.co</a>
         </p>
       </div>
     </div>
@@ -397,7 +397,7 @@ export default function EventPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#f8f6f1" }}>
-        <Loader2 size={28} className="animate-spin" style={{ color: "#0a6b64" }} />
+        <Loader2 size={28} className="animate-spin" style={{ color: "#086c64" }} />
       </div>
     }>
       <EventPageInner />

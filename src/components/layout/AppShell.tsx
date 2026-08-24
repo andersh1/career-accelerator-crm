@@ -206,7 +206,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className="hidden md:flex flex-col w-[240px] shrink-0"
-        style={{ background: "linear-gradient(180deg, #0a6b64 0%, #063b37 100%)" }}
+        style={{ background: "linear-gradient(180deg, #086c64 0%, #063b37 100%)" }}
       >
         <SidebarContent />
       </aside>
@@ -217,7 +217,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside
             className="absolute left-0 top-0 bottom-0 w-[240px] z-50"
-            style={{ background: "linear-gradient(180deg, #0a6b64 0%, #063b37 100%)" }}
+            style={{ background: "linear-gradient(180deg, #086c64 0%, #063b37 100%)" }}
           >
             <SidebarContent />
           </aside>

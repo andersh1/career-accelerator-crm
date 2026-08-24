@@ -74,9 +74,9 @@ export default function OutcomesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
-            <Trophy size={20} style={{ color: "#0a6b64" }} /> Outcomes
+            <Trophy size={20} style={{ color: "#086c64" }} /> Outcomes
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>Track where enrolled students land after the program</p>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>Track where enrolled students land after the program</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold"
           style={{ background: "#fffbeb", borderColor: "#fde68a", color: "#92400e" }}>
@@ -92,11 +92,11 @@ export default function OutcomesPage() {
             { label: "Total enrolled", value: stats.total,          color: "#14211f" },
             { label: "Placed",         value: stats.placed,         color: "#059669" },
             { label: "Still searching",value: stats.stillSearching, color: "#d97706" },
-            { label: "Not logging",    value: stats.unlogged,       color: "#8a938f" },
-            { label: "Placement rate", value: `${placementRate}%`,  color: "#0a6b64" },
+            { label: "Not logging",    value: stats.unlogged,       color: "#949598" },
+            { label: "Placement rate", value: `${placementRate}%`,  color: "#086c64" },
           ].map(s => (
             <div key={s.label} className="card shadow-sm p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>{s.label}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>{s.label}</p>
               <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
@@ -105,9 +105,9 @@ export default function OutcomesPage() {
 
       {stats?.avgSalary && (
         <div className="mb-6 card shadow-sm p-4 flex items-center gap-3">
-          <DollarSign size={16} style={{ color: "#0a6b64" }} />
+          <DollarSign size={16} style={{ color: "#086c64" }} />
           <span className="text-sm font-semibold" style={{ color: "#14211f" }}>
-            Avg reported salary: <span style={{ color: "#0a6b64" }}>${stats.avgSalary.toLocaleString()}</span>
+            Avg reported salary: <span style={{ color: "#086c64" }}>${stats.avgSalary.toLocaleString()}</span>
           </span>
         </div>
       )}
@@ -121,9 +121,9 @@ export default function OutcomesPage() {
               className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
                 statusFilter === f.key
                   ? "border-transparent text-white"
-                  : "border-[#e4e0d6] hover:border-[#0a6b64]"
+                  : "border-[#e4e0d6] hover:border-[#086c64]"
               }`}
-              style={statusFilter === f.key ? { background: "#0a6b64", color: "white" } : { color: "#5a6663" }}>
+              style={statusFilter === f.key ? { background: "#086c64", color: "white" } : { color: "#5a6663" }}>
               {f.label}
             </button>
           ))}
@@ -136,7 +136,7 @@ export default function OutcomesPage() {
               <option value="">All cohorts</option>
               {cohorts.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#8a938f" }} />
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#949598" }} />
           </div>
         )}
       </div>
@@ -144,24 +144,24 @@ export default function OutcomesPage() {
       {/* Table */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 size={24} className="animate-spin" style={{ color: "#0a6b64" }} />
+          <Loader2 size={24} className="animate-spin" style={{ color: "#086c64" }} />
         </div>
       ) : leads.length === 0 ? (
         <div className="card shadow-sm p-16 text-center">
           <Trophy size={32} className="mx-auto mb-3 opacity-20" />
-          <p className="text-sm font-semibold" style={{ color: "#8a938f" }}>No enrolled students match this filter</p>
+          <p className="text-sm font-semibold" style={{ color: "#949598" }}>No enrolled students match this filter</p>
         </div>
       ) : (
         <div className="card shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Student</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Status</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Company / Role</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden md:table-cell" style={{ color: "#8a938f" }}>Salary</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden md:table-cell" style={{ color: "#8a938f" }}>Cohort</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#8a938f" }}>Updated</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Student</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Status</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Company / Role</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden md:table-cell" style={{ color: "#949598" }}>Salary</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden md:table-cell" style={{ color: "#949598" }}>Cohort</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#949598" }}>Updated</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -176,7 +176,7 @@ export default function OutcomesPage() {
                       <p className="font-semibold" style={{ color: "#14211f" }}>
                         {lead.firstName} {lead.lastName}
                       </p>
-                      <p className="text-xs" style={{ color: "#8a938f" }}>{lead.email}</p>
+                      <p className="text-xs" style={{ color: "#949598" }}>{lead.email}</p>
                     </td>
 
                     {/* Status */}
@@ -196,13 +196,13 @@ export default function OutcomesPage() {
                         <div>
                           {lead.outcomeCompany && (
                             <div className="flex items-center gap-1.5">
-                              <Building2 size={11} style={{ color: "#8a938f" }} />
+                              <Building2 size={11} style={{ color: "#949598" }} />
                               <span className="font-medium" style={{ color: "#14211f" }}>{lead.outcomeCompany}</span>
                             </div>
                           )}
                           {lead.outcomeRole && (
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <Briefcase size={11} style={{ color: "#8a938f" }} />
+                              <Briefcase size={11} style={{ color: "#949598" }} />
                               <span style={{ color: "#5a6663" }}>{lead.outcomeRole}</span>
                             </div>
                           )}
@@ -215,7 +215,7 @@ export default function OutcomesPage() {
                     {/* Salary */}
                     <td className="px-4 py-3 hidden md:table-cell">
                       {lead.outcomeSalary ? (
-                        <span className="font-medium" style={{ color: "#0a6b64" }}>
+                        <span className="font-medium" style={{ color: "#086c64" }}>
                           ${lead.outcomeSalary.toLocaleString()}
                         </span>
                       ) : (
@@ -235,7 +235,7 @@ export default function OutcomesPage() {
                     {/* Updated */}
                     <td className="px-4 py-3 hidden lg:table-cell">
                       {lead.outcomeUpdatedAt ? (
-                        <span className="text-xs" style={{ color: "#8a938f" }}>
+                        <span className="text-xs" style={{ color: "#949598" }}>
                           {new Date(lead.outcomeUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </span>
                       ) : (
@@ -248,7 +248,7 @@ export default function OutcomesPage() {
                       <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition">
                         <Link href={`/leads/${lead.id}`}
                           className="inline-flex items-center gap-1 text-xs font-semibold"
-                          style={{ color: "#0a6b64" }}>
+                          style={{ color: "#086c64" }}>
                           <ExternalLink size={12} /> Open
                         </Link>
                       </div>

@@ -210,9 +210,9 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                 {/* Coach feedback collapsible */}
                 {expandedFeedback === mod.moduleId && mod.submission?.feedback && (
                   <div className="mt-2 rounded-xl overflow-hidden"
-                    style={{ borderLeft: "3px solid #0a6b64", background: "#f1efe8" }}>
+                    style={{ borderLeft: "3px solid #086c64", background: "#f1efe8" }}>
                     <p className="text-[10px] font-bold uppercase tracking-wide px-3 pt-2 pb-1"
-                      style={{ color: "#0a6b64" }}>Coach Feedback</p>
+                      style={{ color: "#086c64" }}>Coach Feedback</p>
                     <p className="text-xs leading-relaxed whitespace-pre-wrap px-3 pb-3"
                       style={{ color: "#14211f" }}>
                       {mod.submission.feedback}
@@ -346,8 +346,8 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
               const mod = moduleBreakdown.find(m => m.moduleId === sr.moduleId);
               const isOpen = expandedSurvey === sr.id;
               const ratingColor = (r: number | null) => {
-                if (!r) return "#8a938f";
-                if (r >= 4) return "#0a6b64";
+                if (!r) return "#949598";
+                if (r >= 4) return "#086c64";
                 if (r === 3) return "#d97706";
                 return "#dc2626";
               };
@@ -358,11 +358,11 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                   <div className="px-4 py-3 flex items-center gap-3" style={{ background: "#f8f6f1" }}>
                     <div className="flex-1 min-w-0">
                       {mod && (
-                        <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#0a6b64" }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#086c64" }}>
                           Module {mod.number} — {mod.title}
                         </p>
                       )}
-                      <p className="text-[11px]" style={{ color: "#8a938f" }}>{fmtDate(sr.submittedAt)}</p>
+                      <p className="text-[11px]" style={{ color: "#949598" }}>{fmtDate(sr.submittedAt)}</p>
                     </div>
                     {/* Would recommend badge */}
                     {sr.wouldRecommend !== null && (
@@ -377,7 +377,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                     <button
                       onClick={() => setExpandedSurvey(isOpen ? null : sr.id)}
                       className="flex-shrink-0 transition"
-                      style={{ color: "#8a938f" }}
+                      style={{ color: "#949598" }}
                     >
                       {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
@@ -395,7 +395,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                         <p className="text-sm font-extrabold" style={{ color: ratingColor(val) }}>
                           {val !== null ? `${val}/5` : "—"}
                         </p>
-                        <p className="text-[9px] uppercase tracking-wide" style={{ color: "#8a938f" }}>{label}</p>
+                        <p className="text-[9px] uppercase tracking-wide" style={{ color: "#949598" }}>{label}</p>
                       </div>
                     ))}
                   </div>
@@ -405,7 +405,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                     <div className="px-4 pb-4 pt-2 space-y-3 border-t" style={{ borderColor: "#e4e0d6", background: "#f1efe8" }}>
                       {sr.biggestTakeaway && (
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#0a6b64" }}>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#086c64" }}>
                             Biggest Takeaway
                           </p>
                           <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.biggestTakeaway}</p>
@@ -413,7 +413,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                       )}
                       {sr.improveSuggestion && (
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>
                             Suggested Improvement
                           </p>
                           <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.improveSuggestion}</p>
@@ -421,14 +421,14 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                       )}
                       {sr.additionalComments && (
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>
+                          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>
                             Additional Comments
                           </p>
                           <p className="text-xs leading-relaxed" style={{ color: "#14211f" }}>{sr.additionalComments}</p>
                         </div>
                       )}
                       {!sr.biggestTakeaway && !sr.improveSuggestion && !sr.additionalComments && (
-                        <p className="text-xs italic" style={{ color: "#8a938f" }}>No written feedback provided.</p>
+                        <p className="text-xs italic" style={{ color: "#949598" }}>No written feedback provided.</p>
                       )}
                     </div>
                   )}

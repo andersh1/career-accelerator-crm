@@ -28,9 +28,9 @@ const STATUS_LABEL: Record<LmsStatus, string> = {
 };
 
 const STATUS_COLOR: Record<LmsStatus, { bg: string; text: string; dot: string }> = {
-  pending:   { bg: "#f1efe8", text: "#8a938f",  dot: "#c9c4b8" },
+  pending:   { bg: "#f1efe8", text: "#949598",  dot: "#c9c4b8" },
   invited:   { bg: "#fef3c7", text: "#92400e",  dot: "#f59e0b" },
-  active:    { bg: "#edf5f4", text: "#0a6b64",  dot: "#0a6b64" },
+  active:    { bg: "#edf5f4", text: "#086c64",  dot: "#086c64" },
   graduated: { bg: "#f0fdf4", text: "#166534",  dot: "#22c55e" },
 };
 
@@ -204,22 +204,22 @@ export default function CohortsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598", letterSpacing: "0.14em" }}>
             Vantage Career Accelerator
           </p>
           <h1 className="font-display font-semibold leading-tight" style={{ fontSize: "1.75rem", color: "#14211f" }}>
             Cohorts
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
             Create cohorts, enroll students, publish to LMS, and graduate.
           </p>
         </div>
         <button
           onClick={() => setCreating(true)}
           className="flex items-center gap-2 text-sm font-semibold text-white px-4 py-2.5 rounded-xl transition"
-          style={{ background: "#0a6b64" }}
+          style={{ background: "#086c64" }}
           onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")}
-          onMouseLeave={e => (e.currentTarget.style.background = "#0a6b64")}
+          onMouseLeave={e => (e.currentTarget.style.background = "#086c64")}
         >
           <Plus size={15} /> New Cohort
         </button>
@@ -228,9 +228,9 @@ export default function CohortsPage() {
       {/* Publish success banner */}
       {publishResult && (
         <div className="flex items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "#edf5f4", border: "1px solid #d0e8e6" }}>
-          <Send size={16} style={{ color: "#0a6b64" }} />
+          <Send size={16} style={{ color: "#086c64" }} />
           <div>
-            <p className="text-sm font-semibold" style={{ color: "#0a6b64" }}>
+            <p className="text-sm font-semibold" style={{ color: "#086c64" }}>
               {publishResult.published === 0
                 ? "All students were already published to the LMS."
                 : `${publishResult.published} student${publishResult.published !== 1 ? "s" : ""} published to LMS.`}
@@ -241,7 +241,7 @@ export default function CohortsPage() {
               </p>
             )}
           </div>
-          <button onClick={() => setPublishResult(null)} className="ml-auto" style={{ color: "#8a938f" }}>
+          <button onClick={() => setPublishResult(null)} className="ml-auto" style={{ color: "#949598" }}>
             <X size={15} />
           </button>
         </div>
@@ -250,12 +250,12 @@ export default function CohortsPage() {
       {/* Graduate success banner */}
       {graduateResult && (
         <div className="flex items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "#edf5f4", border: "1px solid #d0e8e6" }}>
-          <GraduationCap size={18} style={{ color: "#0a6b64" }} />
-          <p className="text-sm font-semibold" style={{ color: "#0a6b64" }}>
+          <GraduationCap size={18} style={{ color: "#086c64" }} />
+          <p className="text-sm font-semibold" style={{ color: "#086c64" }}>
             Cohort graduated — {graduateResult.certsIssued} certificate{graduateResult.certsIssued !== 1 ? "s" : ""} issued,{" "}
             {graduateResult.emailsSent} email{graduateResult.emailsSent !== 1 ? "s" : ""} sent.
           </p>
-          <button onClick={() => setGraduateResult(null)} className="ml-auto" style={{ color: "#8a938f" }}>
+          <button onClick={() => setGraduateResult(null)} className="ml-auto" style={{ color: "#949598" }}>
             <X size={15} />
           </button>
         </div>
@@ -280,7 +280,7 @@ export default function CohortsPage() {
               value={newStartDate}
               onChange={e => setNewStartDate(e.target.value)}
               className="w-40 px-3 py-2.5 text-sm rounded-xl focus:outline-none"
-              style={{ border: "1px solid #e4e0d6", color: newStartDate ? "#14211f" : "#8a938f" }}
+              style={{ border: "1px solid #e4e0d6", color: newStartDate ? "#14211f" : "#949598" }}
               title="Start date (optional)"
             />
             <input
@@ -297,7 +297,7 @@ export default function CohortsPage() {
                 onClick={createCohort}
                 disabled={!newName.trim() || savingNew}
                 className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition disabled:opacity-40"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
               >
                 {savingNew ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 Create
@@ -317,8 +317,8 @@ export default function CohortsPage() {
       {/* Active cohorts */}
       <section>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-2 h-2 rounded-full" style={{ background: "#0a6b64" }} />
-          <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+          <div className="w-2 h-2 rounded-full" style={{ background: "#086c64" }} />
+          <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#949598", letterSpacing: "0.14em" }}>
             Active — {active.length}
           </p>
         </div>
@@ -327,7 +327,7 @@ export default function CohortsPage() {
           <div className="card p-10 text-center">
             <Target size={28} className="mx-auto mb-3" style={{ color: "#c9c4b8" }} />
             <p className="font-semibold" style={{ color: "#5a6663" }}>No active cohorts</p>
-            <p className="text-sm mt-1" style={{ color: "#8a938f" }}>Create one above to get started.</p>
+            <p className="text-sm mt-1" style={{ color: "#949598" }}>Create one above to get started.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -368,7 +368,7 @@ export default function CohortsPage() {
       {/* Archived cohorts */}
       {archived.length > 0 && (
         <section>
-          <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
             Archived — {archived.length}
           </p>
           <div className="space-y-3">
@@ -413,7 +413,7 @@ export default function CohortsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" style={{ border: "1px solid #e4e0d6" }}>
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto" style={{ background: "#edf5f4" }}>
-                <Send size={20} style={{ color: "#0a6b64" }} />
+                <Send size={20} style={{ color: "#086c64" }} />
               </div>
               <h3 className="text-base font-semibold text-center mb-2" style={{ color: "#14211f" }}>
                 Publish to LMS?
@@ -424,7 +424,7 @@ export default function CohortsPage() {
                   : `${cohortStudents.length} student${cohortStudents.length !== 1 ? "s" : ""} in ${publishTarget.name} will receive access to the LMS.`}
               </p>
               {cohortStudents.length > 0 && (
-                <p className="text-xs text-center mb-5" style={{ color: "#8a938f" }}>
+                <p className="text-xs text-center mb-5" style={{ color: "#949598" }}>
                   Students without an account will receive an email with a link to set their password and access the portal.
                 </p>
               )}
@@ -441,7 +441,7 @@ export default function CohortsPage() {
                   onClick={publishCohort}
                   disabled={publishing || cohortStudents.length === 0}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition disabled:opacity-50"
-                  style={{ background: "#0a6b64" }}
+                  style={{ background: "#086c64" }}
                 >
                   {publishing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   Publish
@@ -457,7 +457,7 @@ export default function CohortsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" style={{ border: "1px solid #e4e0d6" }}>
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto" style={{ background: "#edf5f4" }}>
-              <GraduationCap size={22} style={{ color: "#0a6b64" }} />
+              <GraduationCap size={22} style={{ color: "#086c64" }} />
             </div>
             <h3 className="text-base font-semibold text-center mb-2" style={{ color: "#14211f" }}>
               Graduate {graduateTarget.name}?
@@ -477,7 +477,7 @@ export default function CohortsPage() {
                 onClick={graduateCohort}
                 disabled={graduating}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition disabled:opacity-50"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
               >
                 {graduating ? <Loader2 size={14} className="animate-spin" /> : <GraduationCap size={14} />}
                 Graduate
@@ -573,10 +573,10 @@ function CohortCard({
   const pendingCount  = enrolled.filter(s => lmsStatus(s) === "pending").length;
 
   const fillPct  = cohort.capacity ? Math.round((cohort.enrolled / cohort.capacity) * 100) : null;
-  const fillColor = fillPct == null ? "#0a6b64"
+  const fillColor = fillPct == null ? "#086c64"
     : fillPct >= 90 ? "#dc2626"
     : fillPct >= 70 ? "#d97706"
-    : "#0a6b64";
+    : "#086c64";
 
   return (
     <div className="card overflow-hidden">
@@ -584,7 +584,7 @@ function CohortCard({
       <div className="flex items-center gap-4 px-5 py-4">
         {/* Icon */}
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-          <GraduationCap size={18} style={{ color: "#0a6b64" }} />
+          <GraduationCap size={18} style={{ color: "#086c64" }} />
         </div>
 
         {/* Name / edit */}
@@ -604,7 +604,7 @@ function CohortCard({
                 value={editStartDate}
                 onChange={e => onEditStartDate(e.target.value)}
                 className="w-38 px-3 py-1.5 text-sm rounded-xl focus:outline-none"
-                style={{ border: "1px solid #e4e0d6", color: editStartDate ? "#14211f" : "#8a938f" }}
+                style={{ border: "1px solid #e4e0d6", color: editStartDate ? "#14211f" : "#949598" }}
                 title="Start date"
               />
               <input
@@ -619,11 +619,11 @@ function CohortCard({
               <div className="flex gap-1.5">
                 <button onClick={onEditSave} disabled={saving}
                   className="p-1.5 rounded-lg text-white transition"
-                  style={{ background: "#0a6b64" }}>
+                  style={{ background: "#086c64" }}>
                   {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                 </button>
                 <button onClick={onEditCancel} className="p-1.5 rounded-lg transition"
-                  style={{ color: "#8a938f", background: "#f1efe8" }}>
+                  style={{ color: "#949598", background: "#f1efe8" }}>
                   <X size={13} />
                 </button>
               </div>
@@ -635,8 +635,8 @@ function CohortCard({
                 <span
                   className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0"
                   style={cohort.isActive
-                    ? { background: "#edf5f4", color: "#0a6b64" }
-                    : { background: "#f1efe8", color: "#8a938f" }
+                    ? { background: "#edf5f4", color: "#086c64" }
+                    : { background: "#f1efe8", color: "#949598" }
                   }
                 >
                   {cohort.isActive ? "Active" : "Archived"}
@@ -644,18 +644,18 @@ function CohortCard({
               </div>
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                 {cohort.startDate && (
-                  <span className="text-xs font-medium" style={{ color: "#0a6b64" }}>
+                  <span className="text-xs font-medium" style={{ color: "#086c64" }}>
                     Starts {new Date(cohort.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
                   </span>
                 )}
-                <span className="text-xs" style={{ color: "#8a938f" }}>
+                <span className="text-xs" style={{ color: "#949598" }}>
                   {cohort.enrolled} enrolled{cohort.capacity ? ` / ${cohort.capacity}` : ""}
                 </span>
                 {/* LMS summary pills */}
                 {cohort.isActive && enrolled.length > 0 && (
                   <>
                     {activeCount > 0 && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>
                         {activeCount} in LMS
                       </span>
                     )}
@@ -665,7 +665,7 @@ function CohortCard({
                       </span>
                     )}
                     {pendingCount > 0 && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#f1efe8", color: "#8a938f" }}>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "#f1efe8", color: "#949598" }}>
                         {pendingCount} pending
                       </span>
                     )}
@@ -698,7 +698,7 @@ function CohortCard({
               onClick={onEditStart}
               title="Rename"
               className="p-1.5 rounded-lg transition"
-              style={{ color: "#8a938f" }}
+              style={{ color: "#949598" }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
@@ -708,7 +708,7 @@ function CohortCard({
               onClick={onToggleActive}
               title={cohort.isActive ? "Archive" : "Reactivate"}
               className="p-1.5 rounded-lg transition"
-              style={{ color: cohort.isActive ? "#8a938f" : "#0a6b64" }}
+              style={{ color: cohort.isActive ? "#949598" : "#086c64" }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
@@ -720,7 +720,7 @@ function CohortCard({
                 onClick={onPublish}
                 title="Publish to LMS"
                 className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition relative"
-                style={{ background: "#edf5f4", color: "#0a6b64" }}
+                style={{ background: "#edf5f4", color: "#086c64" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d0e8e6"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; }}
               >
@@ -751,7 +751,7 @@ function CohortCard({
             <button
               onClick={onToggleExpand}
               className="p-1.5 rounded-lg transition"
-              style={{ color: "#8a938f" }}
+              style={{ color: "#949598" }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
@@ -772,8 +772,8 @@ function CohortCard({
                 onClick={() => setActiveTab(tab)}
                 className="text-xs font-bold uppercase tracking-wide py-2.5 px-3 border-b-2 transition mr-1"
                 style={{
-                  borderColor:  activeTab === tab ? "#0a6b64" : "transparent",
-                  color:        activeTab === tab ? "#0a6b64"  : "#8a938f",
+                  borderColor:  activeTab === tab ? "#086c64" : "transparent",
+                  color:        activeTab === tab ? "#086c64"  : "#949598",
                 }}
               >
                 {tab === "roster" ? `Roster (${enrolled.length})` : "Schedule"}
@@ -786,13 +786,13 @@ function CohortCard({
           <div>
           <div className="px-5 py-3">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+              <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                 Enrolled · {enrolled.length}
               </p>
               {enrolled.length > 0 && (
-                <div className="flex items-center gap-3 text-[10px]" style={{ color: "#8a938f" }}>
+                <div className="flex items-center gap-3 text-[10px]" style={{ color: "#949598" }}>
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#0a6b64" }} /> Active
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#086c64" }} /> Active
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#f59e0b" }} /> Invited
@@ -804,7 +804,7 @@ function CohortCard({
               )}
             </div>
             {enrolled.length === 0 ? (
-              <p className="text-sm py-2" style={{ color: "#8a938f" }}>No students enrolled yet.</p>
+              <p className="text-sm py-2" style={{ color: "#949598" }}>No students enrolled yet.</p>
             ) : (
               <div className="space-y-1">
                 {enrolled.map(s => {
@@ -815,7 +815,7 @@ function CohortCard({
                       {/* Status dot */}
                       <div className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5" style={{ background: col.dot }} />
                       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
-                        style={{ background: "#0a6b64" }}>
+                        style={{ background: "#086c64" }}>
                         {s.name[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -829,7 +829,7 @@ function CohortCard({
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
-                          <p className="text-xs truncate" style={{ color: "#8a938f" }}>{s.email}</p>
+                          <p className="text-xs truncate" style={{ color: "#949598" }}>{s.email}</p>
                           {s.sectionsCompleted > 0 && (
                             <span className="text-[10px] flex-shrink-0" style={{ color: "#5a6663" }}>
                               <BookOpen size={10} className="inline mr-0.5" style={{ verticalAlign: "middle" }} />
@@ -837,7 +837,7 @@ function CohortCard({
                             </span>
                           )}
                           {s.lastActiveAt && (
-                            <span className="text-[10px] flex-shrink-0" style={{ color: "#8a938f" }}>
+                            <span className="text-[10px] flex-shrink-0" style={{ color: "#949598" }}>
                               Last active {new Date(s.lastActiveAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
@@ -853,7 +853,7 @@ function CohortCard({
           {/* Add students */}
           {cohort.isActive && unenrolled.length > 0 && (
             <div className="px-5 py-3 border-t" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                 Add Students
               </p>
               <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -865,7 +865,7 @@ function CohortCard({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "#14211f" }}>{s.name}</p>
-                      <p className="text-xs truncate" style={{ color: "#8a938f" }}>
+                      <p className="text-xs truncate" style={{ color: "#949598" }}>
                         {s.cohort ? `Currently in ${s.cohort}` : "No cohort"}
                       </p>
                     </div>
@@ -873,7 +873,7 @@ function CohortCard({
                       onClick={() => onAssignStudent(s.id, cohort.id, cohort.name)}
                       disabled={reassigning === s.id}
                       className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition disabled:opacity-50"
-                      style={{ background: "#edf5f4", color: "#0a6b64" }}
+                      style={{ background: "#edf5f4", color: "#086c64" }}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d0e8e6"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; }}
                     >
@@ -900,14 +900,14 @@ function CohortCard({
             <div className="px-5 py-4">
               {schedLoading ? (
                 <div className="flex items-center gap-2 py-6">
-                  <Loader2 size={14} className="animate-spin" style={{ color: "#8a938f" }} />
-                  <span className="text-sm" style={{ color: "#8a938f" }}>Loading schedule…</span>
+                  <Loader2 size={14} className="animate-spin" style={{ color: "#949598" }} />
+                  <span className="text-sm" style={{ color: "#949598" }}>Loading schedule…</span>
                 </div>
               ) : !schedule || schedule.length === 0 ? (
-                <p className="text-sm py-4" style={{ color: "#8a938f" }}>No modules found. Add modules in the LMS first.</p>
+                <p className="text-sm py-4" style={{ color: "#949598" }}>No modules found. Add modules in the LMS first.</p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+                  <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                     Per-Module Session Dates — overrides LMS global dates for this cohort
                   </p>
                   {schedule.map(row => {
@@ -924,7 +924,7 @@ function CohortCard({
                                 onClick={() => saveRow(row.moduleId)}
                                 disabled={savingRow === row.moduleId}
                                 className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg text-white transition"
-                                style={{ background: "#0a6b64" }}
+                                style={{ background: "#086c64" }}
                               >
                                 {savingRow === row.moduleId ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
                                 Save
@@ -957,7 +957,7 @@ function CohortCard({
                         {isEditing ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#8a938f" }}>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <Calendar size={10} /> Prework due
                               </label>
                               <input type="datetime-local"
@@ -968,7 +968,7 @@ function CohortCard({
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#8a938f" }}>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <Calendar size={10} /> Session date
                               </label>
                               <input type="datetime-local"
@@ -979,7 +979,7 @@ function CohortCard({
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#8a938f" }}>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <MapPin size={10} /> Location
                               </label>
                               <input
@@ -991,7 +991,7 @@ function CohortCard({
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#8a938f" }}>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <Link2 size={10} /> Zoom link
                               </label>
                               <input
@@ -1007,24 +1007,24 @@ function CohortCard({
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
                             {row.preworkDue ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
-                                <Calendar size={10} style={{ color: "#8a938f" }} />
+                                <Calendar size={10} style={{ color: "#949598" }} />
                                 Prework due {new Date(row.preworkDue).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                               </span>
                             ) : null}
                             {row.sessionDate ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
-                                <Calendar size={10} style={{ color: "#0a6b64" }} />
+                                <Calendar size={10} style={{ color: "#086c64" }} />
                                 Session {new Date(row.sessionDate).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                               </span>
                             ) : null}
                             {row.sessionLocation ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
-                                <MapPin size={10} style={{ color: "#8a938f" }} /> {row.sessionLocation}
+                                <MapPin size={10} style={{ color: "#949598" }} /> {row.sessionLocation}
                               </span>
                             ) : null}
                             {row.sessionZoomLink ? (
                               <a href={row.sessionZoomLink} target="_blank" rel="noopener noreferrer"
-                                className="text-xs flex items-center gap-1 hover:underline" style={{ color: "#0a6b64" }}>
+                                className="text-xs flex items-center gap-1 hover:underline" style={{ color: "#086c64" }}>
                                 <Link2 size={10} /> Join Zoom
                               </a>
                             ) : null}

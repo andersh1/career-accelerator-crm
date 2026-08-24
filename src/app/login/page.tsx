@@ -38,7 +38,7 @@ export default function LoginPage() {
       {/* Left brand panel */}
       <div
         className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10"
-        style={{ background: "linear-gradient(180deg, #0a6b64 0%, #084f4a 100%)" }}
+        style={{ background: "linear-gradient(180deg, #086c64 0%, #084f4a 100%)" }}
       >
         <div>
           <img src="/vantage-logo.svg" alt="Vantage Career" className="h-8 w-auto object-contain" />
@@ -62,10 +62,10 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 flex flex-col items-center gap-1">
-            <div style={{ background: "#0a6b64", borderRadius: 8, padding: "7px 12px", display: "inline-flex", alignItems: "center" }}>
-              <img src="/vantage-logo.svg" alt="Vantage Career" style={{ height: 26, display: "block" }} />
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <img src="/vantage-logo-color.svg" alt="Vantage Career" style={{ height: 30, display: "block" }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#0a6b64", letterSpacing: "0.8px", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#086c64", letterSpacing: "0.8px", textTransform: "uppercase" }}>
               Career Accelerator
             </span>
           </div>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                   border: "1.5px solid #e4e0d6",
                   color: "#14211f",
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                 onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
               />
             </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-semibold" style={{ color: "#14211f" }}>Password</label>
-                <Link href="/forgot-password" className="text-xs font-medium transition-colors" style={{ color: "#0a6b64" }}>
+                <Link href="/forgot-password" className="text-xs font-medium transition-colors" style={{ color: "#086c64" }}>
                   Forgot password?
                 </Link>
               </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
                   border: "1.5px solid #e4e0d6",
                   color: "#14211f",
                 }}
-                onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                 onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
               />
             </div>
@@ -128,9 +128,9 @@ export default function LoginPage() {
             <button
               type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50"
-              style={{ background: "#0a6b64" }}
+              style={{ background: "#086c64" }}
               onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#084f4a"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#0a6b64"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#086c64"; }}
             >
               {loading
                 ? <><Loader2 size={15} className="animate-spin" /> Signing in…</>
@@ -139,7 +139,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-xs text-center mt-8" style={{ color: "#8a938f" }}>
+          <p className="text-xs text-center mt-8" style={{ color: "#949598" }}>
             Access is managed by your program administrator.
           </p>
         </div>

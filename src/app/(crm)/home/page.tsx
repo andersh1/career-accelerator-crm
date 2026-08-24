@@ -168,7 +168,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 size={24} className="animate-spin" style={{ color: "#8a938f" }} />
+        <Loader2 size={24} className="animate-spin" style={{ color: "#949598" }} />
       </div>
     );
   }
@@ -199,13 +199,13 @@ export default function HomePage() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <h1 className="text-2xl font-display font-semibold" style={{ color: "#14211f" }}>{greeting}, {firstName} 👋</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
-        <button onClick={load} className="flex items-center gap-1.5 text-xs transition px-3 py-2 rounded-xl hover:bg-[#f8f6f1] border border-transparent hover:border-[#e4e0d6]" style={{ color: "#8a938f" }}>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs transition px-3 py-2 rounded-xl hover:bg-[#f8f6f1] border border-transparent hover:border-[#e4e0d6]" style={{ color: "#949598" }}>
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
@@ -213,11 +213,11 @@ export default function HomePage() {
       {/* ── KPI strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Active Leads",  value: summary.active,      icon: <Users size={14} style={{ color: "#0a6b64" }} />,    href: "/pipeline" },
+          { label: "Active Leads",  value: summary.active,      icon: <Users size={14} style={{ color: "#086c64" }} />,    href: "/pipeline" },
           { label: "Overdue Tasks", value: summary.overdueCount, icon: <AlertCircle size={14} className="text-red-400" />, href: "/tasks",  alert: summary.overdueCount > 0 },
           { label: "Stale (14d+)", value: summary.staleCount,   icon: <Clock size={14} className="text-amber-400" />,   href: "/leads",   alert: summary.staleCount > 0 },
           { label: "Pipeline $",   value: fmt$(totalPipelineValue) ?? "$0",
-            icon: <DollarSign size={14} style={{ color: "#0a6b64" }} />, href: "/pipeline", raw: true },
+            icon: <DollarSign size={14} style={{ color: "#086c64" }} />, href: "/pipeline", raw: true },
         ].map(kpi => (
           <Link key={kpi.label} href={kpi.href}
             className={`rounded-2xl border p-4 hover:shadow-md transition group ${kpi.alert ? "bg-red-50 border-red-200" : "card"}`}>
@@ -225,7 +225,7 @@ export default function HomePage() {
             <p className={`text-xl font-extrabold ${kpi.alert ? "text-red-700" : ""}`} style={kpi.alert ? undefined : { color: "#14211f" }}>
               {kpi.raw ? kpi.value : kpi.value}
             </p>
-            <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "#8a938f" }}>{kpi.label}</p>
+            <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "#949598" }}>{kpi.label}</p>
           </Link>
         ))}
       </div>
@@ -236,18 +236,18 @@ export default function HomePage() {
 
           {/* ── New Applications ── */}
           {newApplications.length > 0 && (
-            <div className="overflow-hidden rounded-2xl border-2" style={{ borderColor: "#0a6b64", background: "white" }}>
+            <div className="overflow-hidden rounded-2xl border-2" style={{ borderColor: "#086c64", background: "white" }}>
               <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#d0e8e6", background: "#edf5f4" }}>
                 <h2 className="font-bold flex items-center gap-2" style={{ color: "#084f4a" }}>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white" style={{ background: "#0a6b64" }}>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white" style={{ background: "#086c64" }}>
                     {newApplications.length}
                   </span>
                   New Applications
-                  <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full" style={{ background: "#d0e8e6", color: "#0a6b64" }}>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full" style={{ background: "#d0e8e6", color: "#086c64" }}>
                     Not yet contacted
                   </span>
                 </h2>
-                <Link href="/pipeline" className="text-xs flex items-center gap-0.5 transition" style={{ color: "#0a6b64" }}>
+                <Link href="/pipeline" className="text-xs flex items-center gap-0.5 transition" style={{ color: "#086c64" }}>
                   View all <ChevronRight size={11} />
                 </Link>
               </div>
@@ -258,7 +258,7 @@ export default function HomePage() {
                   return (
                     <Link key={lead.id} href={`/leads/${lead.id}`}
                       className="flex items-center gap-3 px-5 py-3 transition group hover:bg-[#edf5f4]">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ background: "#0a6b64" }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style={{ background: "#086c64" }}>
                         {lead.firstName[0]}{lead.lastName[0]}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -271,7 +271,7 @@ export default function HomePage() {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: isApp ? "#d0e8e6" : "#f1efe8", color: isApp ? "#084f4a" : "#5a6663" }}>
                           {isApp ? "Application" : "Waitlist"} · {sourceLabel}
                         </span>
-                        <span className="text-[10px]" style={{ color: "#8a938f" }}>{timeAgo(lead.createdAt)}</span>
+                        <span className="text-[10px]" style={{ color: "#949598" }}>{timeAgo(lead.createdAt)}</span>
                         <ChevronRight size={14} style={{ color: "#c9c4b8" }} />
                       </div>
                     </Link>
@@ -285,12 +285,12 @@ export default function HomePage() {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#e4e0d6]">
               <h2 className="font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
-                <CheckCircle2 size={15} style={{ color: "#0a6b64" }} /> Today&apos;s Focus
+                <CheckCircle2 size={15} style={{ color: "#086c64" }} /> Today&apos;s Focus
                 {tasks.length > 0 && (
-                  <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>{tasks.length}</span>
+                  <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>{tasks.length}</span>
                 )}
               </h2>
-              <Link href="/tasks" className="text-xs transition flex items-center gap-0.5" style={{ color: "#8a938f" }}>
+              <Link href="/tasks" className="text-xs transition flex items-center gap-0.5" style={{ color: "#949598" }}>
                 All tasks <ChevronRight size={11} />
               </Link>
             </div>
@@ -299,7 +299,7 @@ export default function HomePage() {
               <div className="px-5 py-8 text-center">
                 <p className="text-2xl mb-2">✅</p>
                 <p className="font-semibold" style={{ color: "#5a6663" }}>All clear!</p>
-                <p className="text-sm" style={{ color: "#8a938f" }}>No overdue or due-today tasks.</p>
+                <p className="text-sm" style={{ color: "#949598" }}>No overdue or due-today tasks.</p>
               </div>
             ) : (
               <div className="divide-y divide-[#e4e0d6]">
@@ -324,7 +324,7 @@ export default function HomePage() {
                       </button>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{task.title}</p>
-                        <Link href={`/leads/${task.lead.id}`} className="text-xs transition truncate flex items-center gap-1" style={{ color: "#8a938f" }}>
+                        <Link href={`/leads/${task.lead.id}`} className="text-xs transition truncate flex items-center gap-1" style={{ color: "#949598" }}>
                           <span className={`inline-block w-1.5 h-1.5 rounded-full ${stageInfo(task.lead.stage).dot}`} />
                           {task.lead.firstName} {task.lead.lastName}
                         </Link>
@@ -347,13 +347,13 @@ export default function HomePage() {
               <h2 className="font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
                 <Zap size={15} className="text-amber-400" /> Hot Leads
               </h2>
-              <Link href="/pipeline" className="text-xs transition flex items-center gap-0.5" style={{ color: "#8a938f" }}>
+              <Link href="/pipeline" className="text-xs transition flex items-center gap-0.5" style={{ color: "#949598" }}>
                 Pipeline <ChevronRight size={11} />
               </Link>
             </div>
 
             {hotLeads.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-center" style={{ color: "#8a938f" }}>No active leads in pipeline.</p>
+              <p className="px-5 py-6 text-sm text-center" style={{ color: "#949598" }}>No active leads in pipeline.</p>
             ) : (
               <div className="divide-y divide-[#e4e0d6]">
                 {hotLeads.map(lead => (
@@ -364,7 +364,7 @@ export default function HomePage() {
                       <p className="text-sm font-semibold truncate transition" style={{ color: "#14211f" }}>
                         {lead.firstName} {lead.lastName}
                       </p>
-                      <p className="text-xs truncate" style={{ color: "#8a938f" }}>{lead.email}</p>
+                      <p className="text-xs truncate" style={{ color: "#949598" }}>{lead.email}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stageInfo(lead.stage).color}`}>
@@ -398,7 +398,7 @@ export default function HomePage() {
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[lead.priority]}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate group-hover:text-amber-700" style={{ color: "#14211f" }}>{lead.firstName} {lead.lastName}</p>
-                      <p className="text-xs" style={{ color: "#8a938f" }}>{lead.email}</p>
+                      <p className="text-xs" style={{ color: "#949598" }}>{lead.email}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stageInfo(lead.stage).color}`}>
@@ -420,9 +420,9 @@ export default function HomePage() {
           {/* Pipeline snapshot */}
           <div className="card p-5">
             <Link href="/pipeline" className="flex items-center gap-2 mb-4 group">
-              <TrendingUp size={15} style={{ color: "#0a6b64" }} />
+              <TrendingUp size={15} style={{ color: "#086c64" }} />
               <h2 className="font-bold group-hover:underline" style={{ color: "#14211f" }}>Pipeline</h2>
-              <ChevronRight size={13} className="ml-auto opacity-0 group-hover:opacity-100 transition" style={{ color: "#8a938f" }} />
+              <ChevronRight size={13} className="ml-auto opacity-0 group-hover:opacity-100 transition" style={{ color: "#949598" }} />
             </Link>
             <div className="space-y-3">
               {STAGE_ORDER.map(stage => {
@@ -433,7 +433,7 @@ export default function HomePage() {
                   <Link key={stage} href={`/pipeline`} className="group block">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-semibold" style={{ color: "#5a6663" }}>{stageInfo(stage).label}</span>
-                      <span style={{ color: "#8a938f" }}>{s.count} lead{s.count !== 1 ? "s" : ""}{s.value > 0 ? ` · ${fmt$(s.value)}` : ""}</span>
+                      <span style={{ color: "#949598" }}>{s.count} lead{s.count !== 1 ? "s" : ""}{s.value > 0 ? ` · ${fmt$(s.value)}` : ""}</span>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e4e0d6" }}>
                       <div
@@ -453,14 +453,14 @@ export default function HomePage() {
               <Link href="/cohorts" className="flex items-center gap-2 mb-4 group">
                 <Target size={15} className="text-emerald-400" />
                 <h2 className="font-bold group-hover:underline" style={{ color: "#14211f" }}>Cohort Fill</h2>
-                <ChevronRight size={13} className="ml-auto opacity-0 group-hover:opacity-100 transition" style={{ color: "#8a938f" }} />
+                <ChevronRight size={13} className="ml-auto opacity-0 group-hover:opacity-100 transition" style={{ color: "#949598" }} />
               </Link>
               <div className="space-y-4">
                 {cohortFill.map(c => (
                   <Link key={c.id} href="/cohorts" className="block group">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-semibold truncate group-hover:underline" style={{ color: "#5a6663" }}>{c.name}</span>
-                      <span className="flex-shrink-0 ml-2" style={{ color: "#8a938f" }}>
+                      <span className="flex-shrink-0 ml-2" style={{ color: "#949598" }}>
                         {c.enrolled}{c.capacity ? `/${c.capacity}` : ""} enrolled
                       </span>
                     </div>
@@ -472,7 +472,7 @@ export default function HomePage() {
                             style={{ width: `${Math.min(c.fillPct ?? 0, 100)}%` }}
                           />
                         </div>
-                        <p className="text-[10px] mt-1" style={{ color: "#8a938f" }}>
+                        <p className="text-[10px] mt-1" style={{ color: "#949598" }}>
                           {c.spotsLeft !== null && c.spotsLeft > 0
                             ? <span className="text-amber-600 font-semibold">{c.spotsLeft} spot{c.spotsLeft !== 1 ? "s" : ""} left</span>
                             : <span className="text-red-600 font-semibold">Full</span>
@@ -501,7 +501,7 @@ export default function HomePage() {
                     <div key={r.reason}>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="truncate font-medium" style={{ color: "#5a6663" }}>{r.reason}</span>
-                        <span className="flex-shrink-0 ml-2" style={{ color: "#8a938f" }}>{r.count} ({pct}%)</span>
+                        <span className="flex-shrink-0 ml-2" style={{ color: "#949598" }}>{r.count} ({pct}%)</span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e4e0d6" }}>
                         <div className="h-full bg-red-300 rounded-full" style={{ width: `${pct}%` }} />
@@ -517,15 +517,15 @@ export default function HomePage() {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#e4e0d6]">
               <h2 className="font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
-                <Activity size={15} style={{ color: "#8a938f" }} /> Recent Activity
+                <Activity size={15} style={{ color: "#949598" }} /> Recent Activity
               </h2>
-              <Link href="/leads" className="text-xs transition flex items-center gap-0.5" style={{ color: "#8a938f" }}>
+              <Link href="/leads" className="text-xs transition flex items-center gap-0.5" style={{ color: "#949598" }}>
                 All contacts <ChevronRight size={11} />
               </Link>
             </div>
             <div className="divide-y divide-[#e4e0d6] max-h-72 overflow-y-auto">
               {recentActivity.length === 0 ? (
-                <p className="px-5 py-4 text-sm" style={{ color: "#8a938f" }}>No activity in the last 7 days.</p>
+                <p className="px-5 py-4 text-sm" style={{ color: "#949598" }}>No activity in the last 7 days.</p>
               ) : recentActivity.map(act => {
                 const meta = ACTIVITY_META[act.type] ?? { icon: "📋", label: act.type };
                 return (
@@ -536,7 +536,7 @@ export default function HomePage() {
                       <p className="text-xs font-semibold truncate" style={{ color: "#5a6663" }}>
                         {act.lead.firstName} {act.lead.lastName}
                       </p>
-                      <p className="text-[11px] line-clamp-2" style={{ color: "#8a938f" }} title={act.content ?? meta.label}>{act.content ?? meta.label}</p>
+                      <p className="text-[11px] line-clamp-2" style={{ color: "#949598" }} title={act.content ?? meta.label}>{act.content ?? meta.label}</p>
                     </div>
                     <span className="text-[10px] flex-shrink-0" style={{ color: "#c9c4b8" }}>{timeAgo(act.createdAt)}</span>
                   </Link>
@@ -551,9 +551,9 @@ export default function HomePage() {
       {lmsActivity && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <BookOpen size={15} style={{ color: "#0a6b64" }} />
+            <BookOpen size={15} style={{ color: "#086c64" }} />
             <h2 className="font-bold" style={{ color: "#14211f" }}>LMS Activity</h2>
-            <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "#8a938f" }}>
+            <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: "#949598" }}>
               — last 7 days
             </span>
           </div>
@@ -565,14 +565,14 @@ export default function HomePage() {
                 <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: "#14211f" }}>
                   <span>✅</span> Recent Activity
                   {lmsActivity.recentCompletions.length > 0 && (
-                    <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>
+                    <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>
                       {lmsActivity.recentCompletions.length}
                     </span>
                   )}
                 </h3>
               </div>
               {lmsActivity.recentCompletions.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-center" style={{ color: "#8a938f" }}>No completions in last 7 days.</p>
+                <p className="px-5 py-6 text-sm text-center" style={{ color: "#949598" }}>No completions in last 7 days.</p>
               ) : (
                 <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: "#e4e0d6" }}>
                   {lmsActivity.recentCompletions.slice(0, 8).map((c, i) => (
@@ -581,7 +581,7 @@ export default function HomePage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold truncate" style={{ color: "#14211f" }}>{c.user.name}</p>
                         {c.section && (
-                          <p className="text-[11px] truncate" style={{ color: "#8a938f" }}>
+                          <p className="text-[11px] truncate" style={{ color: "#949598" }}>
                             {c.section.title} · M{c.section.module.number}
                           </p>
                         )}
@@ -604,12 +604,12 @@ export default function HomePage() {
                     </span>
                   )}
                 </h3>
-                <p className="text-[11px] mt-0.5" style={{ color: "#8a938f" }}>No LMS activity in 7+ days</p>
+                <p className="text-[11px] mt-0.5" style={{ color: "#949598" }}>No LMS activity in 7+ days</p>
               </div>
               {lmsActivity.atRiskStudents.length === 0 ? (
                 <div className="px-5 py-6 text-center">
                   <p className="text-xl mb-1">🎉</p>
-                  <p className="text-sm font-semibold" style={{ color: "#0a6b64" }}>Everyone is active!</p>
+                  <p className="text-sm font-semibold" style={{ color: "#086c64" }}>Everyone is active!</p>
                 </div>
               ) : (
                 <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: "#fde68a" }}>
@@ -621,7 +621,7 @@ export default function HomePage() {
                         <span className="text-sm flex-shrink-0">⚠️</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold truncate group-hover:underline" style={{ color: "#14211f" }}>{s.name}</p>
-                          {s.cohort && <p className="text-[10px] truncate" style={{ color: "#8a938f" }}>{s.cohort}</p>}
+                          {s.cohort && <p className="text-[10px] truncate" style={{ color: "#949598" }}>{s.cohort}</p>}
                         </div>
                         <span className="text-[10px] font-semibold flex-shrink-0 text-amber-600">
                           {last ? `${daysAgo(last)}d ago` : "never"}
@@ -639,21 +639,21 @@ export default function HomePage() {
                 <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: "#14211f" }}>
                   <span>📊</span> Recent Surveys
                   {lmsActivity.recentSurveys.length > 0 && (
-                    <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>
+                    <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>
                       {lmsActivity.recentSurveys.length}
                     </span>
                   )}
                 </h3>
               </div>
               {lmsActivity.recentSurveys.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-center" style={{ color: "#8a938f" }}>No surveys submitted this week.</p>
+                <p className="px-5 py-6 text-sm text-center" style={{ color: "#949598" }}>No surveys submitted this week.</p>
               ) : (
                 <div className="divide-y max-h-72 overflow-y-auto" style={{ borderColor: "#e4e0d6" }}>
                   {lmsActivity.recentSurveys.map((s, i) => {
                     const rating = s.overallRating;
                     const ratingColor = rating !== null
-                      ? rating >= 4 ? "#0a6b64" : rating === 3 ? "#d97706" : "#dc2626"
-                      : "#8a938f";
+                      ? rating >= 4 ? "#086c64" : rating === 3 ? "#d97706" : "#dc2626"
+                      : "#949598";
                     return (
                       <div key={i} className="flex items-center gap-2.5 px-5 py-3 hover:bg-[#f8f6f1] transition">
                         {rating !== null ? (
@@ -666,7 +666,7 @@ export default function HomePage() {
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold truncate" style={{ color: "#14211f" }}>{s.user.name}</p>
-                          <p className="text-[10px] truncate" style={{ color: "#8a938f" }}>
+                          <p className="text-[10px] truncate" style={{ color: "#949598" }}>
                             {timeAgo(s.submittedAt)}
                           </p>
                         </div>

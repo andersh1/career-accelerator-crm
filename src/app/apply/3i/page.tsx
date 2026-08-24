@@ -192,7 +192,7 @@ export default function Apply3iPage() {
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
           <div style={{ maxWidth: 500, textAlign: "center" }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#d0e8e6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-              <CheckCircle2 size={30} color="#0a6b64" />
+              <CheckCircle2 size={30} color="#086c64" />
             </div>
             <h2 style={{ fontSize: 26, fontWeight: 700, color: "#14211f", marginBottom: 12 }}>Application received.</h2>
             <p style={{ fontSize: 15, color: "#5a6663", lineHeight: 1.75 }}>
@@ -205,7 +205,7 @@ export default function Apply3iPage() {
       ) : (
         <>
           {/* ── Hero ── */}
-          <section style={{ background: "linear-gradient(135deg, #0a6b64 0%, #084f4a 100%)", padding: "64px 40px 56px", textAlign: "center", color: "#fff" }}>
+          <section style={{ background: "linear-gradient(135deg, #086c64 0%, #084f4a 100%)", padding: "64px 40px 56px", textAlign: "center", color: "#fff" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, padding: "5px 14px", fontSize: 12, fontWeight: 600, letterSpacing: "0.5px", marginBottom: 24 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
               Fall 2026 · 10 Seats · Applications close Aug 21
@@ -226,12 +226,12 @@ export default function Apply3iPage() {
 
           {/* ── What You Get ── */}
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "60px 40px 0" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#0a6b64", marginBottom: 10 }}>What you get</p>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#086c64", marginBottom: 10 }}>What you get</p>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: "#14211f", marginBottom: 32, lineHeight: 1.3 }}>A proven system — not another workshop series.</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               {WHAT_YOU_GET.map((item, i) => (
                 <div key={i} style={{ background: "#fff", border: "1px solid #e4e0d6", borderRadius: 12, padding: "16px 18px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#edf5f4", border: "1.5px solid #0a6b64", color: "#0a6b64", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#edf5f4", border: "1.5px solid #086c64", color: "#086c64", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
                   <p style={{ fontSize: 13.5, color: "#5a6663", lineHeight: 1.6, margin: 0 }}>{item}</p>
                 </div>
               ))}
@@ -240,11 +240,11 @@ export default function Apply3iPage() {
 
           {/* ── Program Details ── */}
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "52px 40px 0" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#0a6b64", marginBottom: 10 }}>Program details</p>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#086c64", marginBottom: 10 }}>Program details</p>
             <div style={{ background: "#fff", border: "1px solid #e4e0d6", borderRadius: 16, overflow: "hidden" }}>
               {PROGRAM_DETAILS.map(({ key, val, bold }, i) => (
                 <div key={key} style={{ display: "flex", gap: 20, padding: "12px 20px", borderBottom: i < PROGRAM_DETAILS.length - 1 ? "1px solid #e4e0d6" : "none", fontSize: 14, alignItems: "center" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#0a6b64", minWidth: 52, flexShrink: 0 }}>{key}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: "#086c64", minWidth: 52, flexShrink: 0 }}>{key}</div>
                   <div style={{ color: bold ? "#14211f" : "#5a6663", fontWeight: bold ? 700 : 400 }}>{val}</div>
                 </div>
               ))}
@@ -254,17 +254,17 @@ export default function Apply3iPage() {
             <div style={{ textAlign: "center", marginTop: 28 }}>
               <button
                 onClick={scrollToForm}
-                style={{ background: "#0a6b64", color: "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 600, padding: "12px 28px", border: "none", borderRadius: 10, cursor: "pointer" }}
+                style={{ background: "#086c64", color: "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 600, padding: "12px 28px", border: "none", borderRadius: 10, cursor: "pointer" }}
               >
                 Apply for the Fall 2026 Cohort →
               </button>
-              <p style={{ fontSize: 12, color: "#8a938f", marginTop: 8 }}>Applications close August 21 · Takes about 5 minutes</p>
+              <p style={{ fontSize: 12, color: "#949598", marginTop: 8 }}>Applications close August 21 · Takes about 5 minutes</p>
             </div>
           </section>
 
           {/* ── Application Form ── */}
           <section id="apply" ref={formRef} style={{ maxWidth: 720, margin: "0 auto", padding: "60px 40px 80px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#0a6b64", marginBottom: 10 }}>Apply now</p>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#086c64", marginBottom: 10 }}>Apply now</p>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: "#14211f", marginBottom: 6 }}>Your Application</h2>
             <p style={{ fontSize: 14, color: "#5a6663", marginBottom: 32, lineHeight: 1.6 }}>Dan reviews every application personally. Takes about 5 minutes — no resume required.</p>
 
@@ -320,7 +320,7 @@ export default function Apply3iPage() {
               {/* ── Questions ── */}
               <div style={{ background: "#fff", border: "1px solid #e4e0d6", borderRadius: 14, padding: 24 }}>
                 <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: "#5a6663", marginBottom: 18 }}>A few questions</p>
-                <p style={{ fontSize: 13, color: "#8a938f", marginBottom: 24, lineHeight: 1.6 }}>No perfect answers — we're looking for honest ones. Take your time.</p>
+                <p style={{ fontSize: 13, color: "#949598", marginBottom: 24, lineHeight: 1.6 }}>No perfect answers — we're looking for honest ones. Take your time.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   {QUESTIONS.map((q, i) => (
@@ -347,11 +347,11 @@ export default function Apply3iPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  style={{ width: "100%", background: submitting ? "#5a6663" : "#0a6b64", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 700, padding: "14px 0", border: "none", borderRadius: 12, cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 0.15s" }}
+                  style={{ width: "100%", background: submitting ? "#5a6663" : "#086c64", color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 700, padding: "14px 0", border: "none", borderRadius: 12, cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "background 0.15s" }}
                 >
                   {submitting ? <><Loader2 size={16} className="animate-spin" /> Submitting…</> : <>Submit Application →</>}
                 </button>
-                <p style={{ fontSize: 12, color: "#8a938f", textAlign: "center", marginTop: 10, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 12, color: "#949598", textAlign: "center", marginTop: 10, lineHeight: 1.6 }}>
                   By submitting you agree to be contacted about the Vantage Career Accelerator program.<br />
                   We will never share your information. · Cohort locks August 21, 2026.
                 </p>
@@ -385,8 +385,8 @@ function FieldBox({ label, required, optional, error, children }: {
     <div data-err={error ? "true" : undefined}>
       <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#14211f", marginBottom: 6, lineHeight: 1.4 }}>
         {label}
-        {required && <span style={{ color: "#0a6b64", marginLeft: 3 }}>*</span>}
-        {optional && <span style={{ fontWeight: 400, fontSize: 12, color: "#8a938f", marginLeft: 5 }}>(optional)</span>}
+        {required && <span style={{ color: "#086c64", marginLeft: 3 }}>*</span>}
+        {optional && <span style={{ fontWeight: 400, fontSize: 12, color: "#949598", marginLeft: 5 }}>(optional)</span>}
       </label>
       {children}
       {error && <div style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{error}</div>}

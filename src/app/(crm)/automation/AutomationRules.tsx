@@ -116,9 +116,9 @@ export function AutomationRules() {
     <div className="space-y-4">
       {/* Dynamic banner */}
       <div className="rounded-xl border p-4 flex items-start gap-3" style={{ background: "#edf5f4", borderColor: "#bfe6e2" }}>
-        <Zap className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0a6b64" }} />
+        <Zap className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#086c64" }} />
         <div>
-          <p className="text-sm font-semibold" style={{ color: "#0a6b64" }}>
+          <p className="text-sm font-semibold" style={{ color: "#086c64" }}>
             {activeCount === null ? "Loading…" : `${activeCount} of ${RULES.length} rules active`}
           </p>
           <p className="text-xs mt-0.5" style={{ color: "#5a6663" }}>
@@ -140,7 +140,7 @@ export function AutomationRules() {
               <div className="flex items-center gap-2 flex-wrap mb-2">
                 <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{rule.title}</p>
                 {!loaded ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#f1efe8] text-[#8a938f]">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#f1efe8] text-[#949598]">
                     <Loader2 size={10} className="animate-spin" /> Loading
                   </span>
                 ) : on ? (
@@ -156,17 +156,17 @@ export function AutomationRules() {
               </div>
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#8a938f" }}>Trigger</span>
+                  <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#949598" }}>Trigger</span>
                   <span style={{ color: "#5a6663" }}>{rule.trigger}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#8a938f" }}>Action</span>
+                  <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#949598" }}>Action</span>
                   <span style={{ color: "#5a6663" }}>{rule.action}</span>
                 </div>
                 {rule.schedule && (
                   <div className="flex items-start gap-2">
-                    <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#8a938f" }}>Runs</span>
-                    <span style={{ color: "#8a938f" }}>{rule.schedule}</span>
+                    <span className="font-semibold w-14 shrink-0 mt-0.5" style={{ color: "#949598" }}>Runs</span>
+                    <span style={{ color: "#949598" }}>{rule.schedule}</span>
                   </div>
                 )}
               </div>
@@ -176,7 +176,7 @@ export function AutomationRules() {
               onClick={() => toggle(rule.id)}
               disabled={saving === rule.id || !loaded}
               className="flex-shrink-0 mt-0.5 relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50"
-              style={{ background: on ? "#0a6b64" : "#e4e0d6" }}
+              style={{ background: on ? "#086c64" : "#e4e0d6" }}
               title={on ? "Disable rule" : "Enable rule"}>
               <span
                 className="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"

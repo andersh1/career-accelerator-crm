@@ -84,14 +84,14 @@ export default function TicketsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <div className="flex items-center gap-2 mb-0.5">
-            <LifeBuoy size={18} style={{ color: "#0a6b64" }} />
+            <LifeBuoy size={18} style={{ color: "#086c64" }} />
             <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>Support Tickets</h1>
           </div>
-          <p className="text-sm" style={{ color: "#8a938f" }}>Manage and respond to student support requests.</p>
+          <p className="text-sm" style={{ color: "#949598" }}>Manage and respond to student support requests.</p>
         </div>
-        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition text-xs font-medium" style={{ color: "#8a938f" }}>
+        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition text-xs font-medium" style={{ color: "#949598" }}>
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           <span>Refresh</span>
         </button>
@@ -108,7 +108,7 @@ export default function TicketsPage() {
             { label: "Urgent",       val: stats.urgent,      color: "bg-red-50 border-red-200",        text: "text-red-700",     icon: <AlertTriangle size={14} className="text-red-500" />   },
           ].map(s => (
             <div key={s.label} className={`rounded-2xl border p-3 ${s.color}`}>
-              <div className="flex items-center gap-1.5 mb-1">{s.icon}<span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>{s.label}</span></div>
+              <div className="flex items-center gap-1.5 mb-1">{s.icon}<span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>{s.label}</span></div>
               <p className={`text-2xl font-extrabold ${s.text}`}>{s.val}</p>
             </div>
           ))}
@@ -118,27 +118,27 @@ export default function TicketsPage() {
       {/* Filters */}
       <div className="card shadow-sm p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
           <input
             type="text"
             placeholder="Search tickets…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full pl-8 pr-4 py-2 text-sm border border-[#e4e0d6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:border-transparent"
+            className="w-full pl-8 pr-4 py-2 text-sm border border-[#e4e0d6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#086c64] focus:border-transparent"
           />
         </div>
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
-          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0a6b64] bg-white">
+          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#086c64] bg-white">
           <option value="">All Status</option>
           {Object.entries(STATUS_CONFIG).map(([v, c]) => <option key={v} value={v}>{c.label}</option>)}
         </select>
         <select value={priority} onChange={e => { setPriority(e.target.value); setPage(1); }}
-          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0a6b64] bg-white">
+          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#086c64] bg-white">
           <option value="">All Priority</option>
           {["LOW","NORMAL","HIGH","URGENT"].map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select value={category} onChange={e => { setCategory(e.target.value); setPage(1); }}
-          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0a6b64] bg-white">
+          className="text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#086c64] bg-white">
           <option value="">All Categories</option>
           {["TECHNICAL","CONTENT","COACHING","BILLING","OTHER"].map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -147,22 +147,22 @@ export default function TicketsPage() {
       {/* Ticket list */}
       <div className="card shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 gap-2" style={{ color: "#8a938f" }}>
+          <div className="flex items-center justify-center py-16 gap-2" style={{ color: "#949598" }}>
             <Loader2 size={16} className="animate-spin" />
             <span className="text-sm">Loading tickets…</span>
           </div>
         ) : !data?.tickets.length ? (
           <div className="py-16 text-center">
             <LifeBuoy size={32} className="mx-auto mb-3" style={{ color: "#c9c4b8" }} />
-            <p className="text-sm font-semibold" style={{ color: "#8a938f" }}>No tickets found</p>
-            <p className="text-xs mt-1" style={{ color: "#8a938f" }}>
+            <p className="text-sm font-semibold" style={{ color: "#949598" }}>No tickets found</p>
+            <p className="text-xs mt-1" style={{ color: "#949598" }}>
               {search || status || priority || category ? "Try adjusting your filters." : "No support tickets yet."}
             </p>
           </div>
         ) : (
           <>
             {/* Table header */}
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b border-[#e4e0d6] text-[10px] font-bold uppercase tracking-wide" style={{ background: "#f8f6f1", color: "#8a938f" }}>
+            <div className="grid grid-cols-[auto_1fr_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b border-[#e4e0d6] text-[10px] font-bold uppercase tracking-wide" style={{ background: "#f8f6f1", color: "#949598" }}>
               <span>#</span>
               <span>Subject / Student</span>
               <span>Category</span>
@@ -185,7 +185,7 @@ export default function TicketsPage() {
                     isUrgent ? "bg-red-50/30" : ""
                   }`}
                 >
-                  <span className="text-[11px] font-bold w-10" style={{ color: "#8a938f" }}>#{ticket.ticketNumber}</span>
+                  <span className="text-[11px] font-bold w-10" style={{ color: "#949598" }}>#{ticket.ticketNumber}</span>
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function TicketsPage() {
                     </div>
                     <p className="text-xs truncate mt-0.5" style={{ color: "#5a6663" }}>
                       {ticket.user.name}
-                      {ticket.user.cohort && <span style={{ color: "#8a938f" }}> · {ticket.user.cohort}</span>}
+                      {ticket.user.cohort && <span style={{ color: "#949598" }}> · {ticket.user.cohort}</span>}
                     </p>
                   </div>
 
@@ -209,9 +209,9 @@ export default function TicketsPage() {
                     {st.label}
                   </span>
 
-                  <div className="flex items-center gap-1.5 text-xs whitespace-nowrap" style={{ color: "#8a938f" }}>
+                  <div className="flex items-center gap-1.5 text-xs whitespace-nowrap" style={{ color: "#949598" }}>
                     <span>{fmtRelative(ticket.lastActivityAt)}</span>
-                    <ChevronRight size={12} style={{ color: "#c9c4b8" }} className="group-hover:text-[#0a6b64] transition" />
+                    <ChevronRight size={12} style={{ color: "#c9c4b8" }} className="group-hover:text-[#086c64] transition" />
                   </div>
                 </Link>
               );

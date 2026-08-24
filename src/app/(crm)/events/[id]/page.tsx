@@ -62,7 +62,7 @@ function avg(arr: number[]) {
 
 // ── SVG sparkline for registration timeline ───────────────────────────────────
 function Sparkline({ data }: { data: { date: string; count: number }[] }) {
-  if (data.length < 2) return <p className="text-xs text-center py-6" style={{ color: "#8a938f" }}>Not enough data for a timeline yet.</p>;
+  if (data.length < 2) return <p className="text-xs text-center py-6" style={{ color: "#949598" }}>Not enough data for a timeline yet.</p>;
   const max   = Math.max(...data.map(d => d.count), 1);
   const W = 280, H = 60, pad = 4;
   const pts = data.map((d, i) => {
@@ -74,19 +74,19 @@ function Sparkline({ data }: { data: { date: string; count: number }[] }) {
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
       <defs>
         <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0a6b64" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#0a6b64" stopOpacity="0" />
+          <stop offset="0%" stopColor="#086c64" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#086c64" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon
         points={`${pad},${H} ${pts.join(" ")} ${W - pad},${H}`}
         fill="url(#sparkFill)"
       />
-      <polyline points={pts.join(" ")} fill="none" stroke="#0a6b64" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts.join(" ")} fill="none" stroke="#086c64" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
       {data.map((d, i) => {
         const [x, y] = pts[i].split(",").map(Number);
         return d.count > 0 ? (
-          <circle key={i} cx={x} cy={y} r="2.5" fill="#0a6b64" />
+          <circle key={i} cx={x} cy={y} r="2.5" fill="#086c64" />
         ) : null;
       })}
     </svg>
@@ -101,7 +101,7 @@ function RateCard({
 }) {
   const diff = benchmark !== undefined ? value - benchmark : null;
   const DiffIcon = diff === null ? null : diff > 0 ? ArrowUpRight : diff < 0 ? ArrowDownRight : Minus;
-  const diffColor = diff === null ? "" : diff > 2 ? "#0a6b64" : diff < -2 ? "#dc2626" : "#8a938f";
+  const diffColor = diff === null ? "" : diff > 2 ? "#086c64" : diff < -2 ? "#dc2626" : "#949598";
 
   return (
     <div className="rounded-2xl border p-4 flex flex-col gap-2" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
@@ -117,7 +117,7 @@ function RateCard({
             </span>
           )}
         </div>
-        <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#8a938f" }}>{label}</p>
+        <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#949598" }}>{label}</p>
         <p className="text-[10px] mt-0.5" style={{ color: "#b5b9b7" }}>{sublabel}</p>
         {benchmark !== undefined && (
           <p className="text-[10px] mt-1" style={{ color: "#b5b9b7" }}>avg {benchmark}% across events</p>
@@ -283,8 +283,8 @@ export default function EventDetailPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin" style={{ color: "#0a6b64" }} /></div>;
-  if (!event)  return <div className="p-8 text-center" style={{ color: "#8a938f" }}>Event not found.</div>;
+  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={24} className="animate-spin" style={{ color: "#086c64" }} /></div>;
+  if (!event)  return <div className="p-8 text-center" style={{ color: "#949598" }}>Event not found.</div>;
 
   const isZoom   = event.eventType === "ZOOM";
   const TypeIcon = isZoom ? Video : MapPin;
@@ -364,20 +364,20 @@ export default function EventDetailPage() {
           <h1 className="text-2xl font-bold" style={{ color: "#14211f" }}>{event.title}</h1>
           <p className="text-sm mt-1" style={{ color: "#5a6663" }}>{formatDate(event.startsAt, event.timezone)}</p>
           {isZoom
-            ? event.meetingUrl && <a href={event.meetingUrl} target="_blank" rel="noreferrer" className="text-sm font-medium" style={{ color: "#0a6b64" }}>{event.meetingUrl}</a>
-            : <p className="text-sm" style={{ color: "#8a938f" }}>{[event.location, event.venueAddress].filter(Boolean).join(" · ")}</p>
+            ? event.meetingUrl && <a href={event.meetingUrl} target="_blank" rel="noreferrer" className="text-sm font-medium" style={{ color: "#086c64" }}>{event.meetingUrl}</a>
+            : <p className="text-sm" style={{ color: "#949598" }}>{[event.location, event.venueAddress].filter(Boolean).join(" · ")}</p>
           }
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           <button onClick={copyLink}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-colors hover:bg-slate-50"
-            style={{ borderColor: "#e4e0d6", color: copied ? "#0a6b64" : "#5a6663" }}>
+            style={{ borderColor: "#e4e0d6", color: copied ? "#086c64" : "#5a6663" }}>
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? "Copied!" : "Copy link"}
           </button>
           <button onClick={toggleActive}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-colors hover:bg-slate-50"
-            style={{ borderColor: "#e4e0d6", color: event.active ? "#0a6b64" : "#8a938f" }}
+            style={{ borderColor: "#e4e0d6", color: event.active ? "#086c64" : "#949598" }}
             title={event.active ? "Click to deactivate — hides the registration page" : "Click to activate — makes registration page live"}>
             {event.active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
             {event.active ? "Active" : "Inactive"}
@@ -398,7 +398,7 @@ export default function EventDetailPage() {
 
       {/* ── Conversion rate KPIs ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <RateCard label="Attendance Rate"  value={attendRate}  sublabel="Registered → Attended" color="#0a6b64" bg="#edf5f4" benchmark={hasBenchmark ? avg(bmAttendRates)  : undefined} />
+        <RateCard label="Attendance Rate"  value={attendRate}  sublabel="Registered → Attended" color="#086c64" bg="#edf5f4" benchmark={hasBenchmark ? avg(bmAttendRates)  : undefined} />
         <RateCard label="Apply Rate"       value={applyRate}   sublabel="Attended → Applied"    color="#2563eb" bg="#eff6ff" benchmark={hasBenchmark ? avg(bmApplyRates)   : undefined} />
         <RateCard label="Enroll Rate"      value={enrollRate}  sublabel="Applied → Enrolled"    color="#7c3aed" bg="#f5f3ff" benchmark={hasBenchmark ? avg(bmEnrollRates)  : undefined} />
         <RateCard label="Overall Conv."    value={overallRate} sublabel="Registered → Enrolled" color="#14211f" bg="#f8f6f1" benchmark={hasBenchmark ? avg(bmOverallRates) : undefined} />
@@ -406,11 +406,11 @@ export default function EventDetailPage() {
 
       {/* ── Pipeline funnel ── */}
       <div className="rounded-2xl border p-5 mb-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-        <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#8a938f" }}>Pipeline Funnel</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-4" style={{ color: "#949598" }}>Pipeline Funnel</p>
         <div className="space-y-2.5">
           {[
             { label: "Registered", value: event.funnel.registered, color: "#14211f", bg: "#f8f6f1" },
-            { label: "Attended",   value: event.funnel.attended,   color: "#0a6b64", bg: "#edf5f4" },
+            { label: "Attended",   value: event.funnel.attended,   color: "#086c64", bg: "#edf5f4" },
             { label: "Applied",    value: event.funnel.applied,    color: "#2563eb", bg: "#eff6ff" },
             { label: "Enrolled",   value: event.funnel.enrolled,   color: "#7c3aed", bg: "#f5f3ff" },
           ].map((s, i, arr) => {
@@ -419,7 +419,7 @@ export default function EventDetailPage() {
             const conv = i > 0 ? pct(s.value, arr[i - 1].value) : null;
             return (
               <div key={s.label} className="flex items-center gap-3">
-                <span className="text-xs font-semibold w-20 text-right shrink-0" style={{ color: "#8a938f" }}>{s.label}</span>
+                <span className="text-xs font-semibold w-20 text-right shrink-0" style={{ color: "#949598" }}>{s.label}</span>
                 <div className="flex-1 h-9 flex items-center">
                   <div className="h-9 rounded-xl flex items-center px-3 transition-all"
                     style={{ width: `${w}%`, minWidth: s.value > 0 ? 56 : 0, background: s.bg, border: `1.5px solid ${s.color}20` }}>
@@ -427,7 +427,7 @@ export default function EventDetailPage() {
                   </div>
                 </div>
                 {conv !== null && (
-                  <span className="text-xs font-bold w-10 shrink-0" style={{ color: conv > 50 ? "#0a6b64" : conv > 20 ? "#92400e" : "#8a938f" }}>{conv}%</span>
+                  <span className="text-xs font-bold w-10 shrink-0" style={{ color: conv > 50 ? "#086c64" : conv > 20 ? "#92400e" : "#949598" }}>{conv}%</span>
                 )}
               </div>
             );
@@ -445,7 +445,7 @@ export default function EventDetailPage() {
               <span style={{ color: "#5a6663" }}>{event.funnel.parents} Parent{event.funnel.parents !== 1 ? "s" : ""}</span>
             </div>
             {event.maxCapacity && (
-              <div className="text-xs ml-auto" style={{ color: "#8a938f" }}>
+              <div className="text-xs ml-auto" style={{ color: "#949598" }}>
                 Capacity: {event.funnel.registered}/{event.maxCapacity}
               </div>
             )}
@@ -457,7 +457,7 @@ export default function EventDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
         {/* Reminders */}
         <div className="rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Email Reminders</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Email Reminders</p>
           <div className="space-y-2">
             {[
               { type: "SEVEN_DAY" as const, label: "7-Day Reminder", sent: event.reminderSent7d, desc: "All registrants" },
@@ -467,27 +467,27 @@ export default function EventDetailPage() {
               <div key={type} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border" style={{ borderColor: "#e4e0d6", background: sent ? "#f0fdf4" : "#faf9f6" }}>
                 <div>
                   <p className="text-xs font-semibold" style={{ color: "#14211f" }}>{label}</p>
-                  <p className="text-[10px]" style={{ color: "#8a938f" }}>{desc}</p>
+                  <p className="text-[10px]" style={{ color: "#949598" }}>{desc}</p>
                 </div>
                 {sent ? (
                   <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full shrink-0">Sent</span>
                 ) : (
                   <button onClick={() => sendReminder(type)} disabled={!!sending || event.registrations.length === 0}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-teal-50 shrink-0" style={{ color: "#0a6b64" }}>
+                    className="p-1.5 rounded-lg transition-colors hover:bg-teal-50 shrink-0" style={{ color: "#086c64" }}>
                     {sending === type ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
                   </button>
                 )}
               </div>
             ))}
           </div>
-          {event.registrations.length === 0 && <p className="text-xs mt-2" style={{ color: "#8a938f" }}>No registrants yet.</p>}
+          {event.registrations.length === 0 && <p className="text-xs mt-2" style={{ color: "#949598" }}>No registrants yet.</p>}
         </div>
 
         {/* Sequence auto-enroll */}
         <div className="rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
           <div className="flex items-center gap-2 mb-3">
-            <Zap size={13} style={{ color: "#0a6b64" }} />
-            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Auto-Enroll in Sequence</p>
+            <Zap size={13} style={{ color: "#086c64" }} />
+            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Auto-Enroll in Sequence</p>
           </div>
           <p className="text-xs mb-4" style={{ color: "#5a6663" }}>Bulk-enroll registrants into a follow-up email sequence. Already-enrolled leads are skipped.</p>
           <div className="space-y-3">
@@ -504,19 +504,19 @@ export default function EventDetailPage() {
                 ].map(({ v, label }) => (
                   <button key={label} type="button" onClick={() => setAttendedOnly(v)}
                     className="px-3 py-2 flex-1 transition-colors"
-                    style={{ background: attendedOnly === v ? "#0a6b64" : "transparent", color: attendedOnly === v ? "#fff" : "#5a6663" }}>
+                    style={{ background: attendedOnly === v ? "#086c64" : "transparent", color: attendedOnly === v ? "#fff" : "#5a6663" }}>
                     {label}
                   </button>
                 ))}
               </div>
               <button onClick={enrollInSequence} disabled={!seqId || enrolling || event.registrations.length === 0}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
-                style={{ background: "#0a6b64" }}>
+                style={{ background: "#086c64" }}>
                 {enrolling ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />} Enroll
               </button>
             </div>
           </div>
-          {event.registrations.length === 0 && <p className="text-xs mt-2" style={{ color: "#8a938f" }}>No registrants yet.</p>}
+          {event.registrations.length === 0 && <p className="text-xs mt-2" style={{ color: "#949598" }}>No registrants yet.</p>}
         </div>
       </div>
 
@@ -531,8 +531,8 @@ export default function EventDetailPage() {
             <button key={key} onClick={() => setMainTab(key)}
               className="flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors"
               style={{
-                borderBottomColor: mainTab === key ? "#0a6b64" : "transparent",
-                color: mainTab === key ? "#0a6b64" : "#8a938f",
+                borderBottomColor: mainTab === key ? "#086c64" : "transparent",
+                color: mainTab === key ? "#086c64" : "#949598",
                 background: "transparent",
               }}>
               <Icon size={14} />{label}
@@ -551,14 +551,14 @@ export default function EventDetailPage() {
                 ] as const).map(({ key, label }) => (
                   <button key={key} onClick={() => setActiveTab(key)}
                     className="px-3 py-1.5 transition-colors"
-                    style={{ background: activeTab === key ? "#0a6b64" : "transparent", color: activeTab === key ? "#fff" : "#5a6663" }}>
+                    style={{ background: activeTab === key ? "#086c64" : "transparent", color: activeTab === key ? "#fff" : "#5a6663" }}>
                     {label}
                   </button>
                 ))}
               </div>
               <button onClick={() => markAllAttended(true)} disabled={markingAll}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border hover:bg-emerald-50 transition-colors"
-                style={{ borderColor: "#e4e0d6", color: "#0a6b64" }}>
+                style={{ borderColor: "#e4e0d6", color: "#086c64" }}>
                 {markingAll ? <Loader2 size={12} className="animate-spin" /> : <UserCheck size={12} />} Mark all attended
               </button>
               <button onClick={exportCSV}
@@ -573,7 +573,7 @@ export default function EventDetailPage() {
         {/* ── Registrants tab ── */}
         {mainTab === "registrants" && (
           filteredRegs.length === 0 ? (
-            <div className="text-center py-12" style={{ color: "#8a938f" }}>
+            <div className="text-center py-12" style={{ color: "#949598" }}>
               <p className="font-medium">{event.registrations.length === 0 ? "No registrations yet" : `No ${activeTab === "students" ? "students" : "parents"} registered`}</p>
               {event.registrations.length === 0 && <p className="text-sm mt-1">Share the event link to start collecting sign-ups.</p>}
             </div>
@@ -581,10 +581,10 @@ export default function EventDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: "#faf9f6", borderBottom: "1px solid #e4e0d6" }}>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Name</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Email</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Type</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Attended</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Name</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Email</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Type</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Attended</th>
                 </tr>
               </thead>
               <tbody>
@@ -592,7 +592,7 @@ export default function EventDetailPage() {
                   <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#faf9f6", borderBottom: i < filteredRegs.length - 1 ? "1px solid #f0ede7" : "none" }}>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-sm" style={{ color: "#14211f" }}>{r.firstName} {r.lastName}</p>
-                      <p className="text-xs" style={{ color: "#8a938f" }}>{new Date(r.createdAt).toLocaleDateString()}{r.utmSource ? ` · ${r.utmSource}` : ""}</p>
+                      <p className="text-xs" style={{ color: "#949598" }}>{new Date(r.createdAt).toLocaleDateString()}{r.utmSource ? ` · ${r.utmSource}` : ""}</p>
                     </td>
                     <td className="px-4 py-3 text-xs hidden sm:table-cell" style={{ color: "#5a6663" }}>{r.email}</td>
                     <td className="px-4 py-3 hidden sm:table-cell">
@@ -603,7 +603,7 @@ export default function EventDetailPage() {
                     <td className="px-4 py-3">
                       <button onClick={() => toggleAttended(r.id, !r.attendedAt)} disabled={togglingReg === r.id}
                         className="flex items-center gap-1.5 text-xs font-semibold transition-colors"
-                        style={{ color: r.attendedAt ? "#0a6b64" : "#c9cac9" }}>
+                        style={{ color: r.attendedAt ? "#086c64" : "#c9cac9" }}>
                         {togglingReg === r.id ? <Loader2 size={14} className="animate-spin" /> : r.attendedAt ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                         {r.attendedAt ? "Attended" : "No-show"}
                       </button>
@@ -619,14 +619,14 @@ export default function EventDetailPage() {
         {mainTab === "analytics" && (
           <div className="p-5 space-y-6">
             {benchmarkLoading && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: "#8a938f" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "#949598" }}>
                 <Loader2 size={12} className="animate-spin" /> Loading benchmark data…
               </div>
             )}
 
             {/* Registration timeline */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Registration Timeline</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Registration Timeline</p>
               {timelineData.length > 0 ? (
                 <>
                   <Sparkline data={timelineData} />
@@ -643,26 +643,26 @@ export default function EventDetailPage() {
                   </p>
                 </>
               ) : (
-                <p className="text-sm py-4" style={{ color: "#8a938f" }}>No registrations yet.</p>
+                <p className="text-sm py-4" style={{ color: "#949598" }}>No registrations yet.</p>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* UTM source breakdown */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Traffic Sources</p>
+                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Traffic Sources</p>
                 {sources.length === 0 ? (
-                  <p className="text-sm" style={{ color: "#8a938f" }}>No data yet.</p>
+                  <p className="text-sm" style={{ color: "#949598" }}>No data yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {sources.map(({ src, count, pct: p }) => (
                       <div key={src}>
                         <div className="flex justify-between mb-1">
                           <span className="text-xs font-semibold capitalize" style={{ color: "#14211f" }}>{src}</span>
-                          <span className="text-xs font-bold" style={{ color: "#5a6663" }}>{count} <span style={{ color: "#8a938f" }}>({p}%)</span></span>
+                          <span className="text-xs font-bold" style={{ color: "#5a6663" }}>{count} <span style={{ color: "#949598" }}>({p}%)</span></span>
                         </div>
                         <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "#f1efe8" }}>
-                          <div className="h-full rounded-full" style={{ width: `${p}%`, background: "#0a6b64" }} />
+                          <div className="h-full rounded-full" style={{ width: `${p}%`, background: "#086c64" }} />
                         </div>
                       </div>
                     ))}
@@ -672,9 +672,9 @@ export default function EventDetailPage() {
 
               {/* Audience split */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Audience Breakdown</p>
+                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Audience Breakdown</p>
                 {event.funnel.registered === 0 ? (
-                  <p className="text-sm" style={{ color: "#8a938f" }}>No registrations yet.</p>
+                  <p className="text-sm" style={{ color: "#949598" }}>No registrations yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {[
@@ -699,17 +699,17 @@ export default function EventDetailPage() {
             {/* Benchmark comparison */}
             {hasBenchmark && (
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>
+                <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>
                   Benchmark vs. Your {benchmarkEvents!.length} Other Event{benchmarkEvents!.length !== 1 ? "s" : ""}
                 </p>
                 <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#e4e0d6" }}>
                   <table className="w-full text-sm">
                     <thead>
                       <tr style={{ background: "#f8f6f1" }}>
-                        <th className="text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Metric</th>
-                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>This Event</th>
-                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Your Avg</th>
-                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Diff</th>
+                        <th className="text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Metric</th>
+                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>This Event</th>
+                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Your Avg</th>
+                        <th className="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Diff</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -720,7 +720,7 @@ export default function EventDetailPage() {
                         { label: "Overall Conv.",     current: overallRate, benchmark: avg(bmOverallRates) },
                       ].map(({ label, current, benchmark: bm }, i) => {
                         const diff = current - bm;
-                        const diffColor = diff > 2 ? "#0a6b64" : diff < -2 ? "#dc2626" : "#8a938f";
+                        const diffColor = diff > 2 ? "#086c64" : diff < -2 ? "#dc2626" : "#949598";
                         return (
                           <tr key={label} style={{ background: i % 2 === 0 ? "#fff" : "#faf9f6", borderTop: "1px solid #f0ede7" }}>
                             <td className="px-4 py-2.5 text-xs font-semibold" style={{ color: "#14211f" }}>{label}</td>

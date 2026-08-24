@@ -106,7 +106,7 @@ export default function KanbanBoard() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-base font-bold mb-1" style={{ color: "#14211f" }}>Why did this lead go cold?</h3>
-            <p className="text-xs mb-4" style={{ color: "#8a938f" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
+            <p className="text-xs mb-4" style={{ color: "#949598" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
             <textarea
               autoFocus
               value={lostReason}
@@ -141,11 +141,11 @@ export default function KanbanBoard() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-6 py-4 bg-white flex-shrink-0" style={{ borderBottom: "1px solid #e4e0d6" }}>
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search leads…"
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white"
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-[#086c64] focus:bg-white"
             style={{ border: "1px solid #e4e0d6", background: "#f8f6f1", color: "#14211f" }}
           />
         </div>
@@ -160,8 +160,8 @@ export default function KanbanBoard() {
         <select
           value={sourceFilter ?? ""}
           onChange={e => setSourceFilter(e.target.value || null)}
-          className="text-xs font-semibold px-3 py-2 rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
-          style={{ border: "1px solid #e4e0d6", background: sourceFilter ? "#edf5f4" : "#f8f6f1", color: sourceFilter ? "#0a6b64" : "#5a6663" }}
+          className="text-xs font-semibold px-3 py-2 rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[#086c64]"
+          style={{ border: "1px solid #e4e0d6", background: sourceFilter ? "#edf5f4" : "#f8f6f1", color: sourceFilter ? "#086c64" : "#5a6663" }}
         >
           <option value="">All sources</option>
           <option value="EVENT">Event</option>
@@ -174,7 +174,7 @@ export default function KanbanBoard() {
         </select>
         <div className="flex-1" />
         <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm" style={{ background: "#0a6b64" }} onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")} onMouseLeave={e => (e.currentTarget.style.background = "#0a6b64")}>
+          className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm" style={{ background: "#086c64" }} onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")} onMouseLeave={e => (e.currentTarget.style.background = "#086c64")}>
           <Plus size={15} /> Add Lead
         </button>
       </div>
@@ -197,13 +197,13 @@ export default function KanbanBoard() {
                   onClick={() => setMobileStage(stg.key)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex-shrink-0 transition"
                   style={{
-                    background: active ? "#0a6b64" : "transparent",
+                    background: active ? "#086c64" : "transparent",
                     color: active ? "#fff" : "#5a6663",
                   }}>
                   <div className={`w-1.5 h-1.5 rounded-full ${stg.dot}`} />
                   {stg.label}
                   <span className={`ml-0.5 px-1 py-0.5 rounded-full text-[10px] font-bold ${active ? "bg-white/20" : "bg-[#e4e0d6]"}`}
-                    style={{ color: active ? "#fff" : "#8a938f" }}>{cnt}</span>
+                    style={{ color: active ? "#fff" : "#949598" }}>{cnt}</span>
                 </button>
               );
             })}
@@ -212,7 +212,7 @@ export default function KanbanBoard() {
           <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
             {filtered.filter(l => l.stage === mobileStage).length === 0 ? (
               <div className="border-2 border-dashed rounded-2xl p-8 text-center" style={{ borderColor: "#e4e0d6" }}>
-                <p className="text-sm" style={{ color: "#8a938f" }}>No leads in this stage</p>
+                <p className="text-sm" style={{ color: "#949598" }}>No leads in this stage</p>
               </div>
             ) : (
               filtered.filter(l => l.stage === mobileStage).map(lead => (
@@ -270,25 +270,25 @@ export default function KanbanBoard() {
                   }}
                 >
                   <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl mb-3 transition-colors ${
-                    isDropTarget ? "ring-2 ring-[#0a6b64] ring-offset-1 " + stg.color : stg.color
+                    isDropTarget ? "ring-2 ring-[#086c64] ring-offset-1 " + stg.color : stg.color
                   }`}>
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${stg.dot}`} />
                       <span className="text-sm font-bold" style={{ color: "#14211f" }}>{stg.label}</span>
-                      {isDraggable && <span className="text-[9px] font-normal" style={{ color: "#8a938f" }}>drag to move</span>}
+                      {isDraggable && <span className="text-[9px] font-normal" style={{ color: "#949598" }}>drag to move</span>}
                     </div>
-                    <span className="text-xs font-bold bg-white px-1.5 py-0.5 rounded-full" style={{ color: "#8a938f" }}>
+                    <span className="text-xs font-bold bg-white px-1.5 py-0.5 rounded-full" style={{ color: "#949598" }}>
                       {stageLeads.length}
                     </span>
                   </div>
 
                   <div className={`flex-1 space-y-2.5 overflow-y-auto pr-0.5 scrollbar-thin rounded-2xl transition-colors ${
                     isDropTarget ? "outline-2 outline-dashed outline-offset-2" : ""
-                  }`} style={isDropTarget ? { background: "#edf5f4", outlineColor: "#0a6b64" } : {}}>
+                  }`} style={isDropTarget ? { background: "#edf5f4", outlineColor: "#086c64" } : {}}>
                     {stageLeads.length === 0 && (
                       <div className="border-2 border-dashed rounded-2xl p-6 text-center transition-colors"
-                        style={isDropTarget ? { borderColor: "#0a6b64", background: "#edf5f4" } : { borderColor: "#e4e0d6" }}>
-                        <p className="text-xs" style={{ color: "#8a938f" }}>{isDropTarget ? "Drop here" : "No leads here"}</p>
+                        style={isDropTarget ? { borderColor: "#086c64", background: "#edf5f4" } : { borderColor: "#e4e0d6" }}>
+                        <p className="text-xs" style={{ color: "#949598" }}>{isDropTarget ? "Drop here" : "No leads here"}</p>
                       </div>
                     )}
                     {stageLeads.map(lead => (
@@ -343,7 +343,7 @@ function LeadCard({
   const priorityColor: Record<string, string> = {
     HIGH:   "bg-red-100 text-red-700",
     NORMAL: "bg-[#f1efe8] text-[#5a6663]",
-    LOW:    "bg-[#f8f6f1] text-[#8a938f]",
+    LOW:    "bg-[#f8f6f1] text-[#949598]",
     URGENT: "bg-red-200 text-red-800",
   };
 
@@ -373,7 +373,7 @@ function LeadCard({
       {/* Header: avatar + name + type + priority */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: "#0a6b64" }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: "#086c64" }}>
             <span className="text-white text-[11px] font-bold">{initials}</span>
           </div>
           <div>
@@ -382,7 +382,7 @@ function LeadCard({
               {lead.firstName} {lead.lastName}
             </Link>
             {(lead.jobTitle || lead.company) && (
-              <p className="text-[11px] leading-tight mt-0.5 truncate max-w-[130px]" style={{ color: "#8a938f" }}>
+              <p className="text-[11px] leading-tight mt-0.5 truncate max-w-[130px]" style={{ color: "#949598" }}>
                 {lead.jobTitle}{lead.jobTitle && lead.company ? " · " : ""}{lead.company}
               </p>
             )}
@@ -403,20 +403,20 @@ function LeadCard({
         <a href={`mailto:${lead.email}`}
           onClick={e => e.stopPropagation()}
           className="flex items-center gap-1.5 text-[11px] transition truncate hover:underline" style={{ color: "#5a6663" }}>
-          <Mail size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+          <Mail size={10} className="flex-shrink-0" style={{ color: "#949598" }} />
           <span className="truncate">{lead.email}</span>
         </a>
         {lead.phone && (
           <a href={`tel:${lead.phone}`}
             onClick={e => e.stopPropagation()}
             className="flex items-center gap-1.5 text-[11px] transition hover:underline" style={{ color: "#5a6663" }}>
-            <Phone size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+            <Phone size={10} className="flex-shrink-0" style={{ color: "#949598" }} />
             {lead.phone}
           </a>
         )}
         {(lead.dealValue ?? 0) > 0 && (
           <div className="flex items-center gap-1.5 text-[11px]">
-            <DollarSign size={10} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+            <DollarSign size={10} className="flex-shrink-0" style={{ color: "#949598" }} />
             <span className="font-semibold" style={{ color: "#14211f" }}>${lead.dealValue!.toLocaleString()}</span>
             {lead.paymentStatus && lead.paymentStatus !== "UNPAID" && (
               <span className={`font-medium ${paymentColor[lead.paymentStatus] ?? ""}`}>
@@ -440,7 +440,7 @@ function LeadCard({
           </span>
         )}
         {lead.tags.slice(0, 2).map(tag => (
-          <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "#edf5f4", color: "#0a6b64" }}>
+          <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "#edf5f4", color: "#086c64" }}>
             {tag}
           </span>
         ))}
@@ -453,7 +453,7 @@ function LeadCard({
 
       {/* Footer: activity + move */}
       <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: "1px solid #e4e0d6" }}>
-        <div className="flex items-center gap-2 text-[11px]" style={{ color: "#8a938f" }}>
+        <div className="flex items-center gap-2 text-[11px]" style={{ color: "#949598" }}>
           <span>{lead._count.activities} {lead._count.activities === 1 ? "activity" : "activities"}</span>
           <span>·</span>
           <span>{daysSince === 0 ? "Today" : `${daysSince}d ago`}</span>
@@ -466,7 +466,7 @@ function LeadCard({
             disabled={moving}
             className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition disabled:opacity-40"
             style={{ color: "#5a6663" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#086c64"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#5a6663"; }}
           >
             {moving ? <Loader2 size={11} className="animate-spin" /> : <ArrowRight size={11} />}

@@ -25,7 +25,7 @@ function dueLabel(dueAt: string | null) {
   if (days < 0)   return { text: "Overdue",  cls: "text-red-600 bg-red-50 border-red-200" };
   if (days === 0) return { text: "Today",    cls: "text-amber-600 bg-amber-50 border-amber-200" };
   if (days === 1) return { text: "Tomorrow", cls: "text-blue-600 bg-blue-50 border-blue-200" };
-  return { text: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "border-[#e4e0d6]", style: { color: "#8a938f", background: "#f8f6f1" } };
+  return { text: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "border-[#e4e0d6]", style: { color: "#949598", background: "#f8f6f1" } };
 }
 
 export default function TasksPage() {
@@ -225,7 +225,7 @@ export default function TasksPage() {
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <Link href={`/leads/${task.lead.id}`}
                         className="text-xs font-medium transition"
-                        style={{ color: "#0a6b64" }}
+                        style={{ color: "#086c64" }}
                         onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
                         onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
                       >
@@ -235,10 +235,10 @@ export default function TasksPage() {
                         {stage.label}
                       </span>
                       {task.notes && (
-                        <span className="text-[10px] truncate max-w-[160px]" style={{ color: "#8a938f" }} title={task.notes}>{task.notes}</span>
+                        <span className="text-[10px] truncate max-w-[160px]" style={{ color: "#949598" }} title={task.notes}>{task.notes}</span>
                       )}
                       {assignee && (
-                        <span className="text-[10px] flex items-center gap-0.5 flex-shrink-0" style={{ color: "#8a938f" }}>
+                        <span className="text-[10px] flex items-center gap-0.5 flex-shrink-0" style={{ color: "#949598" }}>
                           <UserCircle2 size={9} /> {assignee}
                         </span>
                       )}
@@ -254,9 +254,9 @@ export default function TasksPage() {
                     onClick={() => { if (isEditing) { setEditingId(null); } else { setLogTarget(null); openEdit(task); } }}
                     title="Edit task"
                     className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition p-1 rounded-lg"
-                    style={{ color: isEditing ? "#0a6b64" : "#c9c4b8" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "#0a6b64")}
-                    onMouseLeave={e => (e.currentTarget.style.color = isEditing ? "#0a6b64" : "#c9c4b8")}
+                    style={{ color: isEditing ? "#086c64" : "#c9c4b8" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#086c64")}
+                    onMouseLeave={e => (e.currentTarget.style.color = isEditing ? "#086c64" : "#c9c4b8")}
                   >
                     <Pencil size={13} />
                   </button>
@@ -279,9 +279,9 @@ export default function TasksPage() {
                     className={`flex-shrink-0 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition border ${
                       isLogging ? "border-[#e4e0d6]" : "border-transparent"
                     }`}
-                    style={isLogging ? { background: "#edf5f4", color: "#0a6b64" } : { color: "#8a938f" }}
-                    onMouseEnter={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; } }}
-                    onMouseLeave={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#8a938f"; } }}
+                    style={isLogging ? { background: "#edf5f4", color: "#086c64" } : { color: "#949598" }}
+                    onMouseEnter={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; (e.currentTarget as HTMLButtonElement).style.color = "#086c64"; } }}
+                    onMouseLeave={e => { if (!isLogging) { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#949598"; } }}
                   >
                     <Phone size={11} /> Call
                   </button>
@@ -289,7 +289,7 @@ export default function TasksPage() {
 
                 {/* Inline edit panel */}
                 {isEditing && (
-                  <div className="border-t px-5 py-4 space-y-3" style={{ borderColor: "#0a6b64", borderLeftWidth: 2, borderLeftColor: "#0a6b64", background: "#f0faf9" }}>
+                  <div className="border-t px-5 py-4 space-y-3" style={{ borderColor: "#086c64", borderLeftWidth: 2, borderLeftColor: "#086c64", background: "#f0faf9" }}>
                     <input
                       autoFocus value={editTitle} onChange={e => setEditTitle(e.target.value)}
                       onKeyDown={e => { if (e.key === "Escape") setEditingId(null); }}
@@ -304,14 +304,14 @@ export default function TasksPage() {
                     />
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 flex-1">
-                        <Clock size={12} style={{ color: "#8a938f" }} />
+                        <Clock size={12} style={{ color: "#949598" }} />
                         <input type="date" value={editDueAt} onChange={e => setEditDueAt(e.target.value)}
                           className="text-xs rounded-lg px-2 py-1.5 bg-white focus:outline-none"
                           style={{ border: "1px solid #e4e0d6" }} />
                       </div>
                       {admins.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-1">
-                          <UserCircle2 size={12} style={{ color: "#8a938f", flexShrink: 0 }} />
+                          <UserCircle2 size={12} style={{ color: "#949598", flexShrink: 0 }} />
                           <select value={editAssigned} onChange={e => setEditAssigned(e.target.value)}
                             className="text-xs rounded-lg px-2 py-1.5 bg-white focus:outline-none w-full"
                             style={{ border: "1px solid #e4e0d6" }}>
@@ -326,15 +326,15 @@ export default function TasksPage() {
                     <div className="flex items-center gap-2">
                       <button onClick={() => saveEdit(task.id)} disabled={editSaving || !editTitle.trim()}
                         className="flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition disabled:opacity-40"
-                        style={{ background: "#0a6b64" }}>
+                        style={{ background: "#086c64" }}>
                         {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
                         Save
                       </button>
                       <button onClick={() => setEditingId(null)}
                         className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-xl transition"
-                        style={{ color: "#8a938f" }}
+                        style={{ color: "#949598" }}
                         onMouseEnter={e => (e.currentTarget.style.color = "#14211f")}
-                        onMouseLeave={e => (e.currentTarget.style.color = "#8a938f")}>
+                        onMouseLeave={e => (e.currentTarget.style.color = "#949598")}>
                         <X size={11} /> Cancel
                       </button>
                     </div>
@@ -344,7 +344,7 @@ export default function TasksPage() {
                 {/* Inline call log panel */}
                 {isLogging && (
                   <div className="border-t px-5 py-3" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-                    <p className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: "#0a6b64" }}>
+                    <p className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: "#086c64" }}>
                       <Phone size={11} /> Log call with {logTarget.name}
                     </p>
                     <div className="flex gap-2">
@@ -363,7 +363,7 @@ export default function TasksPage() {
                           onClick={logCall}
                           disabled={!callNote.trim() || logging}
                           className="flex items-center gap-1 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition disabled:opacity-40"
-                          style={{ background: "#0a6b64" }}
+                          style={{ background: "#086c64" }}
                         >
                           {logging ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
                           Log
@@ -379,7 +379,7 @@ export default function TasksPage() {
                         </button>
                       </div>
                     </div>
-                    <p className="text-[10px] mt-1.5" style={{ color: "#8a938f" }}>⌘↵ to save · logged as a CALL activity on this lead</p>
+                    <p className="text-[10px] mt-1.5" style={{ color: "#949598" }}>⌘↵ to save · logged as a CALL activity on this lead</p>
                   </div>
                 )}
               </div>
@@ -394,17 +394,17 @@ export default function TasksPage() {
     <div className="max-w-3xl mx-auto p-6 sm:p-8 space-y-8 animate-fade-up">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598", letterSpacing: "0.14em" }}>Vantage Career Accelerator</p>
           <h1 className="font-display font-semibold leading-tight" style={{ fontSize: "1.75rem", color: "#14211f" }}>Tasks</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>{tasks.length} open task{tasks.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>{tasks.length} open task{tasks.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={openNewTask}
             className="flex items-center gap-1.5 text-sm font-semibold text-white px-3 py-2 rounded-xl transition shadow-sm"
-            style={{ background: "#0a6b64" }}
+            style={{ background: "#086c64" }}
             onMouseEnter={e => (e.currentTarget.style.background = "#084f4a")}
-            onMouseLeave={e => (e.currentTarget.style.background = "#0a6b64")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#086c64")}
           >
             <Plus size={14} /> New Task
           </button>
@@ -427,16 +427,16 @@ export default function TasksPage() {
         </div>
       ) : tasks.length === 0 ? (
         <div className="card p-16 text-center">
-          <CheckCircle2 size={32} className="mx-auto mb-3" style={{ color: "#0a6b64" }} />
+          <CheckCircle2 size={32} className="mx-auto mb-3" style={{ color: "#086c64" }} />
           <p className="font-semibold mb-1" style={{ color: "#5a6663" }}>All caught up!</p>
-          <p className="text-sm" style={{ color: "#8a938f" }}>No open tasks. Add tasks from any lead&apos;s detail page.</p>
+          <p className="text-sm" style={{ color: "#949598" }}>No open tasks. Add tasks from any lead&apos;s detail page.</p>
         </div>
       ) : (
         <div className="space-y-8">
           <Section label="Overdue"     items={overdue}  accentStyle={{ color: "#dc2626" }} />
           <Section label="Today"       items={today}    accentStyle={{ color: "#d97706" }} />
-          <Section label="Upcoming"    items={upcoming} accentStyle={{ color: "#0a6b64" }} />
-          <Section label="No due date" items={noDue}    accentStyle={{ color: "#8a938f" }} />
+          <Section label="Upcoming"    items={upcoming} accentStyle={{ color: "#086c64" }} />
+          <Section label="No due date" items={noDue}    accentStyle={{ color: "#949598" }} />
         </div>
       )}
     </div>
@@ -446,7 +446,7 @@ export default function TasksPage() {
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" style={{ border: "1px solid #e4e0d6" }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold" style={{ color: "#14211f" }}>New Task</h3>
-            <button onClick={() => setShowNewTask(false)} className="p-1.5 rounded-xl transition" style={{ color: "#8a938f" }}
+            <button onClick={() => setShowNewTask(false)} className="p-1.5 rounded-xl transition" style={{ color: "#949598" }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1efe8"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
@@ -455,7 +455,7 @@ export default function TasksPage() {
           </div>
 
           <div className="mb-4">
-            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Task</label>
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#949598", letterSpacing: "0.14em" }}>Task</label>
             <input
               autoFocus
               value={taskTitle}
@@ -468,21 +468,21 @@ export default function TasksPage() {
           </div>
 
           <div className="mb-4">
-            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>Lead</label>
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#949598", letterSpacing: "0.14em" }}>Lead</label>
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "#edf5f4", border: "1px solid #e4e0d6" }}>
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#0a6b64" }}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#086c64" }}>
                   <span className="text-white text-[9px] font-bold">{selectedLead.firstName[0]}{selectedLead.lastName[0]}</span>
                 </div>
                 <span className="text-sm font-semibold flex-1" style={{ color: "#14211f" }}>{selectedLead.firstName} {selectedLead.lastName}</span>
                 <button onClick={() => { setSelectedLead(null); setLeadQuery(""); setLeadOptions([]); }}
-                  style={{ color: "#8a938f" }}>
+                  style={{ color: "#949598" }}>
                   <X size={13} />
                 </button>
               </div>
             ) : (
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
                 <input
                   value={leadQuery}
                   onChange={e => onLeadQueryChange(e.target.value)}
@@ -491,7 +491,7 @@ export default function TasksPage() {
                   style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
                 />
                 {searchingLeads && (
-                  <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin" style={{ color: "#8a938f" }} />
+                  <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin" style={{ color: "#949598" }} />
                 )}
                 {leadOptions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg overflow-hidden z-10" style={{ border: "1px solid #e4e0d6" }}>
@@ -499,12 +499,12 @@ export default function TasksPage() {
                       <button key={lead.id}
                         onClick={() => { setSelectedLead(lead); setLeadOptions([]); }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition hover:bg-[#f8f6f1]">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#0a6b64" }}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#086c64" }}>
                           <span className="text-white text-[9px] font-bold">{lead.firstName[0]}{lead.lastName[0]}</span>
                         </div>
                         <div>
                           <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{lead.firstName} {lead.lastName}</p>
-                          {lead.company && <p className="text-xs" style={{ color: "#8a938f" }}>{lead.company}</p>}
+                          {lead.company && <p className="text-xs" style={{ color: "#949598" }}>{lead.company}</p>}
                         </div>
                       </button>
                     ))}
@@ -515,7 +515,7 @@ export default function TasksPage() {
           </div>
 
           <div className="mb-5">
-            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#8a938f", letterSpacing: "0.14em" }}>
+            <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5" style={{ color: "#949598", letterSpacing: "0.14em" }}>
               Due date <span className="font-normal">(optional)</span>
             </label>
             <input
@@ -540,9 +540,9 @@ export default function TasksPage() {
               onClick={createTask}
               disabled={!taskTitle.trim() || !selectedLead || creatingTask}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition disabled:opacity-40"
-              style={{ background: "#0a6b64" }}
+              style={{ background: "#086c64" }}
               onMouseEnter={e => { if (!creatingTask) (e.currentTarget as HTMLButtonElement).style.background = "#084f4a"; }}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#086c64"}
             >
               {creatingTask ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Create Task

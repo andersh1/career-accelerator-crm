@@ -13,11 +13,11 @@ export default async function AutomationPage() {
     <div className="p-7 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-display font-semibold" style={{ color: "#14211f" }}>Automation Rules</h1>
         </div>
-        <p className="text-sm" style={{ color: "#8a938f" }}>
+        <p className="text-sm" style={{ color: "#949598" }}>
           Smart rules that run in the background. Toggle any rule on or off — changes take effect immediately.
         </p>
       </div>

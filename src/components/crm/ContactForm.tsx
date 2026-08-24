@@ -84,14 +84,14 @@ export default function ContactForm({ onClose, onSaved }: Props) {
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#e4e0d6] sticky top-0 bg-white rounded-t-3xl z-10">
           <div>
             <h2 className="text-base font-bold" style={{ color: "#14211f" }}>Add Contact</h2>
-            <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>
+            <p className="text-xs mt-0.5" style={{ color: "#949598" }}>
               University reps, firm partners, and other relationship contacts
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-[#f8f6f1] transition"
-            style={{ color: "#8a938f" }}
+            style={{ color: "#949598" }}
           >
             <X size={18} />
           </button>
@@ -102,7 +102,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           {/* Name */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>First Name *</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>First Name *</label>
               <div className="relative">
                 <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
                 <input
@@ -110,19 +110,19 @@ export default function ContactForm({ onClose, onSaved }: Props) {
                   value={form.firstName}
                   onChange={e => set("firstName", e.target.value)}
                   placeholder="Sarah"
-                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Last Name *</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Last Name *</label>
               <input
                 required
                 value={form.lastName}
                 onChange={e => set("lastName", e.target.value)}
                 placeholder="Johnson"
-                className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                 style={{ color: "#14211f" }}
               />
             </div>
@@ -131,7 +131,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           {/* Email + Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Email *</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Email *</label>
               <div className="relative">
                 <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
                 <input
@@ -140,13 +140,13 @@ export default function ContactForm({ onClose, onSaved }: Props) {
                   value={form.email}
                   onChange={e => set("email", e.target.value)}
                   placeholder="sarah@university.edu"
-                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Phone</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Phone</label>
               <div className="relative">
                 <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
                 <input
@@ -154,7 +154,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
                   value={form.phone}
                   onChange={e => set("phone", e.target.value)}
                   placeholder="+1 555 000 0000"
-                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
@@ -164,27 +164,27 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           {/* Company + Job Title */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Organization</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Organization</label>
               <div className="relative">
                 <Building2 size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
                 <input
                   value={form.company}
                   onChange={e => set("company", e.target.value)}
                   placeholder="Northwestern University"
-                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Job Title</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Job Title</label>
               <div className="relative">
                 <Briefcase size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
                 <input
                   value={form.jobTitle}
                   onChange={e => set("jobTitle", e.target.value)}
                   placeholder="Dir. of Student Programs"
-                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
@@ -193,14 +193,14 @@ export default function ContactForm({ onClose, onSaved }: Props) {
 
           {/* LinkedIn */}
           <div>
-            <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>LinkedIn URL</label>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>LinkedIn URL</label>
             <div className="relative">
               <Linkedin size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
               <input
                 value={form.linkedinUrl}
                 onChange={e => set("linkedinUrl", e.target.value)}
                 placeholder="https://linkedin.com/in/sarahjohnson"
-                className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                className="w-full pl-8 pr-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                 style={{ color: "#14211f" }}
               />
             </div>
@@ -209,11 +209,11 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           {/* Source + Assigned To */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>How you met</label>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>How you met</label>
               <select
                 value={form.source}
                 onChange={e => set("source", e.target.value)}
-                className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                 style={{ color: form.source ? "#14211f" : "#c9c4b8" }}
               >
                 <option value="">— Select —</option>
@@ -222,13 +222,13 @@ export default function ContactForm({ onClose, onSaved }: Props) {
             </div>
             {users.length > 0 && (
               <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>
+                <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>
                   <span className="inline-flex items-center gap-1"><UserCircle2 size={11} /> Owner</span>
                 </label>
                 <select
                   value={form.assignedTo}
                   onChange={e => set("assignedTo", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 >
                   <option value="">— Unassigned —</option>
@@ -242,13 +242,13 @@ export default function ContactForm({ onClose, onSaved }: Props) {
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold mb-1" style={{ color: "#8a938f" }}>Notes</label>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Notes</label>
             <textarea
               value={form.notes}
               onChange={e => set("notes", e.target.value)}
               rows={3}
               placeholder="How you know them, context for the relationship…"
-              className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40 resize-none"
+              className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]/40 resize-none"
               style={{ color: "#14211f" }}
             />
           </div>
@@ -259,7 +259,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
               type="submit"
               disabled={saving}
               className="flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition disabled:opacity-50"
-              style={{ background: "#0a6b64" }}
+              style={{ background: "#086c64" }}
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : null}
               {saving ? "Saving…" : "Add Contact"}

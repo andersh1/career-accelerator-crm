@@ -9,7 +9,7 @@ const brand = {
     300: "#6cbab5",
     400: "#3a9e99",
     500: "#0f8a80",
-    600: "#0a6b64",  // --teal (primary)
+    600: "#086c64",  // --teal (primary)
     700: "#084f4a",  // --teal-dark
     800: "#063b37",
     900: "#042a27",
@@ -26,7 +26,7 @@ const config: Config = {
       },
       fontFamily: {
         sans:    ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        display: ["var(--font-display)", "Montserrat", "sans-serif"],
       },
       animation: {
         "fade-up":  "fadeUp .4s ease both",

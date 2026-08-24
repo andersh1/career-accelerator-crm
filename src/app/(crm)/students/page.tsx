@@ -93,12 +93,12 @@ export default function StudentsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#edf5f4" }}>
-            <GraduationCap size={18} style={{ color: "#0a6b64" }} />
+            <GraduationCap size={18} style={{ color: "#086c64" }} />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
             <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>Students</h1>
-            <p className="text-sm" style={{ color: "#8a938f" }}>
+            <p className="text-sm" style={{ color: "#949598" }}>
               {loading ? "Loading…" : `${filtered.length} active student${filtered.length !== 1 ? "s" : ""}`}
             </p>
           </div>
@@ -106,7 +106,7 @@ export default function StudentsPage() {
 
         {/* Search */}
         <div className="relative w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -118,10 +118,10 @@ export default function StudentsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 size={24} className="animate-spin" style={{ color: "#8a938f" }} />
+          <Loader2 size={24} className="animate-spin" style={{ color: "#949598" }} />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64" style={{ color: "#8a938f" }}>
+        <div className="flex flex-col items-center justify-center h-64" style={{ color: "#949598" }}>
           <GraduationCap size={40} className="mb-3 opacity-30" />
           <p className="text-sm">No students found</p>
         </div>
@@ -143,16 +143,16 @@ export default function StudentsPage() {
                     {s.firstName} {s.lastName}
                   </Link>
                   {s.jobTitle && (
-                    <p className="text-xs truncate mt-0.5" style={{ color: "#8a938f" }}>{s.jobTitle}</p>
+                    <p className="text-xs truncate mt-0.5" style={{ color: "#949598" }}>{s.jobTitle}</p>
                   )}
                   {s.company && (
-                    <p className="text-xs truncate" style={{ color: "#8a938f" }}>{s.company}</p>
+                    <p className="text-xs truncate" style={{ color: "#949598" }}>{s.company}</p>
                   )}
                 </div>
                 <Link
                   href={`/leads/${s.id}`}
                   className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:text-teal-600 hover:bg-[#edf5f4] transition flex-shrink-0 text-xs font-medium"
-                  style={{ color: "#8a938f" }}
+                  style={{ color: "#949598" }}
                   title="View contact"
                 >
                   <ExternalLink size={12} />
@@ -167,7 +167,7 @@ export default function StudentsPage() {
                   className="flex items-center gap-2 text-xs hover:text-teal-600 transition truncate"
                   style={{ color: "#5a6663" }}
                 >
-                  <Mail size={11} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+                  <Mail size={11} className="flex-shrink-0" style={{ color: "#949598" }} />
                   <span className="truncate">{s.email}</span>
                 </a>
                 {s.phone && (
@@ -176,7 +176,7 @@ export default function StudentsPage() {
                     className="flex items-center gap-2 text-xs hover:text-teal-600 transition"
                     style={{ color: "#5a6663" }}
                   >
-                    <Phone size={11} className="flex-shrink-0" style={{ color: "#8a938f" }} />
+                    <Phone size={11} className="flex-shrink-0" style={{ color: "#949598" }} />
                     {s.phone}
                   </a>
                 )}
@@ -186,7 +186,7 @@ export default function StudentsPage() {
               {s.notes && (
                 <div className="mb-3 flex gap-1.5">
                   <MessageSquare size={11} className="flex-shrink-0 mt-0.5" style={{ color: "#c9c4b8" }} />
-                  <p className="text-[11px] leading-relaxed line-clamp-2" style={{ color: "#8a938f" }} title={s.notes}>{s.notes}</p>
+                  <p className="text-[11px] leading-relaxed line-clamp-2" style={{ color: "#949598" }} title={s.notes}>{s.notes}</p>
                 </div>
               )}
 
@@ -194,7 +194,7 @@ export default function StudentsPage() {
               {s.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                   {s.tags.filter(t => t !== "founding-cohort").map(tag => (
-                    <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "#edf5f4", color: "#0a6b64" }}>
+                    <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "#edf5f4", color: "#086c64" }}>
                       {tag}
                     </span>
                   ))}
@@ -206,19 +206,19 @@ export default function StudentsPage() {
                 <div className="flex items-center gap-3 mb-3 text-[11px]" style={{ color: "#5a6663" }}>
                   {s.cohort && (
                     <span className="flex items-center gap-1">
-                      <GraduationCap size={10} style={{ color: "#0a6b64" }} />
+                      <GraduationCap size={10} style={{ color: "#086c64" }} />
                       <span className="font-medium">{s.cohort}</span>
                     </span>
                   )}
                   {s.sectionsCompleted != null && (
                     <span className="flex items-center gap-1">
-                      <BookOpen size={10} style={{ color: "#8a938f" }} />
+                      <BookOpen size={10} style={{ color: "#949598" }} />
                       {s.sectionsCompleted} sections
                     </span>
                   )}
                   {s.lastActiveAt && (
                     <span className="flex items-center gap-1">
-                      <Activity size={10} style={{ color: "#8a938f" }} />
+                      <Activity size={10} style={{ color: "#949598" }} />
                       {daysSince(s.lastActiveAt) === 0 ? "Active today" : `${daysSince(s.lastActiveAt)}d ago`}
                     </span>
                   )}
@@ -229,7 +229,7 @@ export default function StudentsPage() {
               )}
 
               {/* Footer */}
-              <div className="pt-3 border-t border-[#e4e0d6] flex items-center justify-between text-[11px]" style={{ color: "#8a938f" }}>
+              <div className="pt-3 border-t border-[#e4e0d6] flex items-center justify-between text-[11px]" style={{ color: "#949598" }}>
                 <span>{s._count.activities} {s._count.activities === 1 ? "activity" : "activities"}</span>
                 <span>{daysSince(s.updatedAt) === 0 ? "Updated today" : `Updated ${daysSince(s.updatedAt)}d ago`}</span>
               </div>

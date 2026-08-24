@@ -18,7 +18,7 @@ interface GmailStatus {
   gmailSyncedAt: string | null;
 }
 
-const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white" ;
+const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64] focus:bg-white" ;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -33,7 +33,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   return (
     <div>
       <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>{label}</label>
-      {hint && <p className="text-xs mb-1.5" style={{ color: "#8a938f" }}>{hint}</p>}
+      {hint && <p className="text-xs mb-1.5" style={{ color: "#949598" }}>{hint}</p>}
       {children}
     </div>
   );
@@ -343,9 +343,9 @@ export default function SettingsPage() {
     <div className="max-w-2xl mx-auto p-6 animate-fade-up">
       {/* Header */}
       <div className="mb-6">
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
         <h1 className="text-2xl font-semibold font-display" style={{ color: "#14211f" }}>Settings</h1>
-        <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>Manage your account, team, and integrations.</p>
+        <p className="text-sm mt-0.5" style={{ color: "#949598" }}>Manage your account, team, and integrations.</p>
       </div>
 
       {/* Gmail OAuth banner */}
@@ -357,7 +357,7 @@ export default function SettingsPage() {
       )}
       {gmailBanner === "disconnected" && (
         <div className="flex items-center gap-3 border border-[#e4e0d6] rounded-2xl px-4 py-3 mb-4" style={{ background: "#f8f6f1" }}>
-          <CheckCircle2 size={16} style={{ color: "#8a938f" }} className="shrink-0" />
+          <CheckCircle2 size={16} style={{ color: "#949598" }} className="shrink-0" />
           <p className="text-sm font-medium" style={{ color: "#5a6663" }}>Gmail disconnected.</p>
         </div>
       )}
@@ -377,12 +377,12 @@ export default function SettingsPage() {
           <button key={t.key} onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${
               activeTab === t.key
-                ? "border-[#0a6b64] text-[#0a6b64]"
+                ? "border-[#086c64] text-[#086c64]"
                 : "border-transparent hover:border-[#e4e0d6]"
             }`}
-            style={activeTab === t.key ? {} : { color: "#8a938f" }}
+            style={activeTab === t.key ? {} : { color: "#949598" }}
             onMouseEnter={e => { if (activeTab !== t.key) (e.currentTarget as HTMLButtonElement).style.color = "#5a6663"; }}
-            onMouseLeave={e => { if (activeTab !== t.key) (e.currentTarget as HTMLButtonElement).style.color = "#8a938f"; }}>
+            onMouseLeave={e => { if (activeTab !== t.key) (e.currentTarget as HTMLButtonElement).style.color = "#949598"; }}>
             {t.icon}{t.label}
           </button>
         ))}
@@ -399,14 +399,14 @@ export default function SettingsPage() {
               <Field label="Email">
                 <input value={session?.user?.email ?? ""} disabled
                   className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm cursor-not-allowed"
-                  style={{ background: "#e4e0d6", color: "#8a938f" }} />
+                  style={{ background: "#e4e0d6", color: "#949598" }} />
               </Field>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button type="submit" disabled={saving}
                 className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
               </button>
@@ -423,13 +423,13 @@ export default function SettingsPage() {
                 <input value={officeHoursLink} onChange={e => setOfficeHoursLink(e.target.value)}
                   placeholder="https://calendly.com/you/office-hours" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
               </Field>
-              <p className="text-xs" style={{ color: "#8a938f" }}>Leave a field blank to remove that booking option from the LMS.</p>
+              <p className="text-xs" style={{ color: "#949598" }}>Leave a field blank to remove that booking option from the LMS.</p>
               {linksError && <p className="text-sm text-red-600">{linksError}</p>}
               <button type="submit" disabled={linksSaving}
                 className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
                 {linksSaving ? <Loader2 size={14} className="animate-spin" /> : linksSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {linksSaving ? "Saving…" : linksSaved ? "Saved!" : "Save Booking Links"}
               </button>
@@ -468,7 +468,7 @@ export default function SettingsPage() {
       {activeTab === "organization" && (
         <div className="space-y-5">
           <Section title="Proposal Defaults">
-            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>These appear on every generated proposal. Customize to match your brand.</p>
+            <p className="text-xs -mt-2" style={{ color: "#949598" }}>These appear on every generated proposal. Customize to match your brand.</p>
             <Field label="Program Name">
               <input value={progName} onChange={e => setProgName(e.target.value)}
                 placeholder="Vantage Career Accelerator Program" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
@@ -483,9 +483,9 @@ export default function SettingsPage() {
             </Field>
             <button onClick={saveAppSettings} disabled={appSaving}
               className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-              style={{ background: "#0a6b64" }}
+              style={{ background: "#086c64" }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
               {appSaving ? <Loader2 size={14} className="animate-spin" /> : appSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
               {appSaving ? "Saving…" : appSaved ? "Saved!" : "Save"}
             </button>
@@ -497,7 +497,7 @@ export default function SettingsPage() {
       {activeTab === "team" && (
         <div className="space-y-5">
           <Section title="Team">
-            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
+            <p className="text-xs -mt-2" style={{ color: "#949598" }}>
               Invite other admins to access the CRM. They&apos;ll receive an email with a temporary password.
             </p>
 
@@ -511,15 +511,15 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{u.name ?? "—"}</p>
-                        <p className="text-xs truncate" style={{ color: "#8a938f" }}>{u.email}</p>
+                        <p className="text-xs truncate" style={{ color: "#949598" }}>{u.email}</p>
                       </div>
                       {u.id === (session as { user?: { id?: string } })?.user?.id ? (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>You</span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>You</span>
                       ) : (
                         <div className="flex items-center gap-1">
                           <button onClick={() => { setResetTargetId(resetTargetId === u.id ? null : u.id); setResetPw(""); setResetResult(null); }}
                             className="p-1.5 rounded-lg transition hover:bg-[#edf5f4]" style={{ color: "#c9c4b8" }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#0a6b64"; }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#086c64"; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#c9c4b8"; }}
                             title="Reset password">
                             <Lock size={14} />
@@ -533,17 +533,17 @@ export default function SettingsPage() {
                     </div>
                     {resetTargetId === u.id && (
                       <form onSubmit={resetAdminPassword} className="px-4 pb-3 pt-1 border-t border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
-                        <p className="text-xs mb-2" style={{ color: "#8a938f" }}>Set a new password for {u.name ?? u.email}</p>
+                        <p className="text-xs mb-2" style={{ color: "#949598" }}>Set a new password for {u.name ?? u.email}</p>
                         <div className="flex gap-2">
                           <input type="password" value={resetPw} onChange={e => setResetPw(e.target.value)}
                             placeholder="New password (8+ chars)" minLength={8}
-                            className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+                            className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]"
                             style={{ color: "#14211f" }} />
                           <button type="submit" disabled={resetSaving || resetPw.length < 8}
                             className="px-3 py-2 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
-                            style={{ background: "#0a6b64" }}
+                            style={{ background: "#086c64" }}
                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
                             {resetSaving ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />}
                             {resetSaving ? "Saving…" : "Save"}
                           </button>
@@ -559,7 +559,7 @@ export default function SettingsPage() {
             )}
 
             <form onSubmit={inviteAdmin} className="space-y-3 pt-1">
-              <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#8a938f" }}>
+              <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#949598" }}>
                 <UserPlus size={12} /> Invite New Admin
               </p>
               <div className="flex gap-2">
@@ -568,7 +568,7 @@ export default function SettingsPage() {
                 <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                   type="email" placeholder="Email address" className={inputCls} style={{ background: "#f8f6f1", color: "#14211f" }} />
                 <select value={inviteRole} onChange={e => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
-                  className="px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] shrink-0"
+                  className="px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64] shrink-0"
                   style={{ background: "#f8f6f1", color: "#14211f" }}>
                   <option value="MEMBER">Member</option>
                   <option value="ADMIN">Admin</option>
@@ -587,9 +587,9 @@ export default function SettingsPage() {
               )}
               <button type="submit" disabled={inviting || !inviteName.trim() || !inviteEmail.trim()}
                 className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
                 {inviting ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
                 {inviting ? "Inviting…" : "Send Invite"}
               </button>
@@ -602,7 +602,7 @@ export default function SettingsPage() {
       {activeTab === "integrations" && (
         <div className="space-y-5">
           <Section title="Gmail Integration">
-            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
+            <p className="text-xs -mt-2" style={{ color: "#949598" }}>
               Connect your Gmail account to automatically log sent emails to lead timelines.
             </p>
             {gmailStatus?.connected ? (
@@ -615,14 +615,14 @@ export default function SettingsPage() {
                   </div>
                   <Mail size={16} className="text-green-600 shrink-0" />
                 </div>
-                <div className="text-xs" style={{ color: "#8a938f" }}>Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
+                <div className="text-xs" style={{ color: "#949598" }}>Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
                 {gmailSyncResult && (
                   <p className="text-sm border border-[#e4e0d6] rounded-xl px-4 py-2.5" style={{ color: "#5a6663", background: "#f8f6f1" }}>{gmailSyncResult}</p>
                 )}
                 <div className="flex gap-2">
                   <button onClick={syncGmail} disabled={gmailSyncing}
                     className="flex items-center gap-2 text-sm font-semibold border disabled:opacity-50 px-4 py-2 rounded-xl transition"
-                    style={{ color: "#0a6b64", borderColor: "#0a6b64", background: "#edf5f4" }}
+                    style={{ color: "#086c64", borderColor: "#086c64", background: "#edf5f4" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d6ecea"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; }}>
                     {gmailSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
@@ -639,7 +639,7 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 border border-[#e4e0d6] rounded-xl px-4 py-3" style={{ background: "#f8f6f1" }}>
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "#c9c4b8" }} />
-                  <p className="text-sm" style={{ color: "#8a938f" }}>Not connected</p>
+                  <p className="text-sm" style={{ color: "#949598" }}>Not connected</p>
                 </div>
                 <button onClick={connectGmail} disabled={gmailConnecting}
                   className="flex items-center gap-2 bg-white hover:bg-[#f8f6f1] disabled:opacity-50 border border-[#e4e0d6] text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
@@ -655,7 +655,7 @@ export default function SettingsPage() {
                   }
                   {gmailConnecting ? "Redirecting…" : "Connect Gmail"}
                 </button>
-                <p className="text-xs" style={{ color: "#8a938f" }}>
+                <p className="text-xs" style={{ color: "#949598" }}>
                   Requires <code className="px-1 rounded" style={{ background: "#e4e0d6" }}>GOOGLE_CLIENT_ID</code> and{" "}
                   <code className="px-1 rounded" style={{ background: "#e4e0d6" }}>GOOGLE_CLIENT_SECRET</code> in your environment.
                 </p>
@@ -664,10 +664,10 @@ export default function SettingsPage() {
           </Section>
 
           <Section title="Slack Integration">
-            <p className="text-xs -mt-2" style={{ color: "#8a938f" }}>
+            <p className="text-xs -mt-2" style={{ color: "#949598" }}>
               Get notified in Slack when a lead enrolls or goes cold.{" "}
               <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noreferrer"
-                style={{ color: "#0a6b64" }} className="hover:underline">How to create a webhook →</a>
+                style={{ color: "#086c64" }} className="hover:underline">How to create a webhook →</a>
             </p>
             <Field label="Webhook URL" hint="Paste your Slack Incoming Webhook URL">
               <input value={slackUrl} onChange={e => setSlackUrl(e.target.value)}
@@ -686,9 +686,9 @@ export default function SettingsPage() {
               </button>
               <button onClick={saveAppSettings} disabled={appSaving}
                 className="flex items-center gap-2 text-sm font-semibold disabled:opacity-50 text-white px-4 py-2 rounded-xl transition"
-                style={{ background: "#0a6b64" }}
+                style={{ background: "#086c64" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#085e58"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0a6b64"; }}>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#086c64"; }}>
                 {appSaving ? <Loader2 size={14} className="animate-spin" /> : appSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
                 {appSaving ? "Saving…" : appSaved ? "Saved!" : "Save"}
               </button>

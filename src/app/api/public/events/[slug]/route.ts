@@ -62,7 +62,7 @@ function buildConfirmationHtml(opts: {
 
   const locationRow = isZoom
     ? (meetingUrl
-        ? `<tr><td style="padding:7px 0;color:#5a6663;font-size:0.875rem;width:110px;vertical-align:top;">Join link</td><td style="padding:7px 0;"><a href="${meetingUrl}" style="color:#0a6b64;font-weight:700;word-break:break-all;">${meetingUrl}</a></td></tr>`
+        ? `<tr><td style="padding:7px 0;color:#5a6663;font-size:0.875rem;width:110px;vertical-align:top;">Join link</td><td style="padding:7px 0;"><a href="${meetingUrl}" style="color:#086c64;font-weight:700;word-break:break-all;">${meetingUrl}</a></td></tr>`
         : `<tr><td style="padding:7px 0;color:#5a6663;font-size:0.875rem;">Format</td><td style="padding:7px 0;font-weight:600;">Online via Zoom — link sent before event</td></tr>`)
     : [
         location ? `<tr><td style="padding:7px 0;color:#5a6663;font-size:0.875rem;width:110px;">Venue</td><td style="padding:7px 0;font-weight:600;">${location}</td></tr>` : "",
@@ -79,7 +79,7 @@ function buildConfirmationHtml(opts: {
 
   return `
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#14211f;">
-      <div style="background:linear-gradient(135deg,#0a6b64,#063b37);padding:24px 28px;border-radius:12px 12px 0 0;">
+      <div style="background:linear-gradient(135deg,#086c64,#063b37);padding:24px 28px;border-radius:12px 12px 0 0;">
         <p style="color:rgba(255,255,255,0.65);margin:0 0 6px;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;">You're registered</p>
         <h2 style="color:white;margin:0;font-size:1.25rem;line-height:1.3;">${eventTitle}</h2>
         <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:0.875rem;">Vantage Career Accelerator</p>
@@ -88,7 +88,7 @@ function buildConfirmationHtml(opts: {
         <p style="margin:0 0 20px;">Hi ${firstName} 👋 — you're all set for <strong>${eventTitle}</strong>. Here are your details:</p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;border:1px solid #e4e0d6;border-radius:10px;overflow:hidden;">
           <tr style="background:#f8f6f1;">
-            <td colspan="2" style="padding:10px 14px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8a938f;">Event Details</td>
+            <td colspan="2" style="padding:10px 14px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#949598;">Event Details</td>
           </tr>
           <tr style="background:#fff;"><td style="padding:7px 14px;color:#5a6663;font-size:0.875rem;width:110px;">Date</td><td style="padding:7px 14px;font-weight:600;">${dateStr}</td></tr>
           <tr style="background:#f8f6f1;"><td style="padding:7px 14px;color:#5a6663;font-size:0.875rem;">Time</td><td style="padding:7px 14px;font-weight:600;">${timeStr}</td></tr>
@@ -99,7 +99,7 @@ function buildConfirmationHtml(opts: {
         <p style="margin:0 0 8px;font-size:0.875rem;color:#5a6663;">📅 <strong>Add to your calendar</strong> — the .ics file is attached to this email.</p>
         <p style="margin:0;font-size:0.875rem;color:#5a6663;">${reminderNote}</p>
         <hr style="border:none;border-top:1px solid #e4e0d6;margin:20px 0;" />
-        <p style="margin:0;font-size:0.8rem;color:#8a938f;">Questions? Reply to this email — we read every one.<br/>Vantage Career Accelerator · <a href="https://lms.vantagecareer.co" style="color:#0a6b64;">lms.vantagecareer.co</a></p>
+        <p style="margin:0;font-size:0.8rem;color:#949598;">Questions? Reply to this email — we read every one.<br/>Vantage Career Accelerator · <a href="https://lms.vantagecareer.co" style="color:#086c64;">lms.vantagecareer.co</a></p>
       </div>
     </div>
   `;

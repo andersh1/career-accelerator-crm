@@ -30,7 +30,7 @@ export default function ReferralsPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "#14211f" }}>Student Referrals</h1>
-        <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+        <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
           Track which students are referring applicants and how many are converting.
         </p>
       </div>
@@ -44,9 +44,9 @@ export default function ReferralsPage() {
             { label: "Enrolled via ref", value: totalEnrolled,  icon: GraduationCap },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="rounded-2xl border p-4 text-center" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
-              <Icon size={18} className="mx-auto mb-1" style={{ color: "#0a6b64" }} />
+              <Icon size={18} className="mx-auto mb-1" style={{ color: "#086c64" }} />
               <p className="text-2xl font-bold" style={{ color: "#14211f" }}>{value}</p>
-              <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{label}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{label}</p>
             </div>
           ))}
         </div>
@@ -55,10 +55,10 @@ export default function ReferralsPage() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={22} className="animate-spin" style={{ color: "#0a6b64" }} />
+          <Loader2 size={22} className="animate-spin" style={{ color: "#086c64" }} />
         </div>
       ) : rows.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border" style={{ borderColor: "#e4e0d6", color: "#8a938f" }}>
+        <div className="text-center py-16 rounded-2xl border" style={{ borderColor: "#e4e0d6", color: "#949598" }}>
           <Share2 size={32} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No referrals yet</p>
           <p className="text-sm mt-1">Students share their link from Settings. Applicants who use it appear here.</p>
@@ -68,11 +68,11 @@ export default function ReferralsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "#f8f6f1", borderBottom: "1px solid #e4e0d6" }}>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Rank</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Student</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Code</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Referrals</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Enrolled</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Rank</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Student</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Code</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Referrals</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Enrolled</th>
               </tr>
             </thead>
             <tbody>
@@ -81,7 +81,7 @@ export default function ReferralsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold" style={{
                       background: i === 0 ? "#fef3c7" : i === 1 ? "#f1f5f9" : i === 2 ? "#fde8d0" : "#f8f6f1",
-                      color: i === 0 ? "#92400e" : i === 1 ? "#475569" : i === 2 ? "#9a3412" : "#8a938f",
+                      color: i === 0 ? "#92400e" : i === 1 ? "#475569" : i === 2 ? "#9a3412" : "#949598",
                     }}>
                       {i === 0 ? <Trophy size={12} /> : i + 1}
                     </div>
@@ -90,17 +90,17 @@ export default function ReferralsPage() {
                     {row.student ? (
                       <div>
                         <p className="font-semibold text-sm" style={{ color: "#14211f" }}>{row.student.name}</p>
-                        <p className="text-xs" style={{ color: "#8a938f" }}>{row.student.email}</p>
+                        <p className="text-xs" style={{ color: "#949598" }}>{row.student.email}</p>
                         {row.student.cohort && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>{row.student.cohort}</span>
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>{row.student.cohort}</span>
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs" style={{ color: "#8a938f" }}>Unknown student</span>
+                      <span className="text-xs" style={{ color: "#949598" }}>Unknown student</span>
                     )}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className="font-mono text-xs font-bold" style={{ color: "#0a6b64" }}>{row.code}</span>
+                    <span className="font-mono text-xs font-bold" style={{ color: "#086c64" }}>{row.code}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className="font-bold text-sm" style={{ color: "#14211f" }}>{row.total}</span>
@@ -112,7 +112,7 @@ export default function ReferralsPage() {
                         {row.enrolled}
                       </span>
                     ) : (
-                      <span className="text-xs" style={{ color: "#8a938f" }}>—</span>
+                      <span className="text-xs" style={{ color: "#949598" }}>—</span>
                     )}
                   </td>
                 </tr>
@@ -122,7 +122,7 @@ export default function ReferralsPage() {
         </div>
       )}
 
-      <p className="text-xs mt-4" style={{ color: "#8a938f" }}>
+      <p className="text-xs mt-4" style={{ color: "#949598" }}>
         Students find their referral link in <strong>LMS → Settings → Refer a Classmate</strong>.
       </p>
     </div>

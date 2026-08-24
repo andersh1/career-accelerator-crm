@@ -59,18 +59,18 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Partnerships</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Partnerships</p>
           <h1 className="text-xl sm:text-2xl font-display font-semibold flex items-center gap-2" style={{ color: "#14211f" }}>
-            <UserRound size={22} style={{ color: "#0a6b64" }} /> Contacts
+            <UserRound size={22} style={{ color: "#086c64" }} /> Contacts
           </h1>
-          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#949598" }}>
             University reps, firm partners, and relationship contacts — not in the lead pipeline
           </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm flex-shrink-0"
-          style={{ background: "#0a6b64" }}
+          style={{ background: "#086c64" }}
         >
           <Plus size={15} /> Add Contact
         </button>
@@ -83,7 +83,7 @@ export default function ContactsPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, email, or organization…"
-          className="w-full pl-9 pr-4 py-2.5 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+          className="w-full pl-9 pr-4 py-2.5 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
           style={{ color: "#14211f" }}
         />
       </div>
@@ -96,7 +96,7 @@ export default function ContactsPage() {
       ) : contacts.length === 0 ? (
         <div className="text-center py-24">
           <UserRound size={40} className="mx-auto mb-3" style={{ color: "#e4e0d6" }} />
-          <p className="text-sm font-semibold mb-1" style={{ color: "#8a938f" }}>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#949598" }}>
             {search ? "No contacts match your search" : "No contacts yet"}
           </p>
           <p className="text-xs" style={{ color: "#c9c4b8" }}>
@@ -106,7 +106,7 @@ export default function ContactsPage() {
             <button
               onClick={() => setShowForm(true)}
               className="mt-4 text-sm font-semibold px-4 py-2 rounded-xl text-white transition"
-              style={{ background: "#0a6b64" }}
+              style={{ background: "#086c64" }}
             >
               Add your first contact
             </button>
@@ -125,7 +125,7 @@ export default function ContactsPage() {
               {/* Avatar */}
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                style={{ background: "#edf5f4", color: "#0a6b64" }}
+                style={{ background: "#edf5f4", color: "#086c64" }}
               >
                 {c.firstName[0]}{c.lastName[0]}
               </div>
@@ -136,7 +136,7 @@ export default function ContactsPage() {
                   {c.firstName} {c.lastName}
                 </p>
                 {(c.jobTitle || c.company) && (
-                  <p className="text-xs truncate flex items-center gap-1 mt-0.5" style={{ color: "#8a938f" }}>
+                  <p className="text-xs truncate flex items-center gap-1 mt-0.5" style={{ color: "#949598" }}>
                     {c.jobTitle && <span>{c.jobTitle}</span>}
                     {c.jobTitle && c.company && <span>·</span>}
                     {c.company && (
@@ -154,7 +154,7 @@ export default function ContactsPage() {
                   <Mail size={11} /> {c.email}
                 </p>
                 {c.phone && (
-                  <p className="text-xs flex items-center gap-1" style={{ color: "#8a938f" }}>
+                  <p className="text-xs flex items-center gap-1" style={{ color: "#949598" }}>
                     <Phone size={11} /> {c.phone}
                   </p>
                 )}
@@ -163,7 +163,7 @@ export default function ContactsPage() {
               {/* Activity count */}
               {c._count.activities > 0 && (
                 <div className="hidden md:flex flex-col items-end flex-shrink-0 ml-4">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f8f6f1", color: "#8a938f" }}>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f8f6f1", color: "#949598" }}>
                     {c._count.activities} activit{c._count.activities !== 1 ? "ies" : "y"}
                   </span>
                 </div>

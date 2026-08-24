@@ -40,13 +40,13 @@ function buildReminderHtml(opts: {
       subject: `Thanks for attending: ${eventTitle}`,
       html: `
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#14211f;">
-          <div style="background:#0a6b64;padding:20px 28px;border-radius:12px 12px 0 0;">
+          <div style="background:#086c64;padding:20px 28px;border-radius:12px 12px 0 0;">
             <h2 style="color:white;margin:0;font-size:1.1rem;">Thanks for joining us, ${firstName}!</h2>
           </div>
           <div style="border:1px solid #e4e0d6;border-top:none;border-radius:0 0 12px 12px;padding:24px 28px;">
             <p style="margin:0 0 16px;">We hope <strong>${eventTitle}</strong> gave you a clear sense of what the Vantage Career Accelerator can do for your career.</p>
             <p style="margin:0 0 20px;">If you're serious about landing a role you're excited about, the next step is to apply. Seats in each cohort are limited.</p>
-            <a href="https://lms.vantagecareer.co/apply" style="display:inline-block;background:#0a6b64;color:white;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:10px;font-size:0.9rem;">Apply Now →</a>
+            <a href="https://lms.vantagecareer.co/apply" style="display:inline-block;background:#086c64;color:white;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:10px;font-size:0.9rem;">Apply Now →</a>
             <p style="margin:24px 0 0;font-size:0.875rem;color:#5a6663;">Questions? Simply reply to this email — we read every one.</p>
           </div>
         </div>
@@ -63,7 +63,7 @@ function buildReminderHtml(opts: {
 
   const locationBlock = isZoom
     ? (meetingUrl
-        ? `<tr><td style="padding:8px 0;color:#5a6663;font-size:0.875rem;width:110px;">Join link</td><td style="padding:8px 0;"><a href="${meetingUrl}" style="color:#0a6b64;font-weight:700;">${meetingUrl}</a></td></tr>`
+        ? `<tr><td style="padding:8px 0;color:#5a6663;font-size:0.875rem;width:110px;">Join link</td><td style="padding:8px 0;"><a href="${meetingUrl}" style="color:#086c64;font-weight:700;">${meetingUrl}</a></td></tr>`
         : `<tr><td style="padding:8px 0;color:#5a6663;font-size:0.875rem;">Format</td><td style="padding:8px 0;font-weight:600;">Online via Zoom — link coming soon</td></tr>`)
     : [
         location ? `<tr><td style="padding:8px 0;color:#5a6663;font-size:0.875rem;width:110px;">Venue</td><td style="padding:8px 0;font-weight:600;">${location}</td></tr>` : "",
@@ -74,7 +74,7 @@ function buildReminderHtml(opts: {
     subject: headline,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#14211f;">
-        <div style="background:#0a6b64;padding:20px 28px;border-radius:12px 12px 0 0;">
+        <div style="background:#086c64;padding:20px 28px;border-radius:12px 12px 0 0;">
           <p style="color:rgba(255,255,255,0.7);margin:0 0 4px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">
             ${type === "ONE_DAY" ? "⏰ Reminder — Tomorrow" : "📅 Reminder — One Week Away"}
           </p>

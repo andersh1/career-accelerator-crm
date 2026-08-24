@@ -208,7 +208,7 @@ export default function LeadDetailPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href="/pipeline" className="flex items-center gap-1.5 text-sm transition hover:opacity-70" style={{ color: "#8a938f" }}>
+        <Link href="/pipeline" className="flex items-center gap-1.5 text-sm transition hover:opacity-70" style={{ color: "#949598" }}>
           <ArrowLeft size={15} /> Back to Pipeline
         </Link>
         <div className="flex items-center gap-2 flex-wrap">
@@ -233,12 +233,12 @@ export default function LeadDetailPage() {
           <button onClick={() => setShowComposer(v => !v)}
             className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition ${
               showComposer
-                ? "text-white border-[#0a6b64]"
-                : "hover:bg-[#edf5f4] border-[#0a6b64]"
+                ? "text-white border-[#086c64]"
+                : "hover:bg-[#edf5f4] border-[#086c64]"
             }`}
             style={showComposer
-              ? { background: "#0a6b64", color: "#ffffff" }
-              : { color: "#0a6b64" }}>
+              ? { background: "#086c64", color: "#ffffff" }
+              : { color: "#086c64" }}>
             <PenLine size={13} /> Compose Email
           </button>
           <button onClick={() => setShowTranscript(true)}
@@ -267,18 +267,18 @@ export default function LeadDetailPage() {
         <div className="lg:col-span-1 space-y-4">
           <div className="card shadow-sm p-6">
             <div className="flex items-start gap-4 mb-5">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0" style={{ background: "#0a6b64" }}>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0" style={{ background: "#086c64" }}>
                 <span className="text-white text-xl font-bold">
                   {lead.firstName[0]}{lead.lastName[0]}
                 </span>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
                 <h1 className="text-xl font-display font-semibold leading-tight" style={{ color: "#14211f" }}>
                   {lead.firstName} {lead.lastName}
                 </h1>
                 {(lead.jobTitle || lead.company) && (
-                  <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+                  <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
                     {lead.jobTitle}{lead.jobTitle && lead.company ? " at " : ""}{lead.company}
                   </p>
                 )}
@@ -290,7 +290,7 @@ export default function LeadDetailPage() {
                 className="flex items-center gap-2.5 text-sm transition group hover:opacity-70"
                 style={{ color: "#5a6663" }}>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-                  <Mail size={13} style={{ color: "#0a6b64" }} />
+                  <Mail size={13} style={{ color: "#086c64" }} />
                 </div>
                 <span className="truncate">{lead.email}</span>
               </a>
@@ -299,7 +299,7 @@ export default function LeadDetailPage() {
                   className="flex items-center gap-2.5 text-sm transition group hover:opacity-70"
                   style={{ color: "#5a6663" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-                    <Phone size={13} style={{ color: "#0a6b64" }} />
+                    <Phone size={13} style={{ color: "#086c64" }} />
                   </div>
                   {lead.phone}
                 </a>
@@ -307,7 +307,7 @@ export default function LeadDetailPage() {
               {lead.company && (
                 <div className="flex items-center gap-2.5 text-sm" style={{ color: "#5a6663" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#f1efe8" }}>
-                    <Building2 size={13} style={{ color: "#8a938f" }} />
+                    <Building2 size={13} style={{ color: "#949598" }} />
                   </div>
                   {lead.company}
                 </div>
@@ -315,7 +315,7 @@ export default function LeadDetailPage() {
               {lead.jobTitle && (
                 <div className="flex items-center gap-2.5 text-sm" style={{ color: "#5a6663" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#f1efe8" }}>
-                    <Briefcase size={13} style={{ color: "#8a938f" }} />
+                    <Briefcase size={13} style={{ color: "#949598" }} />
                   </div>
                   {lead.jobTitle}
                 </div>
@@ -325,7 +325,7 @@ export default function LeadDetailPage() {
                   className="flex items-center gap-2.5 text-sm transition group hover:opacity-70"
                   style={{ color: "#5a6663" }}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-                    <Linkedin size={13} style={{ color: "#0a6b64" }} />
+                    <Linkedin size={13} style={{ color: "#086c64" }} />
                   </div>
                   LinkedIn Profile ↗
                 </a>
@@ -335,7 +335,7 @@ export default function LeadDetailPage() {
 
           {/* Pipeline card */}
           <div className="card shadow-sm p-5">
-            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Pipeline</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Pipeline</p>
 
             <div className="relative mb-4">
               <button onClick={() => setShowStageMenu(v => !v)} disabled={movingStage}
@@ -357,7 +357,7 @@ export default function LeadDetailPage() {
                         className="w-full text-left px-3 py-2 text-sm transition flex items-center gap-2 disabled:opacity-40 hover:bg-[#f8f6f1]">
                         <div className={`w-2 h-2 rounded-full ${s.dot}`} />
                         {s.label}
-                        {s.key === lead.stage && <span className="ml-auto text-[10px]" style={{ color: "#8a938f" }}>current</span>}
+                        {s.key === lead.stage && <span className="ml-auto text-[10px]" style={{ color: "#949598" }}>current</span>}
                       </button>
                     ))}
                   </div>
@@ -367,7 +367,7 @@ export default function LeadDetailPage() {
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span style={{ color: "#8a938f" }}>Type</span>
+                <span style={{ color: "#949598" }}>Type</span>
                 <select
                   value={lead.leadType ?? "WAITLIST"}
                   onChange={async e => {
@@ -386,12 +386,12 @@ export default function LeadDetailPage() {
                 </select>
               </div>
               <div className="flex items-center justify-between">
-                <span style={{ color: "#8a938f" }}>Source</span>
+                <span style={{ color: "#949598" }}>Source</span>
                 <span className="font-medium" style={{ color: "#5a6663" }}>{sourceLabel(lead.source ?? "")}</span>
               </div>
               {lead.source === "3I_NEXTGEN" && (
                 <div className="flex items-center justify-between">
-                  <span style={{ color: "#8a938f" }}>Member type</span>
+                  <span style={{ color: "#949598" }}>Member type</span>
                   <select
                     value={lead.subSource ?? ""}
                     onChange={async e => {
@@ -403,7 +403,7 @@ export default function LeadDetailPage() {
                       await load();
                     }}
                     className="text-xs font-semibold cursor-pointer border-0 bg-transparent focus:outline-none"
-                    style={{ color: lead.subSource === "NON_MEMBER_REFERRAL" ? "#c2410c" : lead.subSource === "MEMBER" ? "#0a6b64" : "#8a938f", appearance: "none", WebkitAppearance: "none" }}>
+                    style={{ color: lead.subSource === "NON_MEMBER_REFERRAL" ? "#c2410c" : lead.subSource === "MEMBER" ? "#086c64" : "#949598", appearance: "none", WebkitAppearance: "none" }}>
                     <option value="">— unset —</option>
                     {NEXTGEN_SUB_SOURCES.map(s => (
                       <option key={s.key} value={s.key}>{s.label}</option>
@@ -414,16 +414,16 @@ export default function LeadDetailPage() {
               {/* Promo code */}
               {lead.promoCode && (
                 <div className="pt-2 mt-1 border-t" style={{ borderColor: "#f0ede7" }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Promo Code</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Promo Code</p>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#f0fdf4", color: "#0a6b64" }}>{lead.promoCode}</span>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#f0fdf4", color: "#086c64" }}>{lead.promoCode}</span>
                   </div>
                 </div>
               )}
               {/* Referral code */}
               {lead.referralCode && (
                 <div className="pt-2 mt-1 border-t" style={{ borderColor: "#f0ede7" }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Referred By</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Referred By</p>
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#fdf4f0", color: "#9a3412" }}>{lead.referralCode}</span>
                   </div>
@@ -432,7 +432,7 @@ export default function LeadDetailPage() {
               {/* UTM attribution */}
               {(lead.utmSource || lead.utmMedium || lead.utmCampaign) && (
                 <div className="pt-2 mt-1 border-t" style={{ borderColor: "#f0ede7" }}>
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>UTM Attribution</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>UTM Attribution</p>
                   {[
                     ["Source",   lead.utmSource],
                     ["Medium",   lead.utmMedium],
@@ -441,25 +441,25 @@ export default function LeadDetailPage() {
                     ["Term",     lead.utmTerm],
                   ].filter(([, v]) => v).map(([label, val]) => (
                     <div key={label as string} className="flex items-center justify-between mt-0.5">
-                      <span className="text-xs" style={{ color: "#8a938f" }}>{label}</span>
+                      <span className="text-xs" style={{ color: "#949598" }}>{label}</span>
                       <span className="text-xs font-medium truncate max-w-[140px]" style={{ color: "#5a6663" }}>{val}</span>
                     </div>
                   ))}
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span style={{ color: "#8a938f" }}>Priority</span>
+                <span style={{ color: "#949598" }}>Priority</span>
                 <span className={`font-semibold ${lead.priority === "HIGH" || lead.priority === "URGENT" ? "text-red-600" : lead.priority === "LOW" ? "text-slate-400" : ""}`}
-                  style={lead.priority !== "HIGH" && lead.priority !== "URGENT" && lead.priority !== "LOW" ? { color: "#0a6b64" } : undefined}>
+                  style={lead.priority !== "HIGH" && lead.priority !== "URGENT" && lead.priority !== "LOW" ? { color: "#086c64" } : undefined}>
                   {lead.priority}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span style={{ color: "#8a938f" }}>Payment</span>
+                <span style={{ color: "#949598" }}>Payment</span>
                 <PaymentBadge status={lead.paymentStatus} />
               </div>
               <div className="flex items-center justify-between">
-                <span style={{ color: "#8a938f" }}>Added</span>
+                <span style={{ color: "#949598" }}>Added</span>
                 <span className="font-medium" style={{ color: "#5a6663" }}>
                   {new Date(lead.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
@@ -468,7 +468,7 @@ export default function LeadDetailPage() {
 
             <div className="mt-4 pt-4 border-t" style={{ borderColor: "#e4e0d6" }}>
               <div className="flex items-center gap-1 flex-wrap">
-                <Tag size={11} className="mr-0.5 flex-shrink-0" style={{ color: "#8a938f" }} />
+                <Tag size={11} className="mr-0.5 flex-shrink-0" style={{ color: "#949598" }} />
                 {lead.tags.map(t => (
                   <span key={t} className="group/tag inline-flex items-center gap-0.5 text-[11px] font-medium bg-indigo-50 text-indigo-600 pl-2 pr-1 py-0.5 rounded-full">
                     {t}
@@ -499,7 +499,7 @@ export default function LeadDetailPage() {
 
             {lead.notes && (
               <div className="mt-4 pt-4 border-t" style={{ borderColor: "#e4e0d6" }}>
-                <p className="text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: "#8a938f" }}>Notes</p>
+                <p className="text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: "#949598" }}>Notes</p>
                 <NoteContent text={lead.notes} clamp={4} />
               </div>
             )}
@@ -537,7 +537,7 @@ export default function LeadDetailPage() {
           {!isEnrolled && (
             <button onClick={() => setShowConvert(true)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white text-sm font-bold rounded-xl shadow-sm transition hover:opacity-90"
-              style={{ background: "#0a6b64" }}>
+              style={{ background: "#086c64" }}>
               <UserCheck size={16} /> Convert to Student
             </button>
           )}
@@ -558,9 +558,9 @@ export default function LeadDetailPage() {
                   } catch { /* silent */ }
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: "#edf5f4", color: "#0a6b64", border: "1px solid #d8efec" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#0a6b64"; e.currentTarget.style.color = "white"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#edf5f4"; e.currentTarget.style.color = "#0a6b64"; }}
+                style={{ background: "#edf5f4", color: "#086c64", border: "1px solid #d8efec" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#086c64"; e.currentTarget.style.color = "white"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#edf5f4"; e.currentTarget.style.color = "#086c64"; }}
               >
                 <ExternalLink size={14} /> View in LMS
               </button>
@@ -597,7 +597,7 @@ export default function LeadDetailPage() {
           )}
 
           <div className="card shadow-sm p-5">
-            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>Log Activity</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Log Activity</p>
             <div className="flex gap-2 mb-3 flex-wrap items-center">
               {ACTIVITY_TYPES.map(t => (
                 <button key={t.key} onClick={() => setActType(t.key)}
@@ -608,7 +608,7 @@ export default function LeadDetailPage() {
                   }`}
                   style={actType === t.key
                     ? { background: "#14211f", color: "#ffffff" }
-                    : { color: "#8a938f" }}>
+                    : { color: "#949598" }}>
                   {t.icon} {t.label}
                 </button>
               ))}
@@ -631,7 +631,7 @@ export default function LeadDetailPage() {
               />
               <button onClick={addActivity} disabled={addingAct || !actContent.trim()}
                 className="flex items-center gap-1.5 disabled:opacity-50 text-white text-sm font-semibold px-3 py-2.5 rounded-xl transition flex-shrink-0 self-end hover:opacity-90"
-                style={{ background: "#0a6b64" }}>
+                style={{ background: "#086c64" }}>
                 {addingAct ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Log
               </button>
@@ -658,11 +658,11 @@ export default function LeadDetailPage() {
             return (
               <div className="card shadow-sm overflow-hidden">
                 <div className="px-5 py-3.5 border-b flex items-center gap-2" style={{ borderColor: "#e4e0d6" }}>
-                  <FileText size={14} style={{ color: "#0a6b64" }} />
-                  <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>
+                  <FileText size={14} style={{ color: "#086c64" }} />
+                  <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>
                     Application Answers
                   </p>
-                  <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0faf8", color: "#0a6b64" }}>
+                  <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0faf8", color: "#086c64" }}>
                     3i NextGen
                   </span>
                 </div>
@@ -670,7 +670,7 @@ export default function LeadDetailPage() {
                   {rows.map((row, i) => (
                     <div key={i} className="px-5 py-3.5">
                       {row.label && (
-                        <p className="text-xs font-bold mb-1" style={{ color: "#8a938f", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        <p className="text-xs font-bold mb-1" style={{ color: "#949598", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                           {row.label}
                         </p>
                       )}
@@ -694,7 +694,7 @@ export default function LeadDetailPage() {
               const visible = showAllActs ? filtered : filtered.slice(0, 5);
               return (<>
             <div className="px-5 py-3.5 border-b flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: "#e4e0d6" }}>
-              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>
                 Activity Timeline · {actFilter === "ALL" ? `${lead.activities.length} events` : `${filtered.length} of ${lead.activities.length}`}
               </p>
               <div className="flex items-center gap-1">
@@ -704,8 +704,8 @@ export default function LeadDetailPage() {
                     onClick={() => { setActFilter(f); setShowAllActs(false); }}
                     className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
                     style={actFilter === f
-                      ? { background: "#0a6b64", color: "#fff" }
-                      : { background: "#f1efe8", color: "#8a938f" }}
+                      ? { background: "#086c64", color: "#fff" }
+                      : { background: "#f1efe8", color: "#949598" }}
                   >
                     {f === "ALL" ? "All" : f === "EMAIL" ? "Emails" : f === "NOTE" ? "Notes" : "Calls"}
                   </button>
@@ -715,12 +715,12 @@ export default function LeadDetailPage() {
             {lead.activities.length === 0 ? (
               <div className="p-10 text-center">
                 <MessageSquare size={24} className="mx-auto mb-2" style={{ color: "#c9c4b8" }} />
-                <p className="text-sm" style={{ color: "#8a938f" }}>No activity yet. Log a note, call, or email above.</p>
+                <p className="text-sm" style={{ color: "#949598" }}>No activity yet. Log a note, call, or email above.</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-10 text-center">
                 <MessageSquare size={24} className="mx-auto mb-2" style={{ color: "#c9c4b8" }} />
-                <p className="text-sm" style={{ color: "#8a938f" }}>
+                <p className="text-sm" style={{ color: "#949598" }}>
                   No {actFilter === "EMAIL" ? "emails" : actFilter === "NOTE" ? "notes" : "calls"} logged yet.
                 </p>
               </div>
@@ -767,7 +767,7 @@ export default function LeadDetailPage() {
                               👁 Opened {new Date(act.openedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
-                          <span className="text-[11px]" style={{ color: "#8a938f" }}>
+                          <span className="text-[11px]" style={{ color: "#949598" }}>
                             {new Date(act.createdAt).toLocaleDateString("en-US", {
                               month: "short", day: "numeric",
                               hour: "numeric", minute: "2-digit",
@@ -778,11 +778,11 @@ export default function LeadDetailPage() {
                           <p className="text-sm font-semibold mb-0.5 truncate" style={{ color: "#14211f" }}>{act.subject}</p>
                         )}
                         {isEmail && act.emailTo && (
-                          <p className="text-[11px] mb-1" style={{ color: "#8a938f" }}>To: {act.emailTo}</p>
+                          <p className="text-[11px] mb-1" style={{ color: "#949598" }}>To: {act.emailTo}</p>
                         )}
                         {act.type === "STAGE_CHANGE" ? (
                           <p className="text-sm" style={{ color: "#5a6663" }}>
-                            <span className="line-through" style={{ color: "#8a938f" }}>{stageFrom}</span>
+                            <span className="line-through" style={{ color: "#949598" }}>{stageFrom}</span>
                             {" → "}
                             <span className="font-semibold" style={{ color: "#14211f" }}>{stageTo}</span>
                           </p>
@@ -810,7 +810,7 @@ export default function LeadDetailPage() {
                 <button
                   onClick={() => setShowAllActs(v => !v)}
                   className="w-full text-xs font-semibold transition py-1 hover:opacity-70"
-                  style={{ color: "#8a938f" }}
+                  style={{ color: "#949598" }}
                 >
                   {showAllActs
                     ? "Show less"
@@ -828,7 +828,7 @@ export default function LeadDetailPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-base font-bold mb-1" style={{ color: "#14211f" }}>Why did this lead go cold?</h3>
-            <p className="text-xs mb-4" style={{ color: "#8a938f" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
+            <p className="text-xs mb-4" style={{ color: "#949598" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
             <textarea
               value={lostReasonInput}
               onChange={e => setLostReasonInput(e.target.value)}
@@ -890,11 +890,11 @@ export default function LeadDetailPage() {
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "#edf5f4" }}>
-                <UserCheck size={22} style={{ color: "#0a6b64" }} />
+                <UserCheck size={22} style={{ color: "#086c64" }} />
               </div>
               <div>
                 <h2 className="text-lg font-bold" style={{ color: "#14211f" }}>Convert to Student</h2>
-                <p className="text-sm" style={{ color: "#8a938f" }}>{lead.firstName} {lead.lastName}</p>
+                <p className="text-sm" style={{ color: "#949598" }}>{lead.firstName} {lead.lastName}</p>
               </div>
             </div>
 
@@ -919,18 +919,18 @@ export default function LeadDetailPage() {
               <label className="flex items-start gap-3 cursor-pointer">
                 <div onClick={() => setSendInvite(v => !v)}
                   className={`mt-0.5 w-10 h-6 rounded-full transition-colors flex-shrink-0 relative`}
-                  style={{ background: sendInvite ? "#0a6b64" : "#e4e0d6" }}>
+                  style={{ background: sendInvite ? "#086c64" : "#e4e0d6" }}>
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${sendInvite ? "translate-x-5" : "translate-x-1"}`} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold" style={{ color: "#5a6663" }}>Send invite email</p>
-                  <p className="text-xs" style={{ color: "#8a938f" }}>Student gets an email with a link to set their password and access the portal.</p>
+                  <p className="text-xs" style={{ color: "#949598" }}>Student gets an email with a link to set their password and access the portal.</p>
                 </div>
               </label>
 
               <div className="rounded-xl p-4 text-sm border" style={{ background: "#edf5f4", borderColor: "rgba(10,107,100,0.25)" }}>
-                <p className="font-semibold mb-1" style={{ color: "#0a6b64" }}>What happens:</p>
-                <ul className="space-y-1 text-xs list-disc list-inside" style={{ color: "#0a6b64" }}>
+                <p className="font-semibold mb-1" style={{ color: "#086c64" }}>What happens:</p>
+                <ul className="space-y-1 text-xs list-disc list-inside" style={{ color: "#086c64" }}>
                   <li>An LMS student account is created for <strong>{lead.email}</strong></li>
                   <li>Lead stage is set to Enrolled</li>
                   {sendInvite && <li>An invite email is sent with a password setup link</li>}
@@ -940,7 +940,7 @@ export default function LeadDetailPage() {
               <div className="flex gap-2 pt-1">
                 <button onClick={convertLead} disabled={converting}
                   className="flex items-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition hover:opacity-90"
-                  style={{ background: "#0a6b64" }}>
+                  style={{ background: "#086c64" }}>
                   {converting ? <Loader2 size={14} className="animate-spin" /> : <UserCheck size={14} />}
                   {converting ? "Converting…" : "Create Student Account"}
                 </button>

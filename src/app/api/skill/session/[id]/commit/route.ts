@@ -30,7 +30,7 @@ function toHtml(body: string) {
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0"
       style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
-      <tr><td style="background:linear-gradient(135deg,#0a6b64,#158c84);padding:24px 32px;">
+      <tr><td style="background:linear-gradient(135deg,#086c64,#158c84);padding:24px 32px;">
         <p style="margin:0;color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Vantage Career Accelerator</p>
       </td></tr>
       <tr><td style="padding:32px;">${paragraphs}</td></tr>

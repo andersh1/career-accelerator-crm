@@ -344,22 +344,22 @@ export default function LeadsPage() {
             <div className="overflow-y-auto flex-1 p-6 space-y-4">
               {/* Merge confirmation bar */}
               {mergeKeepId && mergeMergeId && (
-                <div className="border rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#edf5f4", borderColor: "#0a6b64" }}>
-                  <Merge size={14} style={{ color: "#0a6b64" }} className="shrink-0" />
-                  <span className="flex-1" style={{ color: "#0a6b64" }}>Keep the first lead selected, merge the second into it.</span>
+                <div className="border rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#edf5f4", borderColor: "#086c64" }}>
+                  <Merge size={14} style={{ color: "#086c64" }} className="shrink-0" />
+                  <span className="flex-1" style={{ color: "#086c64" }}>Keep the first lead selected, merge the second into it.</span>
                   <button onClick={mergeLeads} disabled={merging}
                     className="text-xs font-bold disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
-                    style={{ background: "#0a6b64" }}>
+                    style={{ background: "#086c64" }}>
                     {merging ? <Loader2 size={12} className="animate-spin" /> : <Merge size={12} />}
                     {merging ? "Merging…" : "Confirm merge"}
                   </button>
                   <button onClick={() => { setMergeKeepId(null); setMergeMergeId(null); }}
-                    className="transition" style={{ color: "#8a938f" }}><X size={14} /></button>
+                    className="transition" style={{ color: "#949598" }}><X size={14} /></button>
                 </div>
               )}
               {dupGroups.map((group, i) => (
                 <div key={i} className="border border-[#e4e0d6] rounded-xl overflow-hidden">
-                  <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b border-[#e4e0d6]" style={{ background: "#f8f6f1", color: "#8a938f" }}>
+                  <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide border-b border-[#e4e0d6]" style={{ background: "#f8f6f1", color: "#949598" }}>
                     {group.reason}
                   </div>
                   {group.leads.map(lead => {
@@ -369,11 +369,11 @@ export default function LeadsPage() {
                     return (
                       <div key={lead.id} className={`flex items-center gap-3 px-4 py-3 border-b border-[#e4e0d6] last:border-0 transition ${isKeep ? "bg-green-50" : isMerge ? "bg-red-50" : ""}`}>
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#edf5f4" }}>
-                          <span className="text-[9px] font-bold" style={{ color: "#0a6b64" }}>{lead.firstName[0]}{lead.lastName[0]}</span>
+                          <span className="text-[9px] font-bold" style={{ color: "#086c64" }}>{lead.firstName[0]}{lead.lastName[0]}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{lead.firstName} {lead.lastName}</p>
-                          <p className="text-xs truncate" style={{ color: "#8a938f" }}>{lead.email}</p>
+                          <p className="text-xs truncate" style={{ color: "#949598" }}>{lead.email}</p>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stg.color}`}>{stg.label}</span>
                         {isKeep  && <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Keep</span>}
@@ -390,7 +390,7 @@ export default function LeadsPage() {
                           </button>
                         )}
                         <Link href={`/leads/${lead.id}`} onClick={() => setDupOpen(false)}
-                          className="text-xs font-semibold hover:underline shrink-0" style={{ color: "#0a6b64" }}>
+                          className="text-xs font-semibold hover:underline shrink-0" style={{ color: "#086c64" }}>
                           Open
                         </Link>
                       </div>
@@ -406,9 +406,9 @@ export default function LeadsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <h1 className="text-xl sm:text-2xl font-display font-semibold" style={{ color: "#14211f" }}>All Leads</h1>
-          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#8a938f" }}>{leads.length} lead{leads.length !== 1 ? "s" : ""} total</p>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#949598" }}>{leads.length} lead{leads.length !== 1 ? "s" : ""} total</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Desktop actions */}
@@ -420,7 +420,7 @@ export default function LeadsPage() {
               Analytics
             </Link>
             <button onClick={() => { setBinOpen(true); loadBin(); }}
-              className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] px-3 py-2 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition" style={{ color: "#8a938f" }}>
+              className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] px-3 py-2 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition" style={{ color: "#949598" }}>
               <Trash2 size={14} /> Recycle Bin
             </button>
             <button onClick={() => setShowImport(true)}
@@ -436,7 +436,7 @@ export default function LeadsPage() {
             </a>
             <button onClick={() => setShowForm(true)}
               className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm"
-              style={{ background: "#0a6b64" }}>
+              style={{ background: "#086c64" }}>
               <Plus size={15} /> Add Lead
               <kbd className="hidden lg:inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ml-1" style={{ background: "#085c57", color: "#edf5f4" }}>N</kbd>
             </button>
@@ -445,13 +445,13 @@ export default function LeadsPage() {
           {/* Mobile actions: search + overflow menu */}
           <div className="flex sm:hidden items-center gap-2 relative">
             <button onClick={() => setShowFilters(v => !v)}
-              className={`p-2 rounded-xl border transition ${showFilters || hasActiveFilters ? "border-[#0a6b64]" : "border-[#e4e0d6] hover:bg-[#f8f6f1]"}`}
-              style={showFilters || hasActiveFilters ? { background: "#edf5f4", color: "#0a6b64" } : { color: "#8a938f" }}>
+              className={`p-2 rounded-xl border transition ${showFilters || hasActiveFilters ? "border-[#086c64]" : "border-[#e4e0d6] hover:bg-[#f8f6f1]"}`}
+              style={showFilters || hasActiveFilters ? { background: "#edf5f4", color: "#086c64" } : { color: "#949598" }}>
               <Filter size={17} />
-              {hasActiveFilters && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ background: "#0a6b64" }} />}
+              {hasActiveFilters && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ background: "#086c64" }} />}
             </button>
             <button onClick={() => setMobileMenuOpen(v => !v)}
-              className="p-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#8a938f" }}>
+              className="p-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
               <ChevronDown size={17} />
             </button>
             {mobileMenuOpen && (
@@ -459,18 +459,18 @@ export default function LeadsPage() {
                 <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-[#e4e0d6] w-52 py-1.5 text-sm">
                   <Link href="/pipeline" className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f6f1] transition" style={{ color: "#5a6663" }} onClick={() => setMobileMenuOpen(false)}>
-                    <ArrowUpDown size={14} style={{ color: "#8a938f" }} /> Pipeline view
+                    <ArrowUpDown size={14} style={{ color: "#949598" }} /> Pipeline view
                   </Link>
                   <Link href="/analytics" className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f6f1] transition" style={{ color: "#5a6663" }} onClick={() => setMobileMenuOpen(false)}>
-                    <Sparkles size={14} style={{ color: "#8a938f" }} /> Analytics
+                    <Sparkles size={14} style={{ color: "#949598" }} /> Analytics
                   </Link>
                   <button onClick={() => { setMobileMenuOpen(false); setShowImport(true); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f6f1] transition" style={{ color: "#5a6663" }}>
-                    <Upload size={14} style={{ color: "#8a938f" }} /> Import CSV
+                    <Upload size={14} style={{ color: "#949598" }} /> Import CSV
                   </button>
                   <a href={`/api/crm/leads/export`} download onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f6f1] transition" style={{ color: "#5a6663" }}>
-                    <Download size={14} style={{ color: "#8a938f" }} /> Export CSV
+                    <Download size={14} style={{ color: "#949598" }} /> Export CSV
                   </a>
                   <div className="border-t border-[#e4e0d6] mt-1 pt-1">
                     <button onClick={() => { setMobileMenuOpen(false); setBinOpen(true); loadBin(); }}
@@ -488,13 +488,13 @@ export default function LeadsPage() {
       {/* Saved filter chips */}
       {savedFilters.length > 0 && (
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-xs font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: "#8a938f" }}>
+          <span className="text-xs font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: "#949598" }}>
             <Bookmark size={10} /> Views
           </span>
           {savedFilters.map(sf => (
             <div key={sf.name}
-              className="flex items-center gap-1 text-xs font-semibold bg-white border border-[#e4e0d6] rounded-full px-3 py-1 hover:border-[#0a6b64] transition" style={{ color: "#5a6663" }}>
-              <button onClick={() => applySaved(sf)} className="hover:text-[#0a6b64]">{sf.name}</button>
+              className="flex items-center gap-1 text-xs font-semibold bg-white border border-[#e4e0d6] rounded-full px-3 py-1 hover:border-[#086c64] transition" style={{ color: "#5a6663" }}>
+              <button onClick={() => applySaved(sf)} className="hover:text-[#086c64]">{sf.name}</button>
               <button onClick={() => deleteSaved(sf.name)} className="hover:text-red-400 transition ml-1" style={{ color: "#c9c4b8" }}>
                 <X size={10} />
               </button>
@@ -506,7 +506,7 @@ export default function LeadsPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, email, company…"
             className="w-full pl-9 pr-4 py-2 text-sm border border-[#e4e0d6] rounded-xl bg-white focus:outline-none focus:ring-2"
@@ -516,12 +516,12 @@ export default function LeadsPage() {
         <button onClick={() => setShowFilters(v => !v)}
           className={`hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border transition ${
             showFilters || hasActiveFilters
-              ? "border-[#0a6b64]"
+              ? "border-[#086c64]"
               : "border-[#e4e0d6] hover:bg-[#f8f6f1]"
           }`}
-          style={showFilters || hasActiveFilters ? { background: "#edf5f4", color: "#0a6b64" } : { color: "#8a938f" }}>
+          style={showFilters || hasActiveFilters ? { background: "#edf5f4", color: "#086c64" } : { color: "#949598" }}>
           <Filter size={14} /> Filters
-          {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full ml-0.5" style={{ background: "#0a6b64" }} />}
+          {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full ml-0.5" style={{ background: "#086c64" }} />}
         </button>
 
         <button
@@ -529,7 +529,7 @@ export default function LeadsPage() {
             const opts: Array<typeof sortBy> = ["score", "updatedAt", "createdAt", "name", "priority"];
             setSortBy(prev => opts[(opts.indexOf(prev) + 1) % opts.length]);
           }}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#8a938f" }}>
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
           {sortBy === "score" ? <Sparkles size={13} className="text-amber-500" /> : <ArrowUpDown size={13} />}
           {sortLabels[sortBy]}
           <ChevronDown size={12} />
@@ -538,7 +538,7 @@ export default function LeadsPage() {
         {/* Save current filter */}
         {hasActiveFilters && (
           <button onClick={() => setSaveDialogOpen(true)}
-            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#8a938f" }}>
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
             <BookmarkPlus size={14} /> Save view
           </button>
         )}
@@ -557,11 +557,11 @@ export default function LeadsPage() {
             style={{ color: "#14211f" }}
           />
           <button onClick={saveCurrentFilter}
-            className="text-sm font-semibold text-white px-3 py-1.5 rounded-lg transition" style={{ background: "#0a6b64" }}>
+            className="text-sm font-semibold text-white px-3 py-1.5 rounded-lg transition" style={{ background: "#086c64" }}>
             Save
           </button>
           <button onClick={() => setSaveDialogOpen(false)}
-            className="text-sm transition" style={{ color: "#8a938f" }}>
+            className="text-sm transition" style={{ color: "#949598" }}>
             Cancel
           </button>
         </div>
@@ -571,7 +571,7 @@ export default function LeadsPage() {
       {showFilters && (
         <div className="flex gap-3 mb-5 flex-wrap p-4 border border-[#e4e0d6] rounded-xl" style={{ background: "#f8f6f1" }}>
           <div>
-            <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Stage</label>
+            <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Stage</label>
             <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
               className="text-sm border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2" style={{ color: "#14211f" }}>
               <option value="">All stages</option>
@@ -579,7 +579,7 @@ export default function LeadsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Source</label>
+            <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Source</label>
             <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); if (e.target.value !== "3I_NEXTGEN") setSubSourceFilter(""); }}
               className="text-sm border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2" style={{ color: "#14211f" }}>
               <option value="">All sources</option>
@@ -588,7 +588,7 @@ export default function LeadsPage() {
           </div>
           {sourceFilter === "3I_NEXTGEN" && (
             <div>
-              <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Member type</label>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Member type</label>
               <select value={subSourceFilter} onChange={e => setSubSourceFilter(e.target.value)}
                 className="text-sm border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2" style={{ color: "#14211f" }}>
                 <option value="">All types</option>
@@ -597,7 +597,7 @@ export default function LeadsPage() {
             </div>
           )}
           <div>
-            <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Priority</label>
+            <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Priority</label>
             <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
               className="text-sm border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2" style={{ color: "#14211f" }}>
               <option value="">All priorities</option>
@@ -606,7 +606,7 @@ export default function LeadsPage() {
           </div>
           {adminUsers.length > 0 && (
             <div>
-              <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Assigned To</label>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Assigned To</label>
               <select value={assignedToFilter} onChange={e => setAssignedToFilter(e.target.value)}
                 className="text-sm border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2" style={{ color: "#14211f" }}>
                 <option value="">All reps</option>
@@ -616,7 +616,7 @@ export default function LeadsPage() {
           )}
           {hasActiveFilters && (
             <button onClick={clearFilters}
-              className="self-end text-xs transition px-2 py-1.5" style={{ color: "#8a938f" }}>
+              className="self-end text-xs transition px-2 py-1.5" style={{ color: "#949598" }}>
               Clear filters
             </button>
           )}
@@ -625,7 +625,7 @@ export default function LeadsPage() {
 
       {/* Bulk action bar */}
       {someSelected && (
-        <div className="mb-4 flex items-center gap-3 text-white px-5 py-3 rounded-2xl shadow-lg flex-wrap" style={{ background: "#0a6b64" }}>
+        <div className="mb-4 flex items-center gap-3 text-white px-5 py-3 rounded-2xl shadow-lg flex-wrap" style={{ background: "#086c64" }}>
           <span className="text-sm font-bold shrink-0">{selected.size} selected</span>
           <div className="flex items-center gap-2 flex-wrap flex-1">
             <div className="flex items-center gap-1">
@@ -661,7 +661,7 @@ export default function LeadsPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={applyBulk} disabled={bulkWorking || !bulkAction}
-              className="text-xs font-bold bg-white px-3 py-1.5 rounded-lg hover:bg-[#f8f6f1] transition disabled:opacity-40" style={{ color: "#0a6b64" }}>
+              className="text-xs font-bold bg-white px-3 py-1.5 rounded-lg hover:bg-[#f8f6f1] transition disabled:opacity-40" style={{ color: "#086c64" }}>
               {bulkWorking ? "Working…" : "Apply"}
             </button>
             <button
@@ -749,9 +749,9 @@ export default function LeadsPage() {
 
       ) : sorted.length === 0 ? (
         <div className="card shadow-sm p-16 text-center">
-          <p className="text-sm" style={{ color: "#8a938f" }}>No leads match your filters.</p>
+          <p className="text-sm" style={{ color: "#949598" }}>No leads match your filters.</p>
           <button onClick={() => setShowForm(true)}
-            className="mt-4 text-white text-sm font-semibold px-4 py-2 rounded-xl transition" style={{ background: "#0a6b64" }}>
+            className="mt-4 text-white text-sm font-semibold px-4 py-2 rounded-xl transition" style={{ background: "#086c64" }}>
             Add your first lead
           </button>
         </div>
@@ -763,21 +763,21 @@ export default function LeadsPage() {
               <thead>
                 <tr className="border-b border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
                   <th className="pl-5 pr-2 py-3">
-                    <button onClick={toggleAll} className="transition" style={{ color: "#8a938f" }}>
-                      {allSelected ? <CheckSquare size={15} style={{ color: "#0a6b64" }} /> : <Square size={15} />}
+                    <button onClick={toggleAll} className="transition" style={{ color: "#949598" }}>
+                      {allSelected ? <CheckSquare size={15} style={{ color: "#086c64" }} /> : <Square size={15} />}
                     </button>
                   </th>
-                  <th className="text-left px-3 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Name</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#8a938f" }}>Company</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Stage</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#8a938f" }}>Source</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#8a938f" }}>Priority</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#8a938f" }}>Deal</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>
+                  <th className="text-left px-3 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Name</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#949598" }}>Company</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Stage</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden lg:table-cell" style={{ color: "#949598" }}>Source</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#949598" }}>Priority</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#949598" }}>Deal</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>
                     <span className="flex items-center gap-1"><Sparkles size={11} className="text-amber-400" />Score</span>
                   </th>
-                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#8a938f" }}>Last Touched</th>
-                  <th className="text-right px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Actions</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wide hidden xl:table-cell" style={{ color: "#949598" }}>Last Touched</th>
+                  <th className="text-right px-5 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -792,14 +792,14 @@ export default function LeadsPage() {
                       <td className="pl-5 pr-2 py-3.5">
                         <button onClick={() => toggleOne(lead.id)}
                           className="transition" style={{ color: "#c9c4b8" }}>
-                          {isSelected ? <CheckSquare size={15} style={{ color: "#0a6b64" }} /> : <Square size={15} />}
+                          {isSelected ? <CheckSquare size={15} style={{ color: "#086c64" }} /> : <Square size={15} />}
                         </button>
                       </td>
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0`}
-                            style={{ background: isSelected ? "#0a6b64" : "#edf5f4" }}>
-                            <span className="text-[10px] font-bold" style={{ color: isSelected ? "#ffffff" : "#0a6b64" }}>
+                            style={{ background: isSelected ? "#086c64" : "#edf5f4" }}>
+                            <span className="text-[10px] font-bold" style={{ color: isSelected ? "#ffffff" : "#086c64" }}>
                               {lead.firstName[0]}{lead.lastName[0]}
                             </span>
                           </div>
@@ -814,7 +814,7 @@ export default function LeadsPage() {
                                 <span title="Not touched in 14+ days" className="text-amber-400 flex-shrink-0">⚠️</span>
                               )}
                             </div>
-                            <p className="text-xs truncate max-w-[160px]" style={{ color: "#8a938f" }}>{lead.email}</p>
+                            <p className="text-xs truncate max-w-[160px]" style={{ color: "#949598" }}>{lead.email}</p>
                           </div>
                         </div>
                       </td>
@@ -828,7 +828,7 @@ export default function LeadsPage() {
                             defaultValue={lead.stage}
                             onChange={e => quickStageChange(lead.id, e.target.value)}
                             onBlur={() => setStagingLeadId(null)}
-                            className="text-xs font-semibold border border-[#0a6b64] rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 shadow-sm"
+                            className="text-xs font-semibold border border-[#086c64] rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 shadow-sm"
                           >
                             {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                           </select>
@@ -842,7 +842,7 @@ export default function LeadsPage() {
                           </button>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 hidden lg:table-cell text-xs" style={{ color: "#8a938f" }}>
+                      <td className="px-5 py-3.5 hidden lg:table-cell text-xs" style={{ color: "#949598" }}>
                         {sourceLabel(lead.source ?? "")}
                       </td>
                       <td className="px-5 py-3.5 hidden xl:table-cell">
@@ -863,7 +863,7 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <Link href={`/leads/${lead.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold transition hover:underline" style={{ color: "#0a6b64" }}>
+                          className="inline-flex items-center gap-1 text-xs font-semibold transition hover:underline" style={{ color: "#086c64" }}>
                           Open <ExternalLink size={11} />
                         </Link>
                       </td>
@@ -885,15 +885,15 @@ export default function LeadsPage() {
               return (
                 <div key={lead.id}
                   className={`bg-white border rounded-2xl shadow-sm transition ${
-                    isSelected ? "border-[#0a6b64] bg-[#edf5f4]/40" : "border-[#e4e0d6]"
+                    isSelected ? "border-[#086c64] bg-[#edf5f4]/40" : "border-[#e4e0d6]"
                   }`}>
                   <div className="flex items-center gap-3 p-3.5">
                     <button onClick={() => toggleOne(lead.id)} className="transition shrink-0" style={{ color: "#c9c4b8" }}>
-                      {isSelected ? <CheckSquare size={16} style={{ color: "#0a6b64" }} /> : <Square size={16} />}
+                      {isSelected ? <CheckSquare size={16} style={{ color: "#086c64" }} /> : <Square size={16} />}
                     </button>
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: isSelected ? "#0a6b64" : "#edf5f4" }}>
-                      <span className="text-[10px] font-bold" style={{ color: isSelected ? "#ffffff" : "#0a6b64" }}>{lead.firstName[0]}{lead.lastName[0]}</span>
+                      style={{ background: isSelected ? "#086c64" : "#edf5f4" }}>
+                      <span className="text-[10px] font-bold" style={{ color: isSelected ? "#ffffff" : "#086c64" }}>{lead.firstName[0]}{lead.lastName[0]}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -903,10 +903,10 @@ export default function LeadsPage() {
                         </Link>
                         {isCold && <span title="Not touched in 14+ days" className="text-amber-400 flex-shrink-0 text-xs">⚠️</span>}
                       </div>
-                      <p className="text-xs truncate" style={{ color: "#8a938f" }}>{lead.company ? `${lead.company} · ${lead.email}` : lead.email}</p>
+                      <p className="text-xs truncate" style={{ color: "#949598" }}>{lead.company ? `${lead.company} · ${lead.email}` : lead.email}</p>
                     </div>
                     <Link href={`/leads/${lead.id}`} className="shrink-0 p-1.5 rounded-xl hover:bg-[#f8f6f1] transition">
-                      <ExternalLink size={13} style={{ color: "#8a938f" }} />
+                      <ExternalLink size={13} style={{ color: "#949598" }} />
                     </Link>
                   </div>
                   {/* Action strip */}
@@ -935,7 +935,7 @@ export default function LeadsPage() {
       <button
         onClick={() => setShowForm(true)}
         className="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 active:scale-95 text-white rounded-2xl shadow-xl flex items-center justify-center transition-all"
-        style={{ background: "#0a6b64" }}>
+        style={{ background: "#086c64" }}>
         <Plus size={24} />
       </button>
 
@@ -961,7 +961,7 @@ export default function LeadsPage() {
                     onClick={() => quickStageChange(mobileStageLeadId, s.key)}
                     className={`w-full flex items-center gap-3 px-5 py-3.5 transition ${active ? "bg-[#edf5f4]" : "hover:bg-[#f8f6f1] active:bg-[#f8f6f1]"}`}>
                     <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${stageInfo(s.key).color}`}>{s.label}</span>
-                    {active && <span className="ml-auto text-xs font-semibold" style={{ color: "#0a6b64" }}>Current</span>}
+                    {active && <span className="ml-auto text-xs font-semibold" style={{ color: "#086c64" }}>Current</span>}
                   </button>
                 );
               })}
@@ -987,7 +987,7 @@ export default function LeadsPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e4e0d6]">
               <h2 className="font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
-                <Trash2 size={16} style={{ color: "#8a938f" }} /> Recycle Bin
+                <Trash2 size={16} style={{ color: "#949598" }} /> Recycle Bin
               </h2>
               <button onClick={() => setBinOpen(false)} className="p-1.5 rounded-lg hover:bg-[#f8f6f1] transition">
                 <X size={16} />
@@ -1000,7 +1000,7 @@ export default function LeadsPage() {
                 </div>
               )}
               {!binLoading && binLeads.length === 0 && (
-                <div className="text-center py-16" style={{ color: "#8a938f" }}>
+                <div className="text-center py-16" style={{ color: "#949598" }}>
                   <Trash2 size={32} className="mx-auto mb-3" style={{ color: "#c9c4b8" }} />
                   <p className="text-sm">Recycle bin is empty</p>
                   <p className="text-xs mt-1">Deleted leads will appear here for recovery.</p>
@@ -1018,10 +1018,10 @@ export default function LeadsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{lead.firstName} {lead.lastName}</p>
-                          <p className="text-xs truncate" style={{ color: "#8a938f" }}>{lead.email}</p>
+                          <p className="text-xs truncate" style={{ color: "#949598" }}>{lead.email}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${stg.color}`}>{stg.label}</span>
-                            <span className="text-[10px]" style={{ color: "#8a938f" }}>Deleted {daysAgo === 0 ? "today" : `${daysAgo}d ago`}</span>
+                            <span className="text-[10px]" style={{ color: "#949598" }}>Deleted {daysAgo === 0 ? "today" : `${daysAgo}d ago`}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -1043,7 +1043,7 @@ export default function LeadsPage() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-3 border-t border-[#e4e0d6] text-xs" style={{ color: "#8a938f" }}>
+            <div className="px-6 py-3 border-t border-[#e4e0d6] text-xs" style={{ color: "#949598" }}>
               {binLeads.length > 0 ? `${binLeads.length} deleted lead${binLeads.length !== 1 ? "s" : ""}` : "No deleted leads"}
             </div>
           </div>

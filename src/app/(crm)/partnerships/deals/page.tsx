@@ -132,18 +132,18 @@ export default function DealsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Partnerships</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Partnerships</p>
           <h1 className="text-xl sm:text-2xl font-display font-semibold flex items-center gap-2" style={{ color: "#14211f" }}>
-            <Handshake size={22} style={{ color: "#0a6b64" }} /> Deals
+            <Handshake size={22} style={{ color: "#086c64" }} /> Deals
           </h1>
-          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: "#949598" }}>
             {deals.length} deal{deals.length !== 1 ? "s" : ""} total
           </p>
         </div>
         <button
           onClick={() => setShowNew(true)}
           className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm"
-          style={{ background: "#0a6b64" }}
+          style={{ background: "#086c64" }}
         >
           <Plus size={15} /> New Deal
         </button>
@@ -164,7 +164,7 @@ export default function DealsPage() {
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.color}`}>
                     {col.label}
                   </span>
-                  <span className="text-xs font-semibold" style={{ color: "#8a938f" }}>
+                  <span className="text-xs font-semibold" style={{ color: "#949598" }}>
                     {col.deals.length}
                   </span>
                 </div>
@@ -186,12 +186,12 @@ export default function DealsPage() {
                     <button
                       key={deal.id}
                       onClick={() => router.push(`/partnerships/deals/${deal.id}`)}
-                      className="w-full text-left bg-white border border-[#e4e0d6] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-[#0a6b64]/30 transition-all"
+                      className="w-full text-left bg-white border border-[#e4e0d6] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-[#086c64]/30 transition-all"
                     >
                       <p className="font-semibold text-sm leading-snug mb-0.5" style={{ color: "#14211f" }}>
                         {deal.title}
                       </p>
-                      <p className="text-xs flex items-center gap-1 mb-3" style={{ color: "#8a938f" }}>
+                      <p className="text-xs flex items-center gap-1 mb-3" style={{ color: "#949598" }}>
                         <Building2 size={10} /> {deal.orgName}
                       </p>
 
@@ -203,14 +203,14 @@ export default function DealsPage() {
                             </span>
                           )}
                           {val && (
-                            <span className="font-bold" style={{ color: "#0a6b64" }}>
+                            <span className="font-bold" style={{ color: "#086c64" }}>
                               {fmt$(val)}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           {deal._count.participants > 0 && (
-                            <span className="text-[10px] font-medium" style={{ color: "#8a938f" }}>
+                            <span className="text-[10px] font-medium" style={{ color: "#949598" }}>
                               {deal._count.participants} participant{deal._count.participants !== 1 ? "s" : ""}
                             </span>
                           )}
@@ -246,7 +246,7 @@ export default function DealsPage() {
             </div>
             <form onSubmit={createDeal} className="p-6 space-y-4">
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>
                   Deal Title <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -254,13 +254,13 @@ export default function DealsPage() {
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="e.g. Northwestern SPS — Fall 2026"
-                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>
                   Organization <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -268,44 +268,44 @@ export default function DealsPage() {
                   value={orgName}
                   onChange={e => setOrgName(e.target.value)}
                   placeholder="University / firm name"
-                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Seats</label>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Seats</label>
                   <input
                     type="number"
                     min="0"
                     value={seats}
                     onChange={e => setSeats(e.target.value)}
                     placeholder="0"
-                    className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                    className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                     style={{ color: "#14211f" }}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Price / Seat ($)</label>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Price / Seat ($)</label>
                   <input
                     type="number"
                     min="0"
                     value={pricePerSeat}
                     onChange={e => setPricePerSeat(e.target.value)}
                     placeholder="0"
-                    className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                    className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                     style={{ color: "#14211f" }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Payment Type</label>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Payment Type</label>
                 <select
                   value={paymentType}
                   onChange={e => setPaymentType(e.target.value)}
-                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 >
                   {PAYMENT_TYPES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
@@ -313,11 +313,11 @@ export default function DealsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Assigned To</label>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Assigned To</label>
                 <select
                   value={assignedTo}
                   onChange={e => setAssignedTo(e.target.value)}
-                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                   style={{ color: "#14211f" }}
                 >
                   <option value="">Unassigned</option>
@@ -326,13 +326,13 @@ export default function DealsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "#8a938f" }}>Notes</label>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Notes</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Any initial notes…"
                   rows={3}
-                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40 resize-none"
+                  className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40 resize-none"
                   style={{ color: "#14211f" }}
                 />
               </div>
@@ -350,7 +350,7 @@ export default function DealsPage() {
                   type="submit"
                   disabled={creating || !title.trim() || !orgName.trim()}
                   className="flex-1 text-sm font-semibold text-white px-4 py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: "#0a6b64" }}
+                  style={{ background: "#086c64" }}
                 >
                   {creating ? <Loader2 size={14} className="animate-spin" /> : null}
                   {creating ? "Creating…" : "Create Deal"}

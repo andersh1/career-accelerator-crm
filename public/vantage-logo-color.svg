@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 40" width="300" height="40">
+  <!-- V mark -->
+  <g fill="none" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M5 3 L20 37 L35 3" stroke="#086c64" stroke-width="6"/>
+    <path d="M5 3 L20 37 L35 3" stroke="#ffffff" stroke-width="3.8"/>
+    <path d="M6.6 4.5 L20 34.5" stroke="#949598" stroke-width="2.4"/>
+    <path d="M33.4 4.5 L20 34.5" stroke="#ffffff" stroke-width="4.6"/>
+    <path d="M33.4 4.5 L20 34.5" stroke="#086c64" stroke-width="2.4"/>
+  </g>
+  <text x="46" y="28" font-family="Georgia, 'Times New Roman', serif" font-size="23" font-weight="700" fill="#086c64" letter-spacing="1">VANTAGE</text>
+  <text x="172" y="28" font-family="Montserrat, Helvetica, Arial, sans-serif" font-size="19" font-weight="500" fill="#949598" letter-spacing="3">CAREER</text>
+</svg>

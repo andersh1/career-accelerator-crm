@@ -109,14 +109,14 @@ export default function PromoCodesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "#14211f" }}>Promo Codes</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
             Create codes for discounts, partner access, or campaign tracking.
           </p>
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-          style={{ background: "#0a6b64" }}
+          style={{ background: "#086c64" }}
         >
           <Plus size={15} />
           New code
@@ -187,7 +187,7 @@ export default function PromoCodesPage() {
               type="submit"
               disabled={saving}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-              style={{ background: "#0a6b64", opacity: saving ? 0.6 : 1 }}
+              style={{ background: "#086c64", opacity: saving ? 0.6 : 1 }}
             >
               {saving && <Loader2 size={13} className="animate-spin" />}
               Create code
@@ -207,10 +207,10 @@ export default function PromoCodesPage() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={22} className="animate-spin" style={{ color: "#0a6b64" }} />
+          <Loader2 size={22} className="animate-spin" style={{ color: "#086c64" }} />
         </div>
       ) : codes.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border" style={{ borderColor: "#e4e0d6", color: "#8a938f" }}>
+        <div className="text-center py-16 rounded-2xl border" style={{ borderColor: "#e4e0d6", color: "#949598" }}>
           <Tag size={32} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No promo codes yet</p>
           <p className="text-sm mt-1">Create your first code above.</p>
@@ -220,11 +220,11 @@ export default function PromoCodesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "#f8f6f1", borderBottom: "1px solid #e4e0d6" }}>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Code</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Label</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Discount</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#8a938f" }}>Uses</th>
-                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Status</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Code</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Label</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Discount</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide hidden sm:table-cell" style={{ color: "#949598" }}>Uses</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -235,13 +235,13 @@ export default function PromoCodesPage() {
                 return (
                   <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#faf9f6", borderBottom: i < codes.length - 1 ? "1px solid #f0ede7" : "none" }}>
                     <td className="px-4 py-3">
-                      <span className="font-mono font-bold text-[13px]" style={{ color: "#0a6b64" }}>{c.code}</span>
+                      <span className="font-mono font-bold text-[13px]" style={{ color: "#086c64" }}>{c.code}</span>
                     </td>
                     <td className="px-4 py-3 text-xs hidden sm:table-cell" style={{ color: "#5a6663" }}>{c.label ?? "—"}</td>
                     <td className="px-4 py-3">
                       {c.discountPct != null
                         ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full"><Percent size={10} />{c.discountPct}% off</span>
-                        : <span className="text-xs" style={{ color: "#8a938f" }}>Tracking only</span>}
+                        : <span className="text-xs" style={{ color: "#949598" }}>Tracking only</span>}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span className="text-xs" style={{ color: maxed ? "#dc2626" : "#5a6663" }}>
@@ -261,7 +261,7 @@ export default function PromoCodesPage() {
                           title="Copy landing page link"
                           onClick={() => copyLink(c.code)}
                           className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-xs font-medium"
-                          style={{ color: copied === c.code ? "#0a6b64" : "#8a938f" }}
+                          style={{ color: copied === c.code ? "#086c64" : "#949598" }}
                         >
                           {copied === c.code ? <CheckCheck size={13} /> : <Copy size={13} />}
                           <span>{copied === c.code ? "Copied" : "Copy link"}</span>
@@ -270,7 +270,7 @@ export default function PromoCodesPage() {
                           title={c.active ? "Deactivate" : "Activate"}
                           onClick={() => toggle(c.id, c.active)}
                           className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-xs font-medium"
-                          style={{ color: c.active ? "#0a6b64" : "#8a938f" }}
+                          style={{ color: c.active ? "#086c64" : "#949598" }}
                         >
                           {c.active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                           <span>{c.active ? "Active" : "Inactive"}</span>
@@ -295,7 +295,7 @@ export default function PromoCodesPage() {
         </div>
       )}
 
-      <p className="text-xs mt-4" style={{ color: "#8a938f" }}>
+      <p className="text-xs mt-4" style={{ color: "#949598" }}>
         Copy link button copies the landing page URL with the code pre-applied (e.g. <code className="font-mono bg-slate-100 px-1 rounded">?promo=CODE</code>).
       </p>
     </div>

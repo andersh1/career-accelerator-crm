@@ -32,10 +32,10 @@ export default function ForgotPasswordPage() {
 
         <div className="mb-8">
           <div className="mb-8 inline-flex flex-col items-start gap-1">
-            <div style={{ background: "#0a6b64", borderRadius: 8, padding: "7px 12px", display: "inline-flex", alignItems: "center" }}>
-              <img src="/vantage-logo.svg" alt="Vantage Career" style={{ height: 26, display: "block" }} />
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <img src="/vantage-logo-color.svg" alt="Vantage Career" style={{ height: 30, display: "block" }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#0a6b64", letterSpacing: "0.8px", paddingLeft: 2, textTransform: "uppercase" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#086c64", letterSpacing: "0.8px", paddingLeft: 2, textTransform: "uppercase" }}>
               Career Accelerator
             </span>
           </div>
@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
                 className="w-11 h-11 rounded-2xl flex items-center justify-center mb-5"
                 style={{ background: "rgba(10,107,100,0.1)" }}
               >
-                <Mail size={20} style={{ color: "#0a6b64" }} />
+                <Mail size={20} style={{ color: "#086c64" }} />
               </div>
               <h1 className="text-2xl font-extrabold mb-1" style={{ color: "#14211f" }}>Check your email</h1>
               <p className="text-sm" style={{ color: "#5a6663" }}>
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
               <Link
                 href="/login"
                 className="inline-flex items-center gap-1.5 text-sm font-medium mt-6 transition-colors"
-                style={{ color: "#0a6b64" }}
+                style={{ color: "#086c64" }}
               >
                 <ArrowLeft size={14} /> Back to login
               </Link>
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                     placeholder="you@example.com"
                     className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
                     style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
-                    onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
@@ -91,9 +91,9 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit" disabled={loading}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50"
-                  style={{ background: "#0a6b64" }}
+                  style={{ background: "#086c64" }}
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#084f4a"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "#0a6b64"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#086c64"; }}
                 >
                   {loading
                     ? <><Loader2 size={15} className="animate-spin" /> Sending…</>
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
               <Link
                 href="/login"
                 className="inline-flex items-center gap-1.5 text-sm font-medium mt-6 transition-colors"
-                style={{ color: "#8a938f" }}
+                style={{ color: "#949598" }}
               >
                 <ArrowLeft size={14} /> Back to login
               </Link>

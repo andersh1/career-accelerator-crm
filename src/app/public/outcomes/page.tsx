@@ -68,7 +68,7 @@ function OutcomeForm() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#f1efe8" }}>
-        <Loader2 size={28} className="animate-spin" style={{ color: "#0a6b64" }} />
+        <Loader2 size={28} className="animate-spin" style={{ color: "#086c64" }} />
       </div>
     );
   }
@@ -78,7 +78,7 @@ function OutcomeForm() {
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f1efe8" }}>
         <div className="max-w-sm w-full text-center">
           <p className="text-sm font-semibold mb-2" style={{ color: "#14211f" }}>This link is invalid or has expired.</p>
-          <p className="text-xs" style={{ color: "#8a938f" }}>Please reach out to your program coach if you need help.</p>
+          <p className="text-xs" style={{ color: "#949598" }}>Please reach out to your program coach if you need help.</p>
         </div>
       </div>
     );
@@ -89,7 +89,7 @@ function OutcomeForm() {
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f1efe8" }}>
         <div className="max-w-sm w-full text-center">
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "#e6f4f3" }}>
-            <CheckCircle size={28} style={{ color: "#0a6b64" }} />
+            <CheckCircle size={28} style={{ color: "#086c64" }} />
           </div>
           <h1 className="text-lg font-bold mb-2" style={{ color: "#14211f" }}>Thanks for sharing!</h1>
           <p className="text-sm leading-relaxed" style={{ color: "#5a6663" }}>
@@ -106,10 +106,10 @@ function OutcomeForm() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-block mb-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest" style={{ background: "#e6f4f3", color: "#0a6b64" }}>
+          <div className="inline-block mb-4 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest" style={{ background: "#e6f4f3", color: "#086c64" }}>
             Vantage Career Accelerator
           </div>
-          <h1 className="text-2xl font-bold mb-2" style={{ color: "#14211f", fontFamily: "Georgia, serif" }}>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "#14211f", fontFamily: "var(--font-display), Montserrat, sans-serif" }}>
             {firstName ? `Hey ${firstName} — where did you land?` : "Where did you land?"}
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: "#5a6663" }}>
@@ -122,7 +122,7 @@ function OutcomeForm() {
 
           {/* Status */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#8a938f" }}>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>
               Where are you right now?
             </p>
             <div className="space-y-2">
@@ -133,12 +133,12 @@ function OutcomeForm() {
                   onClick={() => setStatus(s.key)}
                   className="w-full text-left rounded-xl border-2 px-4 py-3 transition"
                   style={{
-                    borderColor: status === s.key ? "#0a6b64" : "#e4e0d6",
+                    borderColor: status === s.key ? "#086c64" : "#e4e0d6",
                     background:  status === s.key ? "#e6f4f3" : "white",
                   }}
                 >
                   <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{s.label}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{s.desc}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{s.desc}</p>
                 </button>
               ))}
             </div>
@@ -147,7 +147,7 @@ function OutcomeForm() {
           {/* Placed fields */}
           {status === "PLACED" && (
             <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: "#e4e0d6", background: "white" }}>
-              <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Tell us more (optional)</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Tell us more (optional)</p>
               <div>
                 <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Company</label>
                 <input
@@ -199,7 +199,7 @@ function OutcomeForm() {
             type="submit"
             disabled={submitting || !status}
             className="w-full text-white font-bold text-sm py-3 rounded-xl transition disabled:opacity-50"
-            style={{ background: "#0a6b64" }}
+            style={{ background: "#086c64" }}
           >
             {submitting ? "Submitting…" : "Submit my outcome →"}
           </button>
@@ -213,7 +213,7 @@ export default function OutcomesPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#f1efe8" }}>
-        <Loader2 size={28} className="animate-spin" style={{ color: "#0a6b64" }} />
+        <Loader2 size={28} className="animate-spin" style={{ color: "#086c64" }} />
       </div>
     }>
       <OutcomeForm />

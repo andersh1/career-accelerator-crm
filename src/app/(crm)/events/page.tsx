@@ -60,7 +60,7 @@ function CopyLink({ slug, size = "sm" }: { slug: string; size?: "sm" | "lg" }) {
     return (
       <button onClick={copy}
         className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors hover:bg-slate-50"
-        style={{ borderColor: "#e4e0d6", color: copied ? "#0a6b64" : "#5a6663" }}>
+        style={{ borderColor: "#e4e0d6", color: copied ? "#086c64" : "#5a6663" }}>
         {copied ? <Check size={14} /> : <Copy size={14} />}
         {copied ? "Copied!" : "Copy link"}
       </button>
@@ -69,7 +69,7 @@ function CopyLink({ slug, size = "sm" }: { slug: string; size?: "sm" | "lg" }) {
   return (
     <button onClick={copy} title="Copy registration link"
       className="p-1.5 rounded-lg transition-colors hover:bg-slate-100 flex items-center gap-1 text-[11px] font-medium"
-      style={{ color: copied ? "#0a6b64" : "#8a938f" }}>
+      style={{ color: copied ? "#086c64" : "#949598" }}>
       {copied ? <Check size={12} /> : <Copy size={12} />}
       {copied ? "Copied" : "Copy link"}
     </button>
@@ -87,7 +87,7 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 function FunnelViz({ totals }: { totals: { registered: number; attended: number; applied: number; enrolled: number } }) {
   const steps = [
     { label: "Registered", value: totals.registered, color: "#14211f", bg: "#f8f6f1" },
-    { label: "Attended",   value: totals.attended,   color: "#0a6b64", bg: "#edf5f4" },
+    { label: "Attended",   value: totals.attended,   color: "#086c64", bg: "#edf5f4" },
     { label: "Applied",    value: totals.applied,    color: "#2563eb", bg: "#eff6ff" },
     { label: "Enrolled",   value: totals.enrolled,   color: "#7c3aed", bg: "#f5f3ff" },
   ];
@@ -99,7 +99,7 @@ function FunnelViz({ totals }: { totals: { registered: number; attended: number;
         const conv = i > 0 ? pct(steps[i].value, steps[i - 1].value) : null;
         return (
           <div key={s.label} className="flex items-center gap-3">
-            <span className="text-xs font-semibold w-20 text-right shrink-0" style={{ color: "#8a938f" }}>{s.label}</span>
+            <span className="text-xs font-semibold w-20 text-right shrink-0" style={{ color: "#949598" }}>{s.label}</span>
             <div className="flex-1 relative h-8 flex items-center">
               <div className="h-8 rounded-xl flex items-center px-3 transition-all"
                 style={{ width: `${w}%`, minWidth: s.value > 0 ? 60 : 0, background: s.bg, border: `1.5px solid ${s.color}20` }}>
@@ -107,7 +107,7 @@ function FunnelViz({ totals }: { totals: { registered: number; attended: number;
               </div>
             </div>
             {conv !== null && (
-              <span className="text-xs font-bold w-12 shrink-0" style={{ color: conv > 50 ? "#0a6b64" : conv > 20 ? "#92400e" : "#8a938f" }}>
+              <span className="text-xs font-bold w-12 shrink-0" style={{ color: conv > 50 ? "#086c64" : conv > 20 ? "#92400e" : "#949598" }}>
                 {conv}%
               </span>
             )}
@@ -136,16 +136,16 @@ function EventRow({ e, compact }: { e: Event; compact?: boolean }) {
             </span>
           )}
         </div>
-        <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{formatDate(e.startsAt, e.timezone, true)}</p>
+        <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{formatDate(e.startsAt, e.timezone, true)}</p>
       </div>
       <div className="hidden sm:flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-1.5">
-          <Users size={11} style={{ color: "#8a938f" }} />
+          <Users size={11} style={{ color: "#949598" }} />
           <span className="text-xs font-bold" style={{ color: "#14211f" }}>{e.funnel.registered}</span>
         </div>
         {e.funnel.registered > 0 && (
           <div className="hidden md:flex flex-col gap-1">
-            <MiniBar value={e.funnel.attended} max={e.funnel.registered} color="#0a6b64" />
+            <MiniBar value={e.funnel.attended} max={e.funnel.registered} color="#086c64" />
             <MiniBar value={e.funnel.enrolled} max={e.funnel.registered} color="#7c3aed" />
           </div>
         )}
@@ -159,12 +159,12 @@ function EventRow({ e, compact }: { e: Event; compact?: boolean }) {
         <CopyLink slug={e.slug} />
         <a href={`https://crm.vantagecareer.co/public/events/${e.slug}`} target="_blank" rel="noreferrer"
           className="p-1.5 rounded-lg transition-colors hover:bg-slate-100"
-          style={{ color: "#8a938f" }} title="View public page">
+          style={{ color: "#949598" }} title="View public page">
           <ExternalLink size={12} />
         </a>
         <Link href={`/events/${e.id}`}
           className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors hover:bg-[#edf5f4]"
-          style={{ color: "#0a6b64" }}>
+          style={{ color: "#086c64" }}>
           Manage <ChevronRight size={11} />
         </Link>
       </div>
@@ -198,14 +198,14 @@ function NextUpCard({ e }: { e: Event }) {
               {isZoom ? "Zoom" : "In-Person"}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-              style={{ background: urgent ? "#fef2f2" : warn ? "#fffbeb" : "#edf5f4", color: urgent ? "#dc2626" : warn ? "#92400e" : "#0a6b64" }}>
+              style={{ background: urgent ? "#fef2f2" : warn ? "#fffbeb" : "#edf5f4", color: urgent ? "#dc2626" : warn ? "#92400e" : "#086c64" }}>
               {cdLabel}
             </span>
           </div>
           <h2 className="text-lg font-extrabold leading-tight" style={{ color: "#14211f" }}>{e.title}</h2>
           <div className="flex items-center gap-1.5 mt-1">
-            <Clock size={11} style={{ color: "#8a938f" }} />
-            <p className="text-xs" style={{ color: "#8a938f" }}>{formatDate(e.startsAt, e.timezone)}</p>
+            <Clock size={11} style={{ color: "#949598" }} />
+            <p className="text-xs" style={{ color: "#949598" }}>{formatDate(e.startsAt, e.timezone)}</p>
           </div>
           {e.speakerName && (
             <p className="text-xs mt-1 font-medium" style={{ color: "#5a6663" }}>Speaker: {e.speakerName}</p>
@@ -217,12 +217,12 @@ function NextUpCard({ e }: { e: Event }) {
           style={{ borderColor: "#f0ede7" }}>
           <div className="text-center">
             <p className="text-3xl font-extrabold" style={{ color: "#14211f" }}>{e.funnel.registered}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#8a938f" }}>Registered</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#949598" }}>Registered</p>
           </div>
           {e.funnel.enrolled > 0 && (
             <div className="text-center">
               <p className="text-lg font-extrabold" style={{ color: "#7c3aed" }}>{e.funnel.enrolled}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#8a938f" }}>Enrolled</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#949598" }}>Enrolled</p>
             </div>
           )}
         </div>
@@ -231,7 +231,7 @@ function NextUpCard({ e }: { e: Event }) {
         <div className="flex sm:flex-col gap-2 flex-wrap sm:shrink-0">
           <Link href={`/events/${e.id}`}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "#0a6b64" }}>
+            style={{ background: "#086c64" }}>
             Manage event <ChevronRight size={14} />
           </Link>
           <CopyLink slug={e.slug} size="lg" />
@@ -302,9 +302,9 @@ export default function EventsPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <h1 className="text-2xl font-bold" style={{ color: "#14211f" }}>Events</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>Dinners, webinars, and panels — from RSVP to enrolled.</p>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>Dinners, webinars, and panels — from RSVP to enrolled.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/analytics?tab=growth"
@@ -314,7 +314,7 @@ export default function EventsPage() {
           </Link>
           <Link href="/events/new"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-colors"
-            style={{ background: "#0a6b64" }}>
+            style={{ background: "#086c64" }}>
             <Plus size={15} /> New Event
           </Link>
         </div>
@@ -322,7 +322,7 @@ export default function EventsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 size={22} className="animate-spin" style={{ color: "#0a6b64" }} />
+          <Loader2 size={22} className="animate-spin" style={{ color: "#086c64" }} />
         </div>
       ) : (
         <>
@@ -334,11 +334,11 @@ export default function EventsPage() {
               style={{ borderColor: "#e4e0d6" }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: "#14211f" }}>No upcoming events</p>
-                <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>Schedule a dinner or webinar to start filling your pipeline.</p>
+                <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Schedule a dinner or webinar to start filling your pipeline.</p>
               </div>
               <Link href="/events/new"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shrink-0"
-                style={{ background: "#0a6b64" }}>
+                style={{ background: "#086c64" }}>
                 <Plus size={14} /> New Event
               </Link>
             </div>
@@ -348,12 +348,12 @@ export default function EventsPage() {
           {events.length > 1 && (
             <div className="flex items-center gap-2">
               <div className="relative flex items-center">
-                <Filter size={13} className="absolute left-3 pointer-events-none" style={{ color: "#8a938f" }} />
+                <Filter size={13} className="absolute left-3 pointer-events-none" style={{ color: "#949598" }} />
                 <select
                   value={filterEventId ?? ""}
                   onChange={e => setFilterEventId(e.target.value || null)}
                   className="pl-8 pr-8 py-2 rounded-xl border text-xs font-semibold outline-none focus:border-teal-600 appearance-none cursor-pointer"
-                  style={{ borderColor: filterEventId ? "#0a6b64" : "#e4e0d6", color: filterEventId ? "#0a6b64" : "#5a6663", background: filterEventId ? "#edf5f4" : "#fff" }}>
+                  style={{ borderColor: filterEventId ? "#086c64" : "#e4e0d6", color: filterEventId ? "#086c64" : "#5a6663", background: filterEventId ? "#edf5f4" : "#fff" }}>
                   <option value="">All Events ({events.length})</option>
                   <optgroup label="Upcoming">
                     {upcoming.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
@@ -375,7 +375,7 @@ export default function EventsPage() {
               {filteredEvent && (
                 <Link href={`/events/${filteredEvent.id}`}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors hover:bg-[#edf5f4]"
-                  style={{ borderColor: "#e4e0d6", color: "#0a6b64" }}>
+                  style={{ borderColor: "#e4e0d6", color: "#086c64" }}>
                   Open event →
                 </Link>
               )}
@@ -391,7 +391,7 @@ export default function EventsPage() {
               },
               {
                 label: "Attendance Rate", value: `${attendRate}%`, delta: attendRate30,
-                deltaLabel: `${attendRate30}% last 30d`, icon: UserCheck, color: "#0a6b64", bg: "#edf5f4",
+                deltaLabel: `${attendRate30}% last 30d`, icon: UserCheck, color: "#086c64", bg: "#edf5f4",
               },
               {
                 label: "Applied", value: totals.applied, delta: totals30.applied,
@@ -408,7 +408,7 @@ export default function EventsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-extrabold" style={{ color }}>{value}</p>
-                  <p className="text-xs font-semibold mt-0.5" style={{ color: "#8a938f" }}>{label}</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: "#949598" }}>{label}</p>
                   {!filterEventId && delta !== undefined && delta > 0 && (
                     <p className="text-[10px] font-semibold mt-1.5 px-1.5 py-0.5 rounded-full inline-block"
                       style={{ background: bg, color }}>
@@ -426,24 +426,24 @@ export default function EventsPage() {
             <div className="lg:col-span-3 rounded-2xl border overflow-hidden" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
               <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#f0ede7", background: "#f8f6f1" }}>
                 <div className="flex items-center gap-2">
-                  <Calendar size={14} style={{ color: "#0a6b64" }} />
+                  <Calendar size={14} style={{ color: "#086c64" }} />
                   <span className="text-sm font-bold" style={{ color: "#14211f" }}>
                     {restUpcoming.length > 0 ? "More Upcoming" : "Upcoming Events"}
                   </span>
                   {restUpcoming.length > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64" }}>{restUpcoming.length}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64" }}>{restUpcoming.length}</span>
                   )}
                 </div>
-                <Link href="/events/new" className="text-xs font-semibold flex items-center gap-1" style={{ color: "#0a6b64" }}>
+                <Link href="/events/new" className="text-xs font-semibold flex items-center gap-1" style={{ color: "#086c64" }}>
                   <Plus size={11} /> New
                 </Link>
               </div>
               {restUpcoming.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm" style={{ color: "#8a938f" }}>
+                  <p className="text-sm" style={{ color: "#949598" }}>
                     {nextUp ? "No other events scheduled" : "No upcoming events"}
                   </p>
-                  <Link href="/events/new" className="text-xs font-semibold mt-1 inline-flex items-center gap-1" style={{ color: "#0a6b64" }}>
+                  <Link href="/events/new" className="text-xs font-semibold mt-1 inline-flex items-center gap-1" style={{ color: "#086c64" }}>
                     Schedule one <ArrowRight size={10} />
                   </Link>
                 </div>
@@ -457,11 +457,11 @@ export default function EventsPage() {
             {/* ── Pipeline funnel ── */}
             <div className="lg:col-span-2 rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={14} style={{ color: "#0a6b64" }} />
+                <TrendingUp size={14} style={{ color: "#086c64" }} />
                 <span className="text-sm font-bold" style={{ color: "#14211f" }}>Registration Pipeline</span>
               </div>
               {totals.registered === 0 ? (
-                <p className="text-sm text-center py-8" style={{ color: "#8a938f" }}>Registrations will appear here once events go live.</p>
+                <p className="text-sm text-center py-8" style={{ color: "#949598" }}>Registrations will appear here once events go live.</p>
               ) : (
                 <FunnelViz totals={totals} />
               )}
@@ -475,8 +475,8 @@ export default function EventsPage() {
                     const p = pct(a, b);
                     return (
                       <div key={label} className="flex items-center justify-between">
-                        <span className="text-[11px]" style={{ color: "#8a938f" }}>{label}</span>
-                        <span className="text-[11px] font-bold" style={{ color: p > 50 ? "#0a6b64" : p > 25 ? "#92400e" : "#5a6663" }}>{p}%</span>
+                        <span className="text-[11px]" style={{ color: "#949598" }}>{label}</span>
+                        <span className="text-[11px] font-bold" style={{ color: p > 50 ? "#086c64" : p > 25 ? "#92400e" : "#5a6663" }}>{p}%</span>
                       </div>
                     );
                   })}
@@ -484,7 +484,7 @@ export default function EventsPage() {
               )}
               <Link href="/analytics?tab=growth"
                 className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl transition-colors hover:bg-[#edf5f4]"
-                style={{ color: "#0a6b64" }}>
+                style={{ color: "#086c64" }}>
                 Full analytics <ArrowRight size={11} />
               </Link>
             </div>
@@ -495,7 +495,7 @@ export default function EventsPage() {
             <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
               <div className="flex items-center gap-2 px-5 py-4 border-b" style={{ borderColor: "#f0ede7", background: "#f8f6f1" }}>
                 <span className="text-sm font-bold" style={{ color: "#14211f" }}>Past Events</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#f1efe8", color: "#8a938f" }}>{past.length}</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#f1efe8", color: "#949598" }}>{past.length}</span>
                 {totals30.enrolled > 0 && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
                     {totals30.enrolled} enrolled in last 30d

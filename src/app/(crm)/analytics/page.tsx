@@ -43,7 +43,7 @@ function fmt$$(n: number) {
 }
 
 function MoMBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="text-xs" style={{ color: "#8a938f" }}>vs last month</span>;
+  if (pct === null) return <span className="text-xs" style={{ color: "#949598" }}>vs last month</span>;
   const up = pct >= 0;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-bold ${up ? "text-emerald-600" : "text-red-500"}`}>
@@ -207,7 +207,7 @@ export default function AnalyticsPage() {
   );
 
   if (!data) return (
-    <div className="p-10 text-center" style={{ color: "#8a938f" }}>Failed to load analytics.</div>
+    <div className="p-10 text-center" style={{ color: "#949598" }}>Failed to load analytics.</div>
   );
 
   const { kpis, mom, funnel, sources, nextgenBreakdown, monthly, timeInStage, cohorts, reps = [], lostReasons = [] } = data;
@@ -221,9 +221,9 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <h1 className="text-2xl font-display font-semibold" style={{ color: "#14211f" }}>Analytics</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>Pipeline performance & growth metrics</p>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>Pipeline performance & growth metrics</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range presets */}
@@ -233,7 +233,7 @@ export default function AnalyticsPage() {
                 onClick={() => { setPreset(key); setEmailStats(null); }}
                 className="px-3 py-1 text-xs font-semibold rounded-lg transition"
                 style={{
-                  background: preset === key ? "#0a6b64" : "transparent",
+                  background: preset === key ? "#086c64" : "transparent",
                   color: preset === key ? "#fff" : "#5a6663",
                 }}>
                 {label}
@@ -252,19 +252,19 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Leads",    value: kpis.total,             sub: <MoMBadge pct={mom.newMoM} />,      icon: Users       },
-          { label: "Active",         value: kpis.active,            sub: <span className="text-xs" style={{ color: "#8a938f" }}>in pipeline</span>, icon: Activity    },
+          { label: "Active",         value: kpis.active,            sub: <span className="text-xs" style={{ color: "#949598" }}>in pipeline</span>, icon: Activity    },
           { label: "Enrolled",       value: kpis.enrolled,          sub: <MoMBadge pct={mom.enrolledMoM} />, icon: UserCheck   },
-          { label: "Win Rate",       value: `${kpis.winRate}%`,     sub: <span className="text-xs" style={{ color: "#8a938f" }}>{kpis.lost} lost</span>, icon: Target },
+          { label: "Win Rate",       value: `${kpis.winRate}%`,     sub: <span className="text-xs" style={{ color: "#949598" }}>{kpis.lost} lost</span>, icon: Target },
         ].map(kpi => (
           <div key={kpi.label} className="card shadow-sm p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#edf5f4" }}>
-                <kpi.icon size={18} style={{ color: "#0a6b64" }} />
+                <kpi.icon size={18} style={{ color: "#086c64" }} />
               </div>
               {kpi.sub}
             </div>
             <p className="text-2xl font-extrabold" style={{ color: "#14211f" }}>{kpi.value}</p>
-            <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{kpi.label}</p>
+            <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{kpi.label}</p>
           </div>
         ))}
       </div>
@@ -310,7 +310,7 @@ export default function AnalyticsPage() {
               <p className="text-2xl font-extrabold" style={{ color: "#14211f" }}>{s.value}</p>
               <div className="flex items-center gap-1.5">
                 <MoMBadge pct={s.pct} />
-                <span className="text-xs" style={{ color: "#8a938f" }}>({s.prev} last mo)</span>
+                <span className="text-xs" style={{ color: "#949598" }}>({s.prev} last mo)</span>
               </div>
             </div>
           ))}
@@ -354,10 +354,10 @@ export default function AnalyticsPage() {
                         {stage.weightedValue > 0 && (
                           <span className="text-xs font-semibold text-violet-600">{fmt$$(stage.weightedValue)}</span>
                         )}
-                        <span className="text-xs" style={{ color: "#8a938f" }}>{stage.probability}%</span>
+                        <span className="text-xs" style={{ color: "#949598" }}>{stage.probability}%</span>
                         <span className="text-sm font-bold" style={{ color: "#14211f" }}>{stage.count}</span>
                         {convRate !== null && (
-                          <span className="text-xs" style={{ color: "#8a938f" }}>→ {convRate}%</span>
+                          <span className="text-xs" style={{ color: "#949598" }}>→ {convRate}%</span>
                         )}
                       </div>
                     </div>
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
           <div className="card shadow-sm p-6">
             <h2 className="text-sm font-bold mb-5" style={{ color: "#14211f" }}>Lead Sources</h2>
             {sources.length === 0 ? (
-              <p className="text-sm text-center py-8" style={{ color: "#8a938f" }}>No data yet</p>
+              <p className="text-sm text-center py-8" style={{ color: "#949598" }}>No data yet</p>
             ) : (
               <div className="space-y-3">
                 {sources.map(src => {
@@ -395,7 +395,7 @@ export default function AnalyticsPage() {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-semibold" style={{ color: "#5a6663" }}>{SOURCE_LABELS[src.key] ?? src.key}</span>
                         <span className="text-xs font-bold" style={{ color: "#5a6663" }}>
-                          {src.count} <span className="font-normal" style={{ color: "#8a938f" }}>({pct}%)</span>
+                          {src.count} <span className="font-normal" style={{ color: "#949598" }}>({pct}%)</span>
                         </span>
                       </div>
                       <div className="h-2 rounded-full overflow-hidden" style={{ background: "#f1efe8" }}>
@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
             )}
             {nextgenBreakdown && nextgenBreakdown.total > 0 && (
               <div className="mt-5 pt-4 border-t" style={{ borderColor: "#e4e0d6" }}>
-                <p className="text-xs font-bold mb-3" style={{ color: "#8a938f" }}>3i NextGen — Member type</p>
+                <p className="text-xs font-bold mb-3" style={{ color: "#949598" }}>3i NextGen — Member type</p>
                 <div className="space-y-2">
                   {[
                     { label: "NextGen Member",       count: nextgenBreakdown.member,   color: "bg-teal-500" },
@@ -422,7 +422,7 @@ export default function AnalyticsPage() {
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-semibold" style={{ color: "#5a6663" }}>{row.label}</span>
                           <span className="text-xs font-bold" style={{ color: "#5a6663" }}>
-                            {row.count} <span className="font-normal" style={{ color: "#8a938f" }}>({pct}%)</span>
+                            {row.count} <span className="font-normal" style={{ color: "#949598" }}>({pct}%)</span>
                           </span>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#f1efe8" }}>
@@ -460,7 +460,7 @@ export default function AnalyticsPage() {
                         style={{ height: `${Math.max((m.enrolled / maxMonthly) * 90, m.enrolled > 0 ? 4 : 0)}px` }} />
                     </div>
                   </div>
-                  <span className="text-[10px] font-medium" style={{ color: "#8a938f" }}>{m.label}</span>
+                  <span className="text-[10px] font-medium" style={{ color: "#949598" }}>{m.label}</span>
                 </div>
               ))}
             </div>
@@ -473,7 +473,7 @@ export default function AnalyticsPage() {
         <div className="space-y-5">
           <div className="card shadow-sm p-6">
             <h2 className="text-sm font-bold mb-1" style={{ color: "#14211f" }}>Average Days per Stage</h2>
-            <p className="text-xs mb-5" style={{ color: "#8a938f" }}>How long leads typically spend at each pipeline stage before moving forward.</p>
+            <p className="text-xs mb-5" style={{ color: "#949598" }}>How long leads typically spend at each pipeline stage before moving forward.</p>
             <div className="space-y-5">
               {timeInStage.map(s => {
                 const maxDays = Math.max(...timeInStage.map(x => x.avgDaysToNext), 1);
@@ -490,10 +490,10 @@ export default function AnalyticsPage() {
                         <span className="flex items-center gap-1">
                           <Clock size={11} />
                           <span className="font-bold" style={{ color: "#14211f" }}>{s.avgDaysToNext}d</span> avg to next stage
-                          {s.sampleSize > 0 && <span style={{ color: "#8a938f" }}>({s.sampleSize} leads)</span>}
+                          {s.sampleSize > 0 && <span style={{ color: "#949598" }}>({s.sampleSize} leads)</span>}
                         </span>
                         {s.avgDaysCurrent > 0 && (
-                          <span style={{ color: "#8a938f" }}>{s.avgDaysCurrent}d currently here</span>
+                          <span style={{ color: "#949598" }}>{s.avgDaysCurrent}d currently here</span>
                         )}
                       </div>
                     </div>
@@ -507,7 +507,7 @@ export default function AnalyticsPage() {
                 );
               })}
             </div>
-            <p className="text-[11px] mt-5" style={{ color: "#8a938f" }}>
+            <p className="text-[11px] mt-5" style={{ color: "#949598" }}>
               Based on stage-change activity log events. Leads with no movement show 0 days-to-next.
             </p>
           </div>
@@ -519,12 +519,12 @@ export default function AnalyticsPage() {
                 <div className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${STAGE_LIGHT[s.stage]?.split(" ")[1] ?? "text-slate-500"}`}>
                   {STAGE_LABELS[s.stage]}
                 </div>
-                <p className="text-3xl font-extrabold" style={{ color: "#14211f" }}>{s.avgDaysToNext}<span className="text-sm font-semibold ml-1" style={{ color: "#8a938f" }}>days</span></p>
+                <p className="text-3xl font-extrabold" style={{ color: "#14211f" }}>{s.avgDaysToNext}<span className="text-sm font-semibold ml-1" style={{ color: "#949598" }}>days</span></p>
                 <p className="text-xs mt-1" style={{ color: "#5a6663" }}>avg before moving on</p>
               </div>
             ))}
             {timeInStage.every(s => s.sampleSize === 0) && (
-              <div className="col-span-3 text-center text-sm py-8" style={{ color: "#8a938f" }}>
+              <div className="col-span-3 text-center text-sm py-8" style={{ color: "#949598" }}>
                 No stage-change history yet. Move leads through stages to see velocity data.
               </div>
             )}
@@ -537,7 +537,7 @@ export default function AnalyticsPage() {
         <div className="space-y-4">
           {cohorts.length === 0 ? (
             <div className="card shadow-sm p-16 text-center">
-              <p className="text-sm" style={{ color: "#8a938f" }}>No cohorts found.</p>
+              <p className="text-sm" style={{ color: "#949598" }}>No cohorts found.</p>
             </div>
           ) : (
             cohorts.map(c => (
@@ -560,10 +560,10 @@ export default function AnalyticsPage() {
                     {c.fillPct !== null ? (
                       <>
                         <p className="text-2xl font-extrabold" style={{ color: "#14211f" }}>{c.fillPct}%</p>
-                        <p className="text-xs" style={{ color: "#8a938f" }}>fill rate</p>
+                        <p className="text-xs" style={{ color: "#949598" }}>fill rate</p>
                       </>
                     ) : (
-                      <span className="text-xs" style={{ color: "#8a938f" }}>No capacity set</span>
+                      <span className="text-xs" style={{ color: "#949598" }}>No capacity set</span>
                     )}
                   </div>
                 </div>
@@ -579,7 +579,7 @@ export default function AnalyticsPage() {
                         style={{ width: `${c.fillPct ?? 0}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] mt-1.5" style={{ color: "#8a938f" }}>
+                    <div className="flex justify-between text-[10px] mt-1.5" style={{ color: "#949598" }}>
                       <span>0</span>
                       <span>{c.enrolled} / {c.capacity}</span>
                     </div>
@@ -596,8 +596,8 @@ export default function AnalyticsPage() {
           {reps.length === 0 ? (
             <div className="card shadow-sm p-16 text-center">
               <UserCircle2 size={28} className="mx-auto mb-3" style={{ color: "#c9c4b8" }} />
-              <p className="text-sm" style={{ color: "#8a938f" }}>No leads are assigned yet.</p>
-              <p className="text-xs mt-1" style={{ color: "#8a938f" }}>Assign leads to reps from the lead form or detail page.</p>
+              <p className="text-sm" style={{ color: "#949598" }}>No leads are assigned yet.</p>
+              <p className="text-xs mt-1" style={{ color: "#949598" }}>Assign leads to reps from the lead form or detail page.</p>
             </div>
           ) : (
             <>
@@ -605,17 +605,17 @@ export default function AnalyticsPage() {
               <div className="card shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-[#e4e0d6]">
                   <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Rep Performance</h2>
-                  <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>Pipeline value and conversion by team member</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Pipeline value and conversion by team member</p>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
-                      <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Rep</th>
-                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Total</th>
-                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Active</th>
-                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Enrolled</th>
-                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Win Rate</th>
-                      <th className="text-right px-6 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>Pipeline</th>
+                      <th className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Rep</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Total</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Active</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Enrolled</th>
+                      <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Win Rate</th>
+                      <th className="text-right px-6 py-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Pipeline</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -628,7 +628,7 @@ export default function AnalyticsPage() {
                             }`}>
                               {rep.name.slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="font-semibold" style={{ color: rep.id === "unassigned" ? "#8a938f" : "#14211f", fontStyle: rep.id === "unassigned" ? "italic" : "normal" }}>
+                            <span className="font-semibold" style={{ color: rep.id === "unassigned" ? "#949598" : "#14211f", fontStyle: rep.id === "unassigned" ? "italic" : "normal" }}>
                               {rep.name}
                             </span>
                           </div>
@@ -642,7 +642,7 @@ export default function AnalyticsPage() {
                         </td>
                         <td className="px-4 py-3.5 text-right">
                           <span className={`text-xs font-bold ${rep.winRate >= 50 ? "text-emerald-600" : rep.winRate >= 25 ? "text-amber-600" : ""}`}
-                            style={rep.winRate < 25 ? { color: "#8a938f" } : {}}>
+                            style={rep.winRate < 25 ? { color: "#949598" } : {}}>
                             {rep.winRate}%
                           </span>
                         </td>
@@ -664,7 +664,7 @@ export default function AnalyticsPage() {
                       <div key={rep.id}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-semibold" style={{ color: "#5a6663" }}>{rep.name}</span>
-                          <span className="text-xs font-bold" style={{ color: "#8a938f" }}>{fmt$$(rep.pipeline)}</span>
+                          <span className="text-xs font-bold" style={{ color: "#949598" }}>{fmt$$(rep.pipeline)}</span>
                         </div>
                         <div className="h-3 rounded-full overflow-hidden" style={{ background: "#f1efe8" }}>
                           <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all"
@@ -708,10 +708,10 @@ export default function AnalyticsPage() {
                 ].map(k => (
                   <div key={k.label} className="card shadow-sm p-5">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "#edf5f4" }}>
-                      <k.icon size={18} style={{ color: "#0a6b64" }} />
+                      <k.icon size={18} style={{ color: "#086c64" }} />
                     </div>
                     <p className="text-2xl font-extrabold" style={{ color: "#14211f" }}>{k.value}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{k.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{k.label}</p>
                   </div>
                 ))}
               </div>
@@ -740,10 +740,10 @@ export default function AnalyticsPage() {
                   ].map(k => (
                     <div key={k.label} className="card shadow-sm p-5">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "#edf5f4" }}>
-                        <k.icon size={18} style={{ color: "#0a6b64" }} />
+                        <k.icon size={18} style={{ color: "#086c64" }} />
                       </div>
                       <p className="text-2xl font-extrabold" style={{ color: "#14211f" }}>{k.value}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{k.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{k.label}</p>
                     </div>
                   ))}
                 </div>
@@ -797,7 +797,7 @@ export default function AnalyticsPage() {
                                 style={{ height: `${Math.max((m.opened / maxVal) * 90, m.opened > 0 ? 4 : 0)}px` }} />
                             </div>
                           </div>
-                          <span className="text-[10px] font-medium" style={{ color: "#8a938f" }}>{m.label}</span>
+                          <span className="text-[10px] font-medium" style={{ color: "#949598" }}>{m.label}</span>
                         </div>
                       );
                     })}
@@ -831,8 +831,8 @@ export default function AnalyticsPage() {
               {emailStats.allTime.sent === 0 && (
                 <div className="card shadow-sm p-16 text-center">
                   <Mail size={28} className="mx-auto mb-3" style={{ color: "#c9c4b8" }} />
-                  <p className="text-sm" style={{ color: "#8a938f" }}>No emails logged yet.</p>
-                  <p className="text-xs mt-1" style={{ color: "#8a938f" }}>Send emails via lead timelines or blast campaigns to track open rates.</p>
+                  <p className="text-sm" style={{ color: "#949598" }}>No emails logged yet.</p>
+                  <p className="text-xs mt-1" style={{ color: "#949598" }}>Send emails via lead timelines or blast campaigns to track open rates.</p>
                 </div>
               )}
             </>
@@ -844,7 +844,7 @@ export default function AnalyticsPage() {
       {tab === "pipeline" && lostReasons.length > 0 && (
         <div className="card shadow-sm p-6">
           <h2 className="text-sm font-bold mb-1" style={{ color: "#14211f" }}>Why We Lose</h2>
-          <p className="text-xs mb-5" style={{ color: "#8a938f" }}>Breakdown of lost-reason tags across {kpis.lost} lost lead{kpis.lost !== 1 ? "s" : ""}</p>
+          <p className="text-xs mb-5" style={{ color: "#949598" }}>Breakdown of lost-reason tags across {kpis.lost} lost lead{kpis.lost !== 1 ? "s" : ""}</p>
           <div className="space-y-3">
             {lostReasons.map(r => {
               const pct = Math.round((r.count / kpis.lost) * 100);
@@ -852,7 +852,7 @@ export default function AnalyticsPage() {
                 <div key={r.reason}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold truncate max-w-[60%]" style={{ color: "#5a6663" }}>{r.reason}</span>
-                    <span className="text-xs" style={{ color: "#8a938f" }}>{r.count} lead{r.count !== 1 ? "s" : ""} · {pct}%</span>
+                    <span className="text-xs" style={{ color: "#949598" }}>{r.count} lead{r.count !== 1 ? "s" : ""} · {pct}%</span>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "#f1efe8" }}>
                     <div
@@ -901,10 +901,10 @@ export default function AnalyticsPage() {
                 ].map(k => (
                   <div key={k.label} className="card shadow-sm p-5">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: "#edf5f4" }}>
-                      <k.icon size={18} style={{ color: "#0a6b64" }} />
+                      <k.icon size={18} style={{ color: "#086c64" }} />
                     </div>
                     <p className="text-3xl font-extrabold" style={{ color: "#14211f" }}>{k.value}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>{k.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#949598" }}>{k.label}</p>
                   </div>
                 ))}
               </div>
@@ -916,7 +916,7 @@ export default function AnalyticsPage() {
                   <div className="card shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Daily Page Views</h2>
-                      <span className="text-xs" style={{ color: "#8a938f" }}>{traffic.since} → {traffic.until}</span>
+                      <span className="text-xs" style={{ color: "#949598" }}>{traffic.since} → {traffic.until}</span>
                     </div>
                     <div className="flex items-end gap-1 h-24">
                       {traffic.daily.map(d => {
@@ -926,7 +926,7 @@ export default function AnalyticsPage() {
                           <div key={d.timestamp} className="flex-1 flex flex-col items-center gap-1 group relative">
                             <div
                               className="w-full rounded-t-sm transition-all"
-                              style={{ height: h, background: "#0a6b64", opacity: 0.8 }}
+                              style={{ height: h, background: "#086c64", opacity: 0.8 }}
                               title={`${date}: ${d.pageviews} views, ${d.visitors} visitors`}
                             />
                             <div className="absolute bottom-full mb-1 hidden group-hover:block bg-[#14211f] text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none">
@@ -937,10 +937,10 @@ export default function AnalyticsPage() {
                       })}
                     </div>
                     <div className="flex justify-between mt-1">
-                      <span className="text-[10px]" style={{ color: "#8a938f" }}>
+                      <span className="text-[10px]" style={{ color: "#949598" }}>
                         {new Date(traffic.daily[0].timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
-                      <span className="text-[10px]" style={{ color: "#8a938f" }}>
+                      <span className="text-[10px]" style={{ color: "#949598" }}>
                         {new Date(traffic.daily[traffic.daily.length - 1].timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
                     </div>
@@ -953,7 +953,7 @@ export default function AnalyticsPage() {
                 <div className="card shadow-sm p-6">
                   <h2 className="text-sm font-bold mb-4" style={{ color: "#14211f" }}>Top Pages</h2>
                   {(!traffic.pages || traffic.pages.length === 0) ? (
-                    <p className="text-sm" style={{ color: "#8a938f" }}>No page data yet.</p>
+                    <p className="text-sm" style={{ color: "#949598" }}>No page data yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {traffic.pages.map(p => {
@@ -963,10 +963,10 @@ export default function AnalyticsPage() {
                           <div key={p.requestPath}>
                             <div className="flex items-center justify-between mb-0.5 gap-2">
                               <span className="text-xs font-medium truncate" style={{ color: "#14211f", maxWidth: 220 }}>{p.requestPath}</span>
-                              <span className="text-xs font-bold flex-shrink-0" style={{ color: "#0a6b64" }}>{p.pageviews.toLocaleString()}</span>
+                              <span className="text-xs font-bold flex-shrink-0" style={{ color: "#086c64" }}>{p.pageviews.toLocaleString()}</span>
                             </div>
                             <div className="h-1.5 rounded-full" style={{ background: "#f1efe8" }}>
-                              <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: "#0a6b64" }} />
+                              <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: "#086c64" }} />
                             </div>
                           </div>
                         );
@@ -979,7 +979,7 @@ export default function AnalyticsPage() {
                 <div className="card shadow-sm p-6">
                   <h2 className="text-sm font-bold mb-4" style={{ color: "#14211f" }}>Top Referrers</h2>
                   {(!traffic.referrers || traffic.referrers.length === 0) ? (
-                    <p className="text-sm" style={{ color: "#8a938f" }}>No referrer data yet.</p>
+                    <p className="text-sm" style={{ color: "#949598" }}>No referrer data yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {traffic.referrers.map(r => {
@@ -990,10 +990,10 @@ export default function AnalyticsPage() {
                           <div key={r.referrerHostname ?? "direct"}>
                             <div className="flex items-center justify-between mb-0.5 gap-2">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <ExternalLink size={10} style={{ color: "#8a938f", flexShrink: 0 }} />
+                                <ExternalLink size={10} style={{ color: "#949598", flexShrink: 0 }} />
                                 <span className="text-xs font-medium truncate" style={{ color: "#14211f" }}>{label}</span>
                               </div>
-                              <span className="text-xs font-bold flex-shrink-0" style={{ color: "#0a6b64" }}>{r.pageviews.toLocaleString()}</span>
+                              <span className="text-xs font-bold flex-shrink-0" style={{ color: "#086c64" }}>{r.pageviews.toLocaleString()}</span>
                             </div>
                             <div className="h-1.5 rounded-full" style={{ background: "#f1efe8" }}>
                               <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: "#084f4a" }} />
@@ -1017,17 +1017,17 @@ export default function AnalyticsPage() {
                         const Icon  = icon;
                         return (
                           <div key={d.deviceType} className="flex items-center gap-3">
-                            <Icon size={14} style={{ color: "#8a938f", flexShrink: 0 }} />
+                            <Icon size={14} style={{ color: "#949598", flexShrink: 0 }} />
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-0.5">
                                 <span className="text-xs font-medium capitalize" style={{ color: "#14211f" }}>{d.deviceType ?? "Unknown"}</span>
-                                <span className="text-xs" style={{ color: "#8a938f" }}>{pct}%</span>
+                                <span className="text-xs" style={{ color: "#949598" }}>{pct}%</span>
                               </div>
                               <div className="h-1.5 rounded-full" style={{ background: "#f1efe8" }}>
-                                <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: "#0a6b64" }} />
+                                <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: "#086c64" }} />
                               </div>
                             </div>
-                            <span className="text-xs font-bold w-10 text-right" style={{ color: "#0a6b64" }}>{d.pageviews.toLocaleString()}</span>
+                            <span className="text-xs font-bold w-10 text-right" style={{ color: "#086c64" }}>{d.pageviews.toLocaleString()}</span>
                           </div>
                         );
                       })}
@@ -1064,7 +1064,7 @@ export default function AnalyticsPage() {
               {/* ── Overview: source comparison ── */}
               {growthTab === "overview" && (
                 <div className="space-y-4">
-                  <p className="text-xs" style={{ color: "#8a938f" }}>
+                  <p className="text-xs" style={{ color: "#949598" }}>
                     Compare how each acquisition channel converts leads into enrolled students.
                   </p>
 
@@ -1086,7 +1086,7 @@ export default function AnalyticsPage() {
                           </div>
                           <div>
                             <p className="text-3xl font-extrabold" style={{ color: "#14211f" }}>{row.leads}</p>
-                            <p className="text-xs" style={{ color: "#8a938f" }}>total leads</p>
+                            <p className="text-xs" style={{ color: "#949598" }}>total leads</p>
                           </div>
                           <div className="space-y-2">
                             <div>
@@ -1123,7 +1123,7 @@ export default function AnalyticsPage() {
                         <thead>
                           <tr style={{ background: "#f8f6f1" }}>
                             {["Channel", "Leads", "Applied", "Apply Rate", "Enrolled", "Enroll Rate"].map(h => (
-                              <th key={h} className="text-left px-5 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>{h}</th>
+                              <th key={h} className="text-left px-5 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1141,11 +1141,11 @@ export default function AnalyticsPage() {
                                 <td className="px-5 py-3 font-semibold" style={{ color: "#14211f" }}>{row.leads}</td>
                                 <td className="px-5 py-3" style={{ color: "#5a6663" }}>{row.applied}</td>
                                 <td className="px-5 py-3">
-                                  <span className="font-bold" style={{ color: row.applyRate > 30 ? "#0a6b64" : "#5a6663" }}>{row.applyRate}%</span>
+                                  <span className="font-bold" style={{ color: row.applyRate > 30 ? "#086c64" : "#5a6663" }}>{row.applyRate}%</span>
                                 </td>
                                 <td className="px-5 py-3 font-bold" style={{ color: "#14211f" }}>{row.enrolled}</td>
                                 <td className="px-5 py-3">
-                                  <span className="font-bold text-sm" style={{ color: row.enrollRate > 20 ? "#0a6b64" : row.enrollRate > 10 ? "#92400e" : "#5a6663" }}>
+                                  <span className="font-bold text-sm" style={{ color: row.enrollRate > 20 ? "#086c64" : row.enrollRate > 10 ? "#92400e" : "#5a6663" }}>
                                     {row.enrollRate}%
                                   </span>
                                 </td>
@@ -1163,21 +1163,21 @@ export default function AnalyticsPage() {
               {growthTab === "events" && (
                 <div className="space-y-4">
                   {growthData.events.length === 0 ? (
-                    <div className="card shadow-sm p-12 text-center" style={{ color: "#8a938f" }}>
+                    <div className="card shadow-sm p-12 text-center" style={{ color: "#949598" }}>
                       <p>No events yet. Create your first event to track its pipeline performance.</p>
                     </div>
                   ) : (
                     <div className="card shadow-sm overflow-hidden">
                       <div className="px-6 py-4 border-b" style={{ borderColor: "#f0ede7" }}>
                         <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Events Pipeline</h2>
-                        <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>Which events are turning registrants into enrolled students?</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Which events are turning registrants into enrolled students?</p>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr style={{ background: "#f8f6f1" }}>
                               {["Event", "Type", "Registered", "Attended", "Attend %", "Applied", "Enrolled", "Enroll %"].map(h => (
-                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "#8a938f" }}>{h}</th>
+                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "#949598" }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -1186,7 +1186,7 @@ export default function AnalyticsPage() {
                               <tr key={ev.id} style={{ borderTop: i > 0 ? "1px solid #f0ede7" : "none" }}>
                                 <td className="px-4 py-3">
                                   <p className="font-semibold text-xs leading-snug max-w-[180px]" style={{ color: "#14211f" }}>{ev.title}</p>
-                                  <p className="text-[10px] mt-0.5" style={{ color: "#8a938f" }}>
+                                  <p className="text-[10px] mt-0.5" style={{ color: "#949598" }}>
                                     {new Date(ev.startsAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                   </p>
                                 </td>
@@ -1198,12 +1198,12 @@ export default function AnalyticsPage() {
                                 <td className="px-4 py-3 font-semibold" style={{ color: "#14211f" }}>{ev.registered}</td>
                                 <td className="px-4 py-3" style={{ color: "#5a6663" }}>{ev.attended}</td>
                                 <td className="px-4 py-3">
-                                  <span style={{ color: ev.attendRate > 60 ? "#0a6b64" : "#5a6663" }}>{ev.attendRate}%</span>
+                                  <span style={{ color: ev.attendRate > 60 ? "#086c64" : "#5a6663" }}>{ev.attendRate}%</span>
                                 </td>
                                 <td className="px-4 py-3" style={{ color: "#5a6663" }}>{ev.applied}</td>
                                 <td className="px-4 py-3 font-bold" style={{ color: "#14211f" }}>{ev.enrolled}</td>
                                 <td className="px-4 py-3">
-                                  <span className="font-bold" style={{ color: ev.enrollRate > 15 ? "#0a6b64" : ev.enrollRate > 5 ? "#92400e" : "#5a6663" }}>
+                                  <span className="font-bold" style={{ color: ev.enrollRate > 15 ? "#086c64" : ev.enrollRate > 5 ? "#92400e" : "#5a6663" }}>
                                     {ev.enrollRate}%
                                   </span>
                                 </td>
@@ -1221,39 +1221,39 @@ export default function AnalyticsPage() {
               {growthTab === "referrals" && (
                 <div className="space-y-4">
                   {growthData.referrals.length === 0 ? (
-                    <div className="card shadow-sm p-12 text-center" style={{ color: "#8a938f" }}>
+                    <div className="card shadow-sm p-12 text-center" style={{ color: "#949598" }}>
                       <p>No referral leads tracked yet. Leads tagged with source "Referral" appear here.</p>
                     </div>
                   ) : (
                     <div className="card shadow-sm overflow-hidden">
                       <div className="px-6 py-4 border-b" style={{ borderColor: "#f0ede7" }}>
                         <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Referral Leaderboard</h2>
-                        <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>Students and contacts ranked by enrolled referrals</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Students and contacts ranked by enrolled referrals</p>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr style={{ background: "#f8f6f1" }}>
                               {["#", "Referrer", "Code", "Leads", "Enrolled", "Conversion"].map(h => (
-                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>{h}</th>
+                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {growthData.referrals.map((ref, i) => (
                               <tr key={ref.code} style={{ borderTop: i > 0 ? "1px solid #f0ede7" : "none" }}>
-                                <td className="px-4 py-3 text-xs font-bold" style={{ color: "#8a938f" }}>#{i + 1}</td>
+                                <td className="px-4 py-3 text-xs font-bold" style={{ color: "#949598" }}>#{i + 1}</td>
                                 <td className="px-4 py-3">
                                   <p className="font-semibold text-xs" style={{ color: "#14211f" }}>{ref.referrerName ?? "—"}</p>
-                                  {ref.referrerEmail && <p className="text-[10px]" style={{ color: "#8a938f" }}>{ref.referrerEmail}</p>}
+                                  {ref.referrerEmail && <p className="text-[10px]" style={{ color: "#949598" }}>{ref.referrerEmail}</p>}
                                 </td>
                                 <td className="px-4 py-3">
                                   <code className="text-[11px] px-2 py-0.5 rounded" style={{ background: "#f1efe8", color: "#5a6663" }}>{ref.code}</code>
                                 </td>
                                 <td className="px-4 py-3 font-semibold" style={{ color: "#14211f" }}>{ref.leads}</td>
-                                <td className="px-4 py-3 font-bold" style={{ color: "#0a6b64" }}>{ref.enrolled}</td>
+                                <td className="px-4 py-3 font-bold" style={{ color: "#086c64" }}>{ref.enrolled}</td>
                                 <td className="px-4 py-3">
-                                  <span className="font-bold" style={{ color: ref.enrollRate > 30 ? "#0a6b64" : "#5a6663" }}>{ref.enrollRate}%</span>
+                                  <span className="font-bold" style={{ color: ref.enrollRate > 30 ? "#086c64" : "#5a6663" }}>{ref.enrollRate}%</span>
                                 </td>
                               </tr>
                             ))}
@@ -1269,21 +1269,21 @@ export default function AnalyticsPage() {
               {growthTab === "promo" && (
                 <div className="space-y-4">
                   {growthData.promoCodes.length === 0 ? (
-                    <div className="card shadow-sm p-12 text-center" style={{ color: "#8a938f" }}>
+                    <div className="card shadow-sm p-12 text-center" style={{ color: "#949598" }}>
                       <p>No promo codes yet. Create codes in Promo Codes to track their conversion performance.</p>
                     </div>
                   ) : (
                     <div className="card shadow-sm overflow-hidden">
                       <div className="px-6 py-4 border-b" style={{ borderColor: "#f0ede7" }}>
                         <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Promo Code Performance</h2>
-                        <p className="text-xs mt-0.5" style={{ color: "#8a938f" }}>Which codes are driving real enrollment?</p>
+                        <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Which codes are driving real enrollment?</p>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr style={{ background: "#f8f6f1" }}>
                               {["Code", "Label", "Discount", "Status", "Used", "Enrolled", "Conversion"].map(h => (
-                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>{h}</th>
+                                <th key={h} className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -1291,7 +1291,7 @@ export default function AnalyticsPage() {
                             {growthData.promoCodes.map((p, i) => (
                               <tr key={p.code} style={{ borderTop: i > 0 ? "1px solid #f0ede7" : "none" }}>
                                 <td className="px-4 py-3">
-                                  <code className="text-[11px] font-bold px-2 py-0.5 rounded" style={{ background: "#f1efe8", color: "#0a6b64" }}>{p.code}</code>
+                                  <code className="text-[11px] font-bold px-2 py-0.5 rounded" style={{ background: "#f1efe8", color: "#086c64" }}>{p.code}</code>
                                 </td>
                                 <td className="px-4 py-3 text-xs" style={{ color: "#5a6663" }}>{p.label ?? "—"}</td>
                                 <td className="px-4 py-3 text-xs font-semibold" style={{ color: "#14211f" }}>
@@ -1303,9 +1303,9 @@ export default function AnalyticsPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 font-semibold" style={{ color: "#14211f" }}>{p.leads}</td>
-                                <td className="px-4 py-3 font-bold" style={{ color: "#0a6b64" }}>{p.enrolled}</td>
+                                <td className="px-4 py-3 font-bold" style={{ color: "#086c64" }}>{p.enrolled}</td>
                                 <td className="px-4 py-3">
-                                  <span className="font-bold" style={{ color: p.enrollRate > 30 ? "#0a6b64" : "#5a6663" }}>{p.enrollRate}%</span>
+                                  <span className="font-bold" style={{ color: p.enrollRate > 30 ? "#086c64" : "#5a6663" }}>{p.enrollRate}%</span>
                                 </td>
                               </tr>
                             ))}

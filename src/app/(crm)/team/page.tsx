@@ -13,7 +13,7 @@ interface TeamMember {
   createdAt: string;
 }
 
-const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64] focus:bg-white";
+const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64] focus:bg-white";
 
 function RoleBadge({ role }: { role: string | null }) {
   if (role === "ADMIN") {
@@ -25,7 +25,7 @@ function RoleBadge({ role }: { role: string | null }) {
   }
   if (role === "MEMBER") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}>
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#edf5f4", color: "#086c64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}>
         <Users size={10} /> Member
       </span>
     );
@@ -167,9 +167,9 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#8a938f" }}>Vantage Career Accelerator</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 font-display" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <h1 className="text-2xl font-display font-semibold" style={{ color: "#14211f" }}>Team</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#8a938f" }}>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
             Manage who has access to the CRM and what they can do.
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function TeamPage() {
           <button
             onClick={() => { setShowInvite(true); setInviteResult(null); }}
             className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
-            style={{ background: "#0a6b64" }}
+            style={{ background: "#086c64" }}
           >
             <UserPlus size={15} /> Invite Member
           </button>
@@ -185,13 +185,13 @@ export default function TeamPage() {
       </div>
 
       {/* Role legend */}
-      <div className="flex gap-4 mb-5 text-xs" style={{ color: "#8a938f" }}>
+      <div className="flex gap-4 mb-5 text-xs" style={{ color: "#949598" }}>
         <span className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200"><Shield size={9} /> Admin</span>
           Full access — can invite, delete leads, view analytics
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#0a6b64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}><Users size={9} /> Member</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#edf5f4", color: "#086c64", borderWidth: 1, borderStyle: "solid", borderColor: "#c4dedd" }}><Users size={9} /> Member</span>
           Can view/edit leads and activities
         </span>
       </div>
@@ -199,17 +199,17 @@ export default function TeamPage() {
       {/* Member list */}
       <div className="card shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-12" style={{ color: "#8a938f" }}>
+          <div className="flex items-center justify-center py-12" style={{ color: "#949598" }}>
             <Loader2 size={20} className="animate-spin mr-2" /> Loading…
           </div>
         ) : members.length === 0 ? (
-          <div className="py-12 text-center text-sm" style={{ color: "#8a938f" }}>No team members yet.</div>
+          <div className="py-12 text-center text-sm" style={{ color: "#949598" }}>No team members yet.</div>
         ) : (
           members.map((m, i) => (
             <div key={m.id} className={i > 0 ? "border-t border-[#e4e0d6]" : ""}>
               <div className="flex items-center gap-4 px-5 py-4">
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ background: "linear-gradient(135deg, #0a6b64, #0d8a80)" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ background: "linear-gradient(135deg, #086c64, #0d8a80)" }}>
                   {(m.name ?? m.email)[0].toUpperCase()}
                 </div>
 
@@ -219,10 +219,10 @@ export default function TeamPage() {
                     <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{m.name ?? "—"}</p>
                     <RoleBadge role={m.crmRole} />
                     {m.id === currentUserId && (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: "#8a938f", background: "#f1efe8" }}>You</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: "#949598", background: "#f1efe8" }}>You</span>
                     )}
                   </div>
-                  <p className="text-xs truncate" style={{ color: "#8a938f" }}>{m.email}</p>
+                  <p className="text-xs truncate" style={{ color: "#949598" }}>{m.email}</p>
                   <p className="text-[11px] mt-0.5" style={{ color: "#c9c4b8" }}>Joined {formatDate(m.createdAt)}</p>
                 </div>
 
@@ -245,7 +245,7 @@ export default function TeamPage() {
                         disabled={changingRoleId === m.id}
                         title="Demote to Member"
                         className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-transparent transition disabled:opacity-50"
-                        style={{ color: "#0a6b64" }}
+                        style={{ color: "#086c64" }}
                         onMouseEnter={e => (e.currentTarget.style.background = "#edf5f4")}
                         onMouseLeave={e => (e.currentTarget.style.background = "")}
                       >
@@ -259,7 +259,7 @@ export default function TeamPage() {
                       title="Reset password"
                       className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition text-xs font-medium"
                       style={{ color: "#5a6663" }}
-                      onMouseEnter={e => { e.currentTarget.style.color = "#0a6b64"; e.currentTarget.style.background = "#edf5f4"; }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "#086c64"; e.currentTarget.style.background = "#edf5f4"; }}
                       onMouseLeave={e => { e.currentTarget.style.color = "#5a6663"; e.currentTarget.style.background = ""; }}
                     >
                       <Lock size={13} />
@@ -291,12 +291,12 @@ export default function TeamPage() {
                     <input
                       type="password" value={resetPw} onChange={e => setResetPw(e.target.value)}
                       placeholder="New password (8+ chars)" minLength={8}
-                      className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+                      className="flex-1 px-3 py-2 border border-[#e4e0d6] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]"
                     />
                     <button
                       type="submit" disabled={resetSaving || resetPw.length < 8}
                       className="px-3 py-2 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
-                      style={{ background: "#0a6b64" }}
+                      style={{ background: "#086c64" }}
                     >
                       {resetSaving ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />}
                       {resetSaving ? "Saving…" : "Save"}
@@ -321,9 +321,9 @@ export default function TeamPage() {
             <button
               onClick={() => { setShowInvite(false); setInviteResult(null); }}
               className="absolute top-4 right-4 p-1.5 rounded-lg transition"
-              style={{ color: "#8a938f" }}
+              style={{ color: "#949598" }}
               onMouseEnter={e => { e.currentTarget.style.color = "#14211f"; e.currentTarget.style.background = "#f1efe8"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "#8a938f"; e.currentTarget.style.background = ""; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#949598"; e.currentTarget.style.background = ""; }}
             >
               <X size={16} />
             </button>
@@ -352,7 +352,7 @@ export default function TeamPage() {
                 <label className="block text-sm font-medium mb-1" style={{ color: "#5a6663" }}>Role</label>
                 <select
                   value={inviteRole} onChange={e => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
-                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a6b64]"
+                  className="w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64]"
                   style={{ background: "#f8f6f1" }}
                 >
                   <option value="MEMBER">Member — can view/edit leads, not analytics or team</option>
@@ -389,7 +389,7 @@ export default function TeamPage() {
                   type="submit"
                   disabled={inviting || !inviteName.trim() || !inviteEmail.trim()}
                   className="flex-1 flex items-center justify-center gap-2 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-                  style={{ background: "#0a6b64" }}
+                  style={{ background: "#086c64" }}
                 >
                   {inviting ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
                   {inviting ? "Sending…" : "Send Invite"}

@@ -40,7 +40,7 @@ function ResetForm() {
     return (
       <div className="space-y-3">
         <p className="text-sm" style={{ color: "#5a6663" }}>Invalid or expired reset link.</p>
-        <Link href="/forgot-password" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "#0a6b64" }}>
+        <Link href="/forgot-password" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "#086c64" }}>
           Request a new one <ArrowRight size={14} />
         </Link>
       </div>
@@ -63,7 +63,7 @@ function ResetForm() {
           placeholder="At least 8 characters"
           className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
           style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
           onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
         />
       </div>
@@ -76,7 +76,7 @@ function ResetForm() {
           placeholder="Repeat new password"
           className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
           style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#0a6b64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
           onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
         />
       </div>
@@ -84,9 +84,9 @@ function ResetForm() {
       <button
         type="submit" disabled={loading}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50"
-        style={{ background: "#0a6b64" }}
+        style={{ background: "#086c64" }}
         onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#084f4a"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "#0a6b64"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "#086c64"; }}
       >
         {loading
           ? <><Loader2 size={15} className="animate-spin" /> Saving…</>
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f8f6f1" }}>
       <div className="w-full max-w-sm">
-        <img src="/vantage-logo.svg" alt="Vantage Career" className="h-7 w-auto object-contain mb-8" />
+        <img src="/vantage-logo-color.svg" alt="Vantage Career" className="h-7 w-auto object-contain mb-8" />
         <h1 className="text-2xl font-extrabold mb-1" style={{ color: "#14211f" }}>Set new password</h1>
         <p className="text-sm mb-8" style={{ color: "#5a6663" }}>Choose a new password for your CRM account.</p>
         <Suspense fallback={<p className="text-sm" style={{ color: "#5a6663" }}>Loading…</p>}>
@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
         <Link
           href="/login"
           className="inline-flex items-center gap-1.5 text-sm font-medium mt-6 transition-colors"
-          style={{ color: "#8a938f" }}
+          style={{ color: "#949598" }}
         >
           <ArrowLeft size={14} /> Back to login
         </Link>

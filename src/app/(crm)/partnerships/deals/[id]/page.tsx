@@ -297,7 +297,7 @@ export default function DealDetailPage() {
       <Link
         href="/partnerships/deals"
         className="inline-flex items-center gap-1.5 text-sm font-medium mb-5 transition hover:opacity-70"
-        style={{ color: "#8a938f" }}
+        style={{ color: "#949598" }}
       >
         <ArrowLeft size={14} /> Deals
       </Link>
@@ -316,7 +316,7 @@ export default function DealDetailPage() {
                     onChange={e => setTitleDraft(e.target.value)}
                     onBlur={saveTitle}
                     onKeyDown={e => { if (e.key === "Enter") saveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
-                    className="text-xl font-bold w-full border-b-2 border-[#0a6b64] bg-transparent focus:outline-none pb-1"
+                    className="text-xl font-bold w-full border-b-2 border-[#086c64] bg-transparent focus:outline-none pb-1"
                     style={{ color: "#14211f" }}
                   />
                 ) : (
@@ -329,7 +329,7 @@ export default function DealDetailPage() {
                     {deal.title}
                   </button>
                 )}
-                <p className="text-sm mt-0.5 flex items-center gap-1" style={{ color: "#8a938f" }}>
+                <p className="text-sm mt-0.5 flex items-center gap-1" style={{ color: "#949598" }}>
                   <Building2 size={12} /> {deal.orgName}
                 </p>
               </div>
@@ -368,21 +368,21 @@ export default function DealDetailPage() {
             <div className="flex items-center gap-4 p-3 rounded-xl text-sm" style={{ background: "#f8f6f1" }}>
               {val && (
                 <div className="flex items-center gap-1.5">
-                  <DollarSign size={14} style={{ color: "#0a6b64" }} />
-                  <span className="font-bold" style={{ color: "#0a6b64" }}>{fmt$(val)}</span>
-                  <span className="text-xs" style={{ color: "#8a938f" }}>total</span>
+                  <DollarSign size={14} style={{ color: "#086c64" }} />
+                  <span className="font-bold" style={{ color: "#086c64" }}>{fmt$(val)}</span>
+                  <span className="text-xs" style={{ color: "#949598" }}>total</span>
                 </div>
               )}
               {deal.seats && (
                 <div className="flex items-center gap-1.5">
-                  <Users size={14} style={{ color: "#8a938f" }} />
+                  <Users size={14} style={{ color: "#949598" }} />
                   <span className="font-semibold" style={{ color: "#5a6663" }}>{deal.seats} seats</span>
                 </div>
               )}
               {deal.assignedTo && (
                 <div className="flex items-center gap-1.5 ml-auto">
-                  <UserRound size={14} style={{ color: "#8a938f" }} />
-                  <span className="text-xs" style={{ color: "#8a938f" }}>{deal.assignedTo}</span>
+                  <UserRound size={14} style={{ color: "#949598" }} />
+                  <span className="text-xs" style={{ color: "#949598" }}>{deal.assignedTo}</span>
                 </div>
               )}
             </div>
@@ -402,7 +402,7 @@ export default function DealDetailPage() {
                     className={`text-xs font-semibold px-3 py-1 rounded-full transition ${
                       actType === t ? "text-white" : "border border-[#e4e0d6] hover:bg-[#f8f6f1]"
                     }`}
-                    style={actType === t ? { background: "#0a6b64" } : { color: "#5a6663" }}
+                    style={actType === t ? { background: "#086c64" } : { color: "#5a6663" }}
                   >
                     {t[0] + t.slice(1).toLowerCase()}
                   </button>
@@ -415,14 +415,14 @@ export default function DealDetailPage() {
                   onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) addActivity(); }}
                   placeholder={`Add a ${actType.toLowerCase()}…`}
                   rows={2}
-                  className="flex-1 text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40 resize-none"
+                  className="flex-1 text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40 resize-none"
                   style={{ color: "#14211f" }}
                 />
                 <button
                   onClick={addActivity}
                   disabled={addingAct || !actContent.trim()}
                   className="self-end text-white text-sm font-semibold px-4 py-2 rounded-xl transition disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0"
-                  style={{ background: "#0a6b64" }}
+                  style={{ background: "#086c64" }}
                 >
                   {addingAct ? <Loader2 size={13} className="animate-spin" /> : null}
                   Log
@@ -442,7 +442,7 @@ export default function DealDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#8a938f" }}>{act.type}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>{act.type}</span>
                         <span className="text-[10px]" style={{ color: "#c9c4b8" }}>
                           {new Date(act.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           {act.createdBy && ` · ${act.createdBy}`}
@@ -464,7 +464,7 @@ export default function DealDetailPage() {
           {/* Org / deal details */}
           <div className="bg-white border border-[#e4e0d6] rounded-3xl p-5">
             <h3 className="font-bold text-sm mb-4 flex items-center gap-2" style={{ color: "#14211f" }}>
-              <Building2 size={14} style={{ color: "#0a6b64" }} /> Organization
+              <Building2 size={14} style={{ color: "#086c64" }} /> Organization
             </h3>
             <div className="space-y-3">
               <InlineField
@@ -473,7 +473,7 @@ export default function DealDetailPage() {
                 onSave={v => patch({ orgName: v })}
               />
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Payment Type</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Payment Type</p>
                 <select
                   value={deal.paymentType ?? "ORG_INVOICE"}
                   onChange={e => patch({ paymentType: e.target.value })}
@@ -484,7 +484,7 @@ export default function DealDetailPage() {
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Assigned To</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Assigned To</p>
                 <select
                   value={deal.assignedTo ?? ""}
                   onChange={e => patch({ assignedTo: e.target.value || null })}
@@ -501,7 +501,7 @@ export default function DealDetailPage() {
           {/* Financials */}
           <div className="bg-white border border-[#e4e0d6] rounded-3xl p-5">
             <h3 className="font-bold text-sm mb-4 flex items-center gap-2" style={{ color: "#14211f" }}>
-              <DollarSign size={14} style={{ color: "#0a6b64" }} /> Financials
+              <DollarSign size={14} style={{ color: "#086c64" }} /> Financials
             </h3>
             <div className="space-y-3">
               <InlineNumberField label="Seats" value={deal.seats} onSave={v => patch({ seats: v })} />
@@ -509,8 +509,8 @@ export default function DealDetailPage() {
               <InlineNumberField label="Total Value Override ($)" value={deal.totalValue} onSave={v => patch({ totalValue: v })} />
               {val && (
                 <div className="pt-2 border-t border-[#e4e0d6]">
-                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>Computed Total</p>
-                  <p className="text-lg font-bold" style={{ color: "#0a6b64" }}>{fmt$(val)}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Computed Total</p>
+                  <p className="text-lg font-bold" style={{ color: "#086c64" }}>{fmt$(val)}</p>
                 </div>
               )}
             </div>
@@ -519,7 +519,7 @@ export default function DealDetailPage() {
           {/* Key dates */}
           <div className="bg-white border border-[#e4e0d6] rounded-3xl p-5">
             <h3 className="font-bold text-sm mb-4 flex items-center gap-2" style={{ color: "#14211f" }}>
-              <Calendar size={14} style={{ color: "#0a6b64" }} /> Key Dates
+              <Calendar size={14} style={{ color: "#086c64" }} /> Key Dates
             </h3>
             <div className="space-y-3">
               <DateField label="Proposal Sent" value={deal.proposalSentAt} onSave={v => patch({ proposalSentAt: v })} />
@@ -532,12 +532,12 @@ export default function DealDetailPage() {
           <div className="bg-white border border-[#e4e0d6] rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: "#14211f" }}>
-                <UserRound size={14} style={{ color: "#0a6b64" }} /> Contact
+                <UserRound size={14} style={{ color: "#086c64" }} /> Contact
               </h3>
               <button
                 onClick={() => setShowContactSearch(v => !v)}
                 className="text-xs font-semibold transition hover:opacity-70"
-                style={{ color: "#0a6b64" }}
+                style={{ color: "#086c64" }}
               >
                 {deal.contactLead ? "Change" : "Link"}
               </button>
@@ -546,7 +546,7 @@ export default function DealDetailPage() {
             {deal.contactLead ? (
               <Link href={`/leads/${deal.contactLead.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f8f6f1] transition">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-                  <span className="text-[10px] font-bold" style={{ color: "#0a6b64" }}>
+                  <span className="text-[10px] font-bold" style={{ color: "#086c64" }}>
                     {deal.contactLead.firstName[0]}{deal.contactLead.lastName[0]}
                   </span>
                 </div>
@@ -554,9 +554,9 @@ export default function DealDetailPage() {
                   <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>
                     {deal.contactLead.firstName} {deal.contactLead.lastName}
                   </p>
-                  <p className="text-xs truncate" style={{ color: "#8a938f" }}>{deal.contactLead.email}</p>
+                  <p className="text-xs truncate" style={{ color: "#949598" }}>{deal.contactLead.email}</p>
                   {deal.contactLead.company && (
-                    <p className="text-xs truncate" style={{ color: "#8a938f" }}>{deal.contactLead.company}</p>
+                    <p className="text-xs truncate" style={{ color: "#949598" }}>{deal.contactLead.company}</p>
                   )}
                 </div>
               </Link>
@@ -567,17 +567,17 @@ export default function DealDetailPage() {
             {showContactSearch && (
               <div className="mt-3">
                 <div className="relative">
-                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
                   <input
                     autoFocus
                     value={contactQuery}
                     onChange={e => setContactQuery(e.target.value)}
                     placeholder="Search by name or email…"
-                    className="w-full text-sm border border-[#e4e0d6] rounded-lg pl-7 pr-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                    className="w-full text-sm border border-[#e4e0d6] rounded-lg pl-7 pr-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                     style={{ color: "#14211f" }}
                   />
                 </div>
-                {searchingContact && <p className="text-xs mt-2" style={{ color: "#8a938f" }}>Searching…</p>}
+                {searchingContact && <p className="text-xs mt-2" style={{ color: "#949598" }}>Searching…</p>}
                 {contactResults.length > 0 && (
                   <div className="mt-2 border border-[#e4e0d6] rounded-xl overflow-hidden">
                     {contactResults.map(l => (
@@ -588,7 +588,7 @@ export default function DealDetailPage() {
                         style={{ color: "#14211f" }}
                       >
                         {l.firstName} {l.lastName}
-                        <span className="text-xs ml-1" style={{ color: "#8a938f" }}>{l.email}</span>
+                        <span className="text-xs ml-1" style={{ color: "#949598" }}>{l.email}</span>
                       </button>
                     ))}
                   </div>
@@ -601,9 +601,9 @@ export default function DealDetailPage() {
           <div className="bg-white border border-[#e4e0d6] rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: "#14211f" }}>
-                <Users size={14} style={{ color: "#0a6b64" }} /> Participants
+                <Users size={14} style={{ color: "#086c64" }} /> Participants
                 {deal.participants.length > 0 && (
-                  <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: "#0a6b64" }}>
+                  <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: "#086c64" }}>
                     {deal.participants.length}
                   </span>
                 )}
@@ -611,7 +611,7 @@ export default function DealDetailPage() {
               <button
                 onClick={() => setShowParticipantSearch(v => !v)}
                 className="text-xs font-semibold flex items-center gap-1 transition hover:opacity-70"
-                style={{ color: "#0a6b64" }}
+                style={{ color: "#086c64" }}
               >
                 <Plus size={12} /> Link
               </button>
@@ -628,11 +628,11 @@ export default function DealDetailPage() {
                   <div key={p.id} className="flex items-center gap-2 group">
                     <Link href={`/leads/${p.id}`} className="flex items-center gap-2 flex-1 min-w-0 p-2 rounded-xl hover:bg-[#f8f6f1] transition">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
-                        <span className="text-[9px] font-bold" style={{ color: "#0a6b64" }}>{p.firstName[0]}{p.lastName[0]}</span>
+                        <span className="text-[9px] font-bold" style={{ color: "#086c64" }}>{p.firstName[0]}{p.lastName[0]}</span>
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold truncate" style={{ color: "#14211f" }}>{p.firstName} {p.lastName}</p>
-                        <p className="text-[10px] truncate" style={{ color: "#8a938f" }}>{p.email}</p>
+                        <p className="text-[10px] truncate" style={{ color: "#949598" }}>{p.email}</p>
                       </div>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto flex-shrink-0 ${stgBadge}`}>
                         {p.stage}
@@ -643,7 +643,7 @@ export default function DealDetailPage() {
                       className="opacity-0 group-hover:opacity-100 p-1 rounded-lg transition hover:bg-red-50"
                       title="Unlink"
                     >
-                      <X size={12} style={{ color: "#8a938f" }} />
+                      <X size={12} style={{ color: "#949598" }} />
                     </button>
                   </div>
                 );
@@ -653,17 +653,17 @@ export default function DealDetailPage() {
             {showParticipantSearch && (
               <div className="mt-3">
                 <div className="relative">
-                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#8a938f" }} />
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#949598" }} />
                   <input
                     autoFocus
                     value={participantQuery}
                     onChange={e => setParticipantQuery(e.target.value)}
                     placeholder="Search by name or email…"
-                    className="w-full text-sm border border-[#e4e0d6] rounded-lg pl-7 pr-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+                    className="w-full text-sm border border-[#e4e0d6] rounded-lg pl-7 pr-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
                     style={{ color: "#14211f" }}
                   />
                 </div>
-                {searchingParticipant && <p className="text-xs mt-2" style={{ color: "#8a938f" }}>Searching…</p>}
+                {searchingParticipant && <p className="text-xs mt-2" style={{ color: "#949598" }}>Searching…</p>}
                 {participantResults.length > 0 && (
                   <div className="mt-2 border border-[#e4e0d6] rounded-xl overflow-hidden">
                     {participantResults
@@ -676,7 +676,7 @@ export default function DealDetailPage() {
                         style={{ color: "#14211f" }}
                       >
                         {l.firstName} {l.lastName}
-                        <span className="text-xs ml-1" style={{ color: "#8a938f" }}>{l.email}</span>
+                        <span className="text-xs ml-1" style={{ color: "#949598" }}>{l.email}</span>
                       </button>
                     ))}
                   </div>
@@ -705,7 +705,7 @@ export default function DealDetailPage() {
           </div>
 
           {saving && (
-            <div className="text-xs text-center py-1" style={{ color: "#8a938f" }}>Saving…</div>
+            <div className="text-xs text-center py-1" style={{ color: "#949598" }}>Saving…</div>
           )}
         </div>
       </div>
@@ -738,7 +738,7 @@ function InlineField({ label, value, onSave }: { label: string; value: string; o
 
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>{label}</p>
       {editing ? (
         <input
           autoFocus
@@ -746,7 +746,7 @@ function InlineField({ label, value, onSave }: { label: string; value: string; o
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
-          className="w-full text-sm border border-[#0a6b64] rounded-lg px-2 py-1 focus:outline-none"
+          className="w-full text-sm border border-[#086c64] rounded-lg px-2 py-1 focus:outline-none"
           style={{ color: "#14211f" }}
         />
       ) : (
@@ -774,7 +774,7 @@ function InlineNumberField({ label, value, onSave }: { label: string; value: num
 
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>{label}</p>
       {editing ? (
         <input
           autoFocus
@@ -783,7 +783,7 @@ function InlineNumberField({ label, value, onSave }: { label: string; value: num
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
-          className="w-full text-sm border border-[#0a6b64] rounded-lg px-2 py-1 focus:outline-none"
+          className="w-full text-sm border border-[#086c64] rounded-lg px-2 py-1 focus:outline-none"
           style={{ color: "#14211f" }}
         />
       ) : (
@@ -812,13 +812,13 @@ function DateField({ label, value, onSave }: { label: string; value: string | nu
 
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#8a938f" }}>{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>{label}</p>
       <input
         type="date"
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
-        className="w-full text-sm border border-[#e4e0d6] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40"
+        className="w-full text-sm border border-[#e4e0d6] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40"
         style={{ color: "#14211f" }}
       />
     </div>
@@ -843,10 +843,10 @@ function NotesField({ value, onSave }: { value: string | null; onSave: (v: strin
         onBlur={commit}
         rows={4}
         placeholder="Add notes about this deal…"
-        className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#0a6b64]/40 resize-none"
+        className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#086c64]/40 resize-none"
         style={{ color: "#14211f" }}
       />
-      {saved && <p className="text-[10px] mt-1" style={{ color: "#0a6b64" }}>Saved ✓</p>}
+      {saved && <p className="text-[10px] mt-1" style={{ color: "#086c64" }}>Saved ✓</p>}
     </div>
   );
 }
