@@ -35,29 +35,28 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex" style={{ background: "#f8f6f1" }}>
-      {/* Left brand panel */}
+      {/* Left brand panel — official logo on cream */}
       <div
-        className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10"
-        style={{ background: "linear-gradient(180deg, #086c64 0%, #084f4a 100%)" }}
+        className="hidden lg:flex flex-col justify-between w-[440px] flex-shrink-0 p-10"
+        style={{ background: "#f8f6f1", borderRight: "1px solid #e4e0d6" }}
       >
-        <div>
-          <img src="/vantage-logo.svg" alt="Vantage Career" className="h-8 w-auto object-contain" />
-        </div>
-        <div>
-          <p className="text-white/90 text-2xl font-bold leading-snug mb-3">
+        <div />
+        <div className="flex flex-col items-center text-center px-4">
+          <img src="/vantage-logo-stacked.svg" alt="Vantage Career" className="w-56 h-auto mb-10" />
+          <p className="text-xl font-semibold leading-snug mb-3" style={{ color: "#14211f" }}>
             Build experiences that give people skills, confidence, and agency.
           </p>
-          <p className="text-white/50 text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed" style={{ color: "#949598" }}>
             CRM · Admin access only
           </p>
         </div>
-        <p className="text-white/30 text-xs">
+        <p className="text-xs text-center" style={{ color: "#949598" }}>
           © {new Date().getFullYear()} Vantage Career Accelerator
         </p>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-6" style={{ background: "#ffffff" }}>
         <div className="w-full max-w-sm">
 
           {/* Mobile logo */}
