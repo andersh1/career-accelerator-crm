@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center text-center px-4">
           <img src="/vantage-logo-stacked.svg" alt="Vantage Career" className="w-56 h-auto mb-10" />
           <p className="text-xl font-semibold leading-snug mb-3" style={{ color: "#14211f" }}>
-            Build experiences that give people skills, confidence, and agency.
+            Launch your career the way a founder launches a company.
           </p>
           <p className="text-sm leading-relaxed" style={{ color: "#949598" }}>
             CRM · Admin access only
@@ -61,7 +61,7 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/vantage-mark-white.svg" alt="" aria-hidden
           className="absolute pointer-events-none select-none"
-          style={{ width: 620, right: -140, bottom: -120, opacity: 0.06 }} />
+          style={{ width: 560, right: -120, bottom: -80, opacity: 0.035 }} />
         <div className="w-full max-w-sm relative bg-white rounded-3xl p-8 sm:p-10"
           style={{ boxShadow: "0 24px 60px rgba(4,42,39,0.45), 0 2px 8px rgba(4,42,39,0.25)" }}>
 
