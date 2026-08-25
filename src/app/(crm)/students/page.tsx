@@ -38,6 +38,7 @@ export default function StudentsPage() {
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
   const [cohortFilter, setCohortFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,8 +69,12 @@ export default function StudentsPage() {
   useEffect(() => { load(); }, [load]);
 
   const cohortOptions = Array.from(new Set(students.map(s => s.cohort).filter(Boolean))).sort() as string[];
+  const activeCount = students.filter(s => s.stage !== "GRADUATED").length;
+  const gradCount   = students.filter(s => s.stage === "GRADUATED").length;
   const filtered = students.filter(s => {
     if (cohortFilter && s.cohort !== cohortFilter) return false;
+    if (statusFilter === "ACTIVE" && s.stage === "GRADUATED") return false;
+    if (statusFilter === "GRADUATED" && s.stage !== "GRADUATED") return false;
     if (!search.trim()) return true;
     return `${s.firstName} ${s.lastName} ${s.email} ${s.company ?? ""} ${s.jobTitle ?? ""}`
       .toLowerCase().includes(search.toLowerCase());
@@ -106,10 +111,25 @@ export default function StudentsPage() {
             <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
             <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>Students</h1>
             <p className="text-sm" style={{ color: "#949598" }}>
-              {loading ? "Loading…" : `${filtered.length} active student${filtered.length !== 1 ? "s" : ""}`}
+              {loading ? "Loading…"
+                : (cohortFilter || statusFilter || search.trim())
+                  ? `${filtered.length} shown · ${activeCount} active · ${gradCount} graduated`
+                  : `${activeCount} active · ${gradCount} graduated`}
             </p>
           </div>
         </div>
+
+        {/* Status filter */}
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          style={{ color: statusFilter ? "#14211f" : "#949598" }}
+        >
+          <option value="">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="GRADUATED">Graduated</option>
+        </select>
 
         {/* Cohort filter */}
         <select
