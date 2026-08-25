@@ -36,6 +36,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
+  const [cohortFilter, setCohortFilter] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,11 +63,13 @@ export default function StudentsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = search.trim()
-    ? students.filter(s =>
-        `${s.firstName} ${s.lastName} ${s.email} ${s.company ?? ""} ${s.jobTitle ?? ""}`
-          .toLowerCase().includes(search.toLowerCase()))
-    : students;
+  const cohortOptions = Array.from(new Set(students.map(s => s.cohort).filter(Boolean))).sort() as string[];
+  const filtered = students.filter(s => {
+    if (cohortFilter && s.cohort !== cohortFilter) return false;
+    if (!search.trim()) return true;
+    return `${s.firstName} ${s.lastName} ${s.email} ${s.company ?? ""} ${s.jobTitle ?? ""}`
+      .toLowerCase().includes(search.toLowerCase());
+  });
 
   const initials = (s: Student) =>
     `${s.firstName[0] ?? ""}${s.lastName[0] ?? ""}`.toUpperCase();
@@ -103,6 +106,17 @@ export default function StudentsPage() {
             </p>
           </div>
         </div>
+
+        {/* Cohort filter */}
+        <select
+          value={cohortFilter}
+          onChange={e => setCohortFilter(e.target.value)}
+          className="px-3 py-2 border border-[#e4e0d6] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          style={{ color: cohortFilter ? "#14211f" : "#949598" }}
+        >
+          <option value="">All cohorts</option>
+          {cohortOptions.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
 
         {/* Search */}
         <div className="relative w-64">

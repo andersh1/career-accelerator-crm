@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (existing) {
     await prisma.lead.update({
       where: { id: params.id },
-      data: { stage: "ENROLLED", enrolledUserId: existing.id, updatedAt: new Date() },
+      data: { stage: "ENROLLED", leadType: "STUDENT", enrolledUserId: existing.id, updatedAt: new Date() },
     });
     // Update cohort on existing user if provided
     if (cohortId) {
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   await prisma.lead.update({
     where: { id: params.id },
-    data: { stage: "ENROLLED", enrolledUserId: user.id, updatedAt: new Date() },
+    data: { stage: "ENROLLED", leadType: "STUDENT", enrolledUserId: user.id, updatedAt: new Date() },
   });
 
   await prisma.leadActivity.create({
