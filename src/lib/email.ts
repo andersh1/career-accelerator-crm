@@ -37,16 +37,15 @@ function wrap(title: string, body: string) {
 <body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1efe8;padding:40px 20px;">
   <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e0d6;">
-      <tr><td style="background:linear-gradient(180deg,#086c64 0%,#084f4a 100%);padding:28px 32px;">
-        <p style="margin:0;color:rgba(255,255,255,0.5);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Vantage Career Accelerator</p>
-        <h1 style="margin:8px 0 0;color:#ffffff;font-size:20px;font-weight:800;line-height:1.3;">${title}</h1>
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e4e0d6;box-shadow:0 2px 12px rgba(20,33,31,0.06);">
+      <tr><td style="background:linear-gradient(135deg,#086c64,#063f3a);padding:30px 36px;">
+        <img src="https://lms.vantagecareer.co/email-logo-white.png" alt="Vantage Career" height="30" style="display:block;height:30px;width:auto;margin-bottom:18px;"/>
+        <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.35;">${title}</h1>
       </td></tr>
-      <tr><td style="padding:32px;">${body}</td></tr>
-      <tr><td style="padding:20px 32px;border-top:1px solid #e4e0d6;background:#f8f6f1;">
-        <p style="margin:0;color:#949598;font-size:11px;text-align:center;">
-          Vantage Career Accelerator Program · <a href="${LMS_URL}" style="color:#086c64;text-decoration:none;">Open portal</a>
-        </p>
+      <tr><td style="padding:34px 36px;">${body}</td></tr>
+      <tr><td style="padding:22px 36px;border-top:1px solid #e4e0d6;background:#f8f6f1;">
+        <p style="margin:0 0 4px;color:#5a6663;font-size:12px;font-weight:600;text-align:center;">Vantage Career Accelerator</p>
+        <p style="margin:0;color:#949598;font-size:11px;text-align:center;">Launch your career the way a founder launches a company · <a href="${LMS_URL}" style="color:#086c64;text-decoration:none;font-weight:600;">Open your workspace</a></p>
       </td></tr>
     </table>
   </td></tr>

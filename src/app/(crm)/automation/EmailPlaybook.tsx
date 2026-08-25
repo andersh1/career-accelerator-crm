@@ -42,12 +42,12 @@ function wrap(title: string, body: string, cta?: { label: string }) {
   const button = cta ? `<a href="#" style="display:inline-block;background:${GREEN};color:#fff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">${cta.label}</a>` : "";
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:24px 14px;">
-    <div style="background:#086c64;border-radius:16px 16px 0 0;padding:22px 28px;">
-      <p style="margin:0;color:#bfe6e2;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Vantage Career Accelerator</p>
-      <h1 style="margin:8px 0 0;color:#fff;font-size:21px;font-weight:800;line-height:1.3;">${title}</h1>
+    <div style="background:linear-gradient(135deg,#086c64,#063f3a);border-radius:16px 16px 0 0;padding:24px 28px;">
+      <img src="https://lms.vantagecareer.co/email-logo-white.png" alt="Vantage Career" style="display:block;height:26px;width:auto;margin-bottom:14px;"/>
+      <h1 style="margin:0;color:#fff;font-size:21px;font-weight:800;line-height:1.35;">${title}</h1>
     </div>
     <div style="background:#fff;border:1px solid #e4e0d6;border-top:none;border-radius:0 0 16px 16px;padding:26px 28px;">${body}${button}</div>
-    <p style="margin:14px 0 0;text-align:center;font-size:11px;color:#949598;">Vantage Career Accelerator Program · Open portal</p>
+    <p style="margin:14px 0 0;text-align:center;font-size:11px;color:#949598;">Vantage Career Accelerator · Launch your career the way a founder launches a company</p>
   </div></body></html>`;
 }
 
@@ -79,7 +79,7 @@ const EMAILS: PlaybookEmail[] = [
     audience: "Enrolled student", when: "The moment we choose",
     trigger: "Lead convert (toggle ON) or Cohort → Publish. Publish emails each un-onboarded student exactly once — the official “LMS access” moment.",
     source: "CRM", templateKey: "student-invite",
-    sampleVars: { firstName: "Jordan", cohortLine: "You've been enrolled in **Career Accelerator — Cohort 2**." },
+    sampleVars: { firstName: "Jordan", cohortLine: "You're in **Career Accelerator — Cohort 2** — orientation is Tuesday, September 1." },
   },
   {
     id: "prework-reminder", name: "Pre-work Due Tomorrow",
