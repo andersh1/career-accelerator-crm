@@ -16,6 +16,7 @@ interface Student {
   company:     string | null;
   jobTitle:    string | null;
   tags:        string[];
+  stage:       string;
   notes:       string | null;
   linkedinUrl: string | null;
   updatedAt:   string;
@@ -53,7 +54,10 @@ export default function StudentsPage() {
       const lmsMap = new Map(lmsData.map(s => [s.email.toLowerCase(), s]));
       setStudents(leads.map(l => {
         const lms = lmsMap.get(l.email.toLowerCase());
-        return lms ? { ...l, cohort: lms.cohort, sectionsCompleted: lms.sectionsCompleted, lastActiveAt: lms.lastActiveAt, certificateIssuedAt: lms.certificateIssuedAt } : l;
+        const fallbackCohort = l.tags.includes("founding-cohort") ? "Founding Cohort (Summer 2026)" : null;
+        return lms
+          ? { ...l, cohort: lms.cohort ?? fallbackCohort, sectionsCompleted: lms.sectionsCompleted, lastActiveAt: lms.lastActiveAt, certificateIssuedAt: lms.certificateIssuedAt }
+          : { ...l, cohort: fallbackCohort };
       }));
     } else {
       setStudents(leads);
@@ -235,6 +239,9 @@ export default function StudentsPage() {
                       <Activity size={10} style={{ color: "#949598" }} />
                       {daysSince(s.lastActiveAt) === 0 ? "Active today" : `${daysSince(s.lastActiveAt)}d ago`}
                     </span>
+                  )}
+                  {s.stage === "GRADUATED" && (
+                    <span className="font-semibold px-1.5 py-0.5 rounded" style={{ background: "#f1efe8", color: "#5a6663" }}>🎓 Graduated</span>
                   )}
                   {s.certificateIssuedAt && (
                     <span className="font-semibold" style={{ color: "#059669" }}>🎓 Cert issued</span>

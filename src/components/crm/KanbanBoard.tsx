@@ -70,7 +70,7 @@ export default function KanbanBoard() {
     return matchesSearch && matchesSource;
   });
 
-  const kanbanStages = STAGES.filter(s => s.key !== "ENROLLED" && (showLost || s.key !== "LOST"));
+  const kanbanStages = STAGES.filter(s => s.key !== "ENROLLED" && s.key !== "GRADUATED" && (showLost || s.key !== "LOST"));
 
   async function moveStage(leadId: string, newStage: string, lostReason?: string) {
     if (newStage === "LOST" && lostReason === undefined) {

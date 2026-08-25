@@ -9,6 +9,7 @@ export const STAGES = [
   { key: "OFFER_SENT",    label: "Offer Sent",  color: "bg-amber-100 text-amber-700",   dot: "bg-amber-500"   },
   { key: "COMPLETED",     label: "Enrolled",        color: "bg-teal-100 text-teal-700",     dot: "bg-teal-500"    },
   { key: "ENROLLED",      label: "Active Student",  color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
+  { key: "GRADUATED",     label: "Graduated",   color: "bg-stone-100 text-stone-600",   dot: "bg-stone-400"   },
   { key: "DECLINED",      label: "Declined",    color: "bg-orange-100 text-orange-700", dot: "bg-orange-500"  },
   { key: "LOST",          label: "Lost",        color: "bg-red-100 text-red-700",       dot: "bg-red-400"     },
 ] as const;
