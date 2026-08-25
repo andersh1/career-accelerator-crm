@@ -20,11 +20,14 @@ export async function renderTemplate(
   key: string,
   defaults: { subject: string; body: string },
   vars: Record<string, string>
-): Promise<{ subject: string; bodyHtml: string }> {
-  let t = defaults;
+): Promise<{ subject: string; bodyHtml: string } | null> {
+  let t: { subject: string; body: string } = defaults;
   try {
-    const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
-    if (row) t = row;
+    const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true, enabled: true } });
+    if (row) {
+      if (!row.enabled) return null; // switched off in the Email Playbook
+      t = row;
+    }
   } catch { /* fall back to defaults */ }
   return { subject: subVars(t.subject, vars), bodyHtml: textToHtml(subVars(t.body, vars)) };
 }
@@ -113,6 +116,7 @@ export async function sendIntakeConfirmationEmail({
     subject: "We got your application, {{firstName}}! 🙌",
     body: `Hey {{firstName}},\n\nWe received your application to **Vantage Career Accelerator** and we're excited to learn more about you. A member of our team will reach out within **1–2 business days** to talk through your goals and next steps.\n\n**What happens next:**\n1. We review your application\n2. A coach schedules a discovery call with you\n3. You get matched to the right cohort\n\nIn the meantime, feel free to reply to this email with any questions. We're rooting for you.`,
   }, { firstName });
+  if (!t) return; // switched off in the Email Playbook
   await resend.emails.send({ from: FROM, to, subject: t.subject, html: wrap(t.subject, t.bodyHtml) });
 }
 
@@ -282,6 +286,7 @@ export async function sendStudentInviteEmail({
     firstName: studentName,
     cohortLine: cohort ? `You've been enrolled in **${cohort}**.` : "",
   });
+  if (!t) return; // switched off in the Email Playbook
   const body = `${t.bodyHtml}
     <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Set up my account →

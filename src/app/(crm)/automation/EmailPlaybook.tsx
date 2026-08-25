@@ -24,7 +24,7 @@ interface PlaybookEmail {
   preview?: string;         // static preview for non-editable emails
 }
 
-interface DbTemplate { key: string; name: string; subject: string; body: string; placeholders: string; updatedAt: string }
+interface DbTemplate { key: string; name: string; subject: string; body: string; placeholders: string; updatedAt: string; enabled: boolean; editable: boolean }
 
 const GREEN = "#086c64";
 
@@ -102,7 +102,7 @@ const EMAILS: PlaybookEmail[] = [
     subject: "Tonight 6:30 PM ET — Module 1: Self · what to bring",
     audience: "All cohort students", when: "9:00 AM ET on session day",
     trigger: "Per-module “what we're covering / what to bring” content + Zoom button + personal pre-work status. Content edited per module (ask Caleb).",
-    source: "LMS", guard: "Onboarded students only",
+    source: "LMS", guard: "Onboarded students only", templateKey: "session-day",
     preview: wrap("Tonight · 6:30 PM ET — Module 1: Self", `<p style="color:#334155;font-size:14px;">Hi Jordan,</p><p><span style="background:#fffbeb;color:#92400e;font-weight:700;padding:3px 9px;border-radius:999px;font-size:12px;">⚠️ Your pre-work isn't in yet</span></p><p style="margin:14px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;color:#949598;">Have ready when you join</p><ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;"><li>Your submitted pre-work open in the LMS</li><li>One story you're ready to tell out loud</li></ul>`, { label: "Join tonight's session →" }),
   },
   {
@@ -118,7 +118,7 @@ const EMAILS: PlaybookEmail[] = [
     subject: "Your week at Vantage Career Accelerator",
     audience: "All cohort students", when: "Mondays, early morning",
     trigger: "Data-driven weekly summary: sections completed, progress %, what's ahead.",
-    source: "LMS", guard: "Onboarded students only",
+    source: "LMS", guard: "Onboarded students only", templateKey: "weekly-digest",
     preview: wrap("Your week in the program", `<p style="color:#334155;font-size:15px;">Hi Jordan,</p><p style="color:#334155;font-size:15px;">Last week you completed <strong>5 sections</strong> — you're <strong>38%</strong> through the program. This week: Module 4 (Experiment).</p>`),
   },
   {
@@ -134,7 +134,7 @@ const EMAILS: PlaybookEmail[] = [
     subject: "📋 Today's Calls (3) — Tuesday, September 9",
     audience: "Each coach with calls today", when: "8:00 AM ET daily (only on days with 1-on-1s)",
     trigger: "One email per coach: each student's pre-work answers, questions, private notes, assignment status, call-sheet link.",
-    source: "LMS",
+    source: "LMS", templateKey: "coach-digest",
     preview: wrap("📋 Today's 1-on-1 Calls", `<p style="font-size:13px;color:#5a6663;">3 sessions today</p><div style="border:1px solid #e4e0d6;border-radius:10px;padding:12px 14px;margin-top:8px;color:#334155;font-size:14px;"><strong>Jordan Miles</strong> · 2:00 PM ET · Module 1<br/><span style="font-size:12px;"><span style="color:${GREEN};font-weight:700;">✓ Prework</span> · <span style="color:#949598;">Assignment not in yet</span></span></div>`),
   },
   {
@@ -183,7 +183,7 @@ export function EmailPlaybook() {
               const e = byId[id];
               const dbT = e.templateKey ? templates[e.templateKey] : undefined;
               return (
-                <div key={e.id} className="card p-4 flex items-start gap-3.5">
+                <div key={e.id} className={`card p-4 flex items-start gap-3.5 ${dbT && !dbT.enabled ? "opacity-60" : ""}`}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#edf5f4" }}>
                     <Mail size={15} style={{ color: GREEN }} />
                   </div>
@@ -191,21 +191,41 @@ export function EmailPlaybook() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-bold" style={{ color: "#14211f" }}>{e.name}</p>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: e.source === "LMS" ? "#edf5f4" : "#fef7e8", color: e.source === "LMS" ? GREEN : "#b45309" }}>{e.source}</span>
-                      {e.templateKey && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5" style={{ background: "#edf5f4", color: GREEN }}><Pencil size={9} /> Editable</span>}
+                      {dbT?.editable && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5" style={{ background: "#edf5f4", color: GREEN }}><Pencil size={9} /> Editable</span>}
                       {e.guard && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#f1efe8", color: "#5a6663" }}>🔒 {e.guard}</span>}
+                      {dbT && !dbT.enabled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: "#fee2e2", color: "#b91c1c" }}>OFF — not sending</span>}
                     </div>
-                    <p className="text-xs mt-1 italic" style={{ color: "#5a6663" }}>&ldquo;{dbT?.subject ?? e.subject}&rdquo;</p>
+                    <p className="text-xs mt-1 italic" style={{ color: "#5a6663" }}>&ldquo;{dbT?.editable ? dbT.subject : e.subject}&rdquo;</p>
                     <div className="flex items-start gap-4 mt-1.5 flex-wrap text-[11px]" style={{ color: "#949598" }}>
                       <span className="flex items-center gap-1"><Users size={11} /> {e.audience}</span>
                       <span className="flex items-center gap-1"><Clock size={11} /> {e.when}</span>
                     </div>
                     <p className="text-[11px] mt-1 flex items-start gap-1" style={{ color: "#949598" }}><Zap size={11} className="mt-0.5 flex-shrink-0" /> {e.trigger}</p>
                   </div>
-                  <button onClick={() => setOpen(e)}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border flex-shrink-0 hover:shadow-sm transition"
-                    style={{ borderColor: "#e4e0d6", color: GREEN }}>
-                    {e.templateKey ? <><Pencil size={12} /> Edit</> : <><Eye size={12} /> Preview</>}
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {dbT && (
+                      <button
+                        title={dbT.enabled ? "Sending is ON — click to switch off" : "Sending is OFF — click to switch on"}
+                        onClick={async () => {
+                          const next = !dbT.enabled;
+                          setTemplates(prev => ({ ...prev, [dbT.key]: { ...dbT, enabled: next } }));
+                          const res = await fetch("/api/crm/email-templates", {
+                            method: "PATCH", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ key: dbT.key, enabled: next }),
+                          });
+                          if (!res.ok) setTemplates(prev => ({ ...prev, [dbT.key]: dbT }));
+                        }}
+                        className="relative w-10 h-6 rounded-full transition-colors"
+                        style={{ background: dbT.enabled ? GREEN : "#e4e0d6" }}>
+                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${dbT.enabled ? "translate-x-5" : "translate-x-1"}`} />
+                      </button>
+                    )}
+                    <button onClick={() => setOpen(e)}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:shadow-sm transition"
+                      style={{ borderColor: "#e4e0d6", color: GREEN }}>
+                      {dbT?.editable ? <><Pencil size={12} /> Edit</> : <><Eye size={12} /> Preview</>}
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -214,7 +234,7 @@ export function EmailPlaybook() {
       ))}
 
       {open && (
-        open.templateKey && templates[open.templateKey]
+        open.templateKey && templates[open.templateKey]?.editable
           ? <TemplateEditor email={open} template={templates[open.templateKey]}
               onClose={() => setOpen(null)}
               onSaved={t => setTemplates(prev => ({ ...prev, [t.key]: t }))} />

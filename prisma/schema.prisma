@@ -841,6 +841,8 @@ model EmailTemplate {
   subject      String
   body         String
   placeholders String   @default("")
+  enabled      Boolean  @default(true)
+  editable     Boolean  @default(true)
   updatedAt    DateTime @default(now()) @updatedAt
   updatedBy    String?
 }
