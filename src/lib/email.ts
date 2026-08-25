@@ -4,6 +4,31 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const FROM = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
 const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
+// ── DB-backed templates (editable in Automation → Email Playbook) ────────────
+import { prisma } from "@/lib/prisma";
+function subVars(s: string, vars: Record<string, string>) {
+  return s.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
+}
+function textToHtml(t: string) {
+  const esc = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc.trim().split(/\n\n+/).map(p =>
+    `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">${p
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br/>")}</p>`).join("");
+}
+export async function renderTemplate(
+  key: string,
+  defaults: { subject: string; body: string },
+  vars: Record<string, string>
+): Promise<{ subject: string; bodyHtml: string }> {
+  let t = defaults;
+  try {
+    const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
+    if (row) t = row;
+  } catch { /* fall back to defaults */ }
+  return { subject: subVars(t.subject, vars), bodyHtml: textToHtml(subVars(t.body, vars)) };
+}
+
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
 <body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -84,33 +109,11 @@ export async function sendIntakeConfirmationEmail({
   to: string; firstName: string;
 }) {
   if (!resend) return;
-  const subject = `We got your application, ${firstName}! 🙌`;
-  const body = `
-    <p style="margin:0 0 16px;color:#475569;font-size:15px;">Hey ${firstName},</p>
-    <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
-      We received your application to <strong>Vantage Career Accelerator</strong> and we're excited to learn more about you.
-      A member of our team will reach out within <strong>1–2 business days</strong> to talk through your goals and next steps.
-    </p>
-    <div style="background:#f0f4ff;border:1px solid #c7d7fd;border-radius:12px;padding:20px;margin:20px 0;">
-      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#3730a3;text-transform:uppercase;letter-spacing:1px;">What happens next</p>
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">
-        <span style="background:#3b82f6;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;padding:4px;">1</span>
-        <p style="margin:0;color:#334155;font-size:14px;">We review your application</p>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">
-        <span style="background:#3b82f6;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;padding:4px;">2</span>
-        <p style="margin:0;color:#334155;font-size:14px;">A coach schedules a discovery call with you</p>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <span style="background:#3b82f6;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;padding:4px;">3</span>
-        <p style="margin:0;color:#334155;font-size:14px;">You get matched to the right cohort</p>
-      </div>
-    </div>
-    <p style="margin:0;color:#64748b;font-size:13px;line-height:1.7;">
-      In the meantime, feel free to reply to this email with any questions. We're rooting for you.
-    </p>
-  `;
-  await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+  const t = await renderTemplate("intake-confirmation", {
+    subject: "We got your application, {{firstName}}! 🙌",
+    body: `Hey {{firstName}},\n\nWe received your application to **Vantage Career Accelerator** and we're excited to learn more about you. A member of our team will reach out within **1–2 business days** to talk through your goals and next steps.\n\n**What happens next:**\n1. We review your application\n2. A coach schedules a discovery call with you\n3. You get matched to the right cohort\n\nIn the meantime, feel free to reply to this email with any questions. We're rooting for you.`,
+  }, { firstName });
+  await resend.emails.send({ from: FROM, to, subject: t.subject, html: wrap(t.subject, t.bodyHtml) });
 }
 
 export async function sendGraduationEmail({
@@ -272,20 +275,17 @@ export async function sendStudentInviteEmail({
   to: string; studentName: string; resetUrl: string; cohort?: string;
 }) {
   if (!resend) return;
-  const subject = "Welcome to Vantage Career Accelerator — Set up your account";
-  const cohortBlock = cohort
-    ? `<p style="margin:0 0 16px;color:#334155;font-size:14px;">You've been enrolled in <strong>${cohort}</strong>.</p>`
-    : "";
-  const body = `
-    <p style="margin:0 0 16px;color:#475569;font-size:15px;">Hi ${studentName},</p>
-    <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
-      You've been enrolled in the <strong>Vantage Career Accelerator</strong> program. Click below to set your password and access your student portal.
-    </p>
-    ${cohortBlock}
+  const t = await renderTemplate("student-invite", {
+    subject: "Welcome to Vantage Career Accelerator — Set up your account",
+    body: `Hi {{firstName}},\n\nYou've been enrolled in the **Vantage Career Accelerator** program. Click below to set your password and access your student portal.\n\n{{cohortLine}}`,
+  }, {
+    firstName: studentName,
+    cohortLine: cohort ? `You've been enrolled in **${cohort}**.` : "",
+  });
+  const body = `${t.bodyHtml}
     <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
       Set up my account →
     </a>
-    <p style="margin:0;color:#94a3b8;font-size:12px;">This link expires in 7 days. If you didn't expect this email, you can ignore it.</p>
-  `;
-  await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+    <p style="margin:0;color:#94a3b8;font-size:12px;">This link expires in 7 days. If you didn't expect this email, you can ignore it.</p>`;
+  await resend.emails.send({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
 }

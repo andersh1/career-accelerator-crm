@@ -833,3 +833,14 @@ model CrmIssue {
   @@index([status])
   @@index([assignee])
 }
+
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  name         String
+  subject      String
+  body         String
+  placeholders String   @default("")
+  updatedAt    DateTime @default(now()) @updatedAt
+  updatedBy    String?
+}
