@@ -138,9 +138,10 @@ export async function GET() {
 
     // All enrolled students for at-risk check
     prisma.user.findMany({
-      where: { role: "STUDENT", cohortId: { not: null } },
+      // Only onboarded students can be "at risk" — pre-launch cohorts stay quiet.
+      where: { role: "STUDENT", cohortId: { not: null }, onboardedAt: { not: null } },
       select: {
-        id: true, name: true, email: true, cohort: true,
+        id: true, name: true, email: true, cohort: true, onboardedAt: true,
         progress: { orderBy: { completedAt: "desc" }, take: 1, select: { completedAt: true } },
       },
     }),
@@ -187,8 +188,9 @@ export async function GET() {
     spotsLeft: c.capacity ? Math.max(0, c.capacity - c._count.users) : null,
   }));
 
-  // At-risk students: no LMS activity in last 7 days
+  // At-risk students: onboarded 7+ days with no LMS activity in the last 7 days
   const atRiskStudents = enrolledUsers.filter(u => {
+    if (u.onboardedAt && u.onboardedAt > sevenDaysAgo) return false; // just joined — give them a week
     const last = u.progress[0]?.completedAt;
     return !last || last < sevenDaysAgo;
   }).slice(0, 10);
