@@ -55,6 +55,39 @@ function wrap(title: string, body: string) {
 
 const CRM_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
+
+/** Send a test render of a DB template (sample data) to an admin's inbox. */
+export async function sendTemplateTest(key: string, to: string): Promise<{ ok: boolean; reason?: string }> {
+  if (!resend) return { ok: false, reason: "Email not configured" };
+  const SAMPLES: Record<string, { vars: Record<string, string>; cta?: string; ctaUrl?: string }> = {
+    "intake-confirmation": { vars: { firstName: "Jordan" } },
+    "student-invite": {
+      vars: { firstName: "Jordan", cohortLine: "You're in **Career Accelerator — Cohort 2** — orientation is Tuesday, September 1." },
+      cta: "Set up my account →", ctaUrl: LMS_URL,
+    },
+    "prework-reminder": {
+      vars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "Sunday, September 6" },
+      cta: "Go to Pre-work →", ctaUrl: `${LMS_URL}/modules`,
+    },
+    "session-reminder": {
+      vars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", sessionDate: "Tuesday, Sep 8 · 6:30 PM ET" },
+      cta: "Open Dashboard →", ctaUrl: `${LMS_URL}/dashboard`,
+    },
+    "re-engagement": { vars: { firstName: "Jordan" }, cta: "Open Dashboard →", ctaUrl: `${LMS_URL}/dashboard` },
+  };
+  const sample = SAMPLES[key];
+  if (!sample) return { ok: false, reason: "No test sample for this template" };
+  const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
+  if (!row) return { ok: false, reason: "Template not found" };
+  const subject = subVars(row.subject, sample.vars);
+  const button = sample.cta
+    ? `<a href="${sample.ctaUrl}" style="display:inline-block;background:#086c64;color:#fff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">${sample.cta}</a>`
+    : "";
+  const html = wrap(subject, textToHtml(subVars(row.body, sample.vars)) + button);
+  const { error } = await resend.emails.send({ from: FROM, to, subject: `[TEST] ${subject}`, html });
+  return error ? { ok: false, reason: error.message } : { ok: true };
+}
+
 export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: string; name: string; resetUrl: string }) {
   if (!resend) return { ok: false, error: "No API key" };
   const subject = "Reset your Vantage Career Accelerator CRM password";

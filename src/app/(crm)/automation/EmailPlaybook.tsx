@@ -262,6 +262,7 @@ function TemplateEditor({ email, template, onClose, onSaved }: {
   const [subject, setSubject] = useState(template.subject);
   const [body, setBody] = useState(template.body);
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [testState, setTestState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function scheduleSave(nextSubject: string, nextBody: string) {
@@ -297,7 +298,27 @@ function TemplateEditor({ email, template, onClose, onSaved }: {
               {state === "idle" && "Changes save automatically"}
             </span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X size={16} style={{ color: "#949598" }} /></button>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={testState === "sending"}
+              onClick={async () => {
+                setTestState("sending");
+                const res = await fetch("/api/crm/email-templates/test", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ key: template.key }),
+                });
+                setTestState(res.ok ? "sent" : "failed");
+                setTimeout(() => setTestState("idle"), 4000);
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border hover:shadow-sm transition disabled:opacity-50"
+              style={{ borderColor: "#e4e0d6", color: GREEN }}>
+              {testState === "sending" ? <><Loader2 size={12} className="animate-spin" /> Sending…</>
+                : testState === "sent" ? <><CheckCircle2 size={12} /> Sent to your inbox</>
+                : testState === "failed" ? "Failed — try again"
+                : <><Mail size={12} /> Email me a test</>}
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100"><X size={16} style={{ color: "#949598" }} /></button>
+          </div>
         </div>
         <div className="flex-1 grid md:grid-cols-2 min-h-0">
           {/* Editor */}
