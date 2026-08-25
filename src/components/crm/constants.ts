@@ -1,6 +1,7 @@
 export const STAGES = [
   { key: "WAITLIST",      label: "Waitlist",    color: "bg-sky-100 text-sky-700",       dot: "bg-sky-400"     },
   { key: "LEAD",          label: "Lead",        color: "bg-slate-100 text-slate-700",   dot: "bg-slate-400"   },
+  { key: "WAITING_TO_MEET", label: "Waiting to Meet", color: "bg-cyan-100 text-cyan-700", dot: "bg-cyan-500"  },
   { key: "CONTACTED",     label: "Contacted",   color: "bg-blue-100 text-blue-700",     dot: "bg-blue-500"    },
   { key: "APPLIED",       label: "Applied",     color: "bg-sky-100 text-sky-700",       dot: "bg-sky-500"     },
   { key: "STRATEGY_CALL", label: "Interviewed", color: "bg-violet-100 text-violet-700", dot: "bg-violet-500"  },
@@ -20,6 +21,7 @@ export const SOURCES = [
   { key: "WEBSITE",         label: "Website"           },
   { key: "EVENT",           label: "Event"             },
   { key: "COLD_OUTREACH",   label: "Cold Outreach"     },
+  { key: "DIRECT_MAIL",     label: "Direct Mail"       },
   { key: "PAID_AD",         label: "Paid Ad"           },
   { key: "OTHER",           label: "Other"             },
 ];
@@ -47,6 +49,7 @@ export function nextgenSubSourceLabel(key: string | null | undefined) {
 export const LEAD_TYPES = [
   { key: "WAITLIST",    label: "Waitlist",    color: "bg-sky-100 text-sky-700"         },
   { key: "APPLICATION", label: "Application", color: "bg-violet-100 text-violet-700"   },
+  { key: "CONSULTATION", label: "Consultation", color: "bg-cyan-100 text-cyan-700"     },
   { key: "STUDENT",     label: "Student",     color: "bg-emerald-100 text-emerald-700" },
   { key: "PARTNER",     label: "Partner",     color: "bg-amber-100 text-amber-700"     },
   { key: "PARENT",      label: "Parent",      color: "bg-orange-100 text-orange-700"   },

@@ -53,7 +53,7 @@ const SECTIONS: Section[] = [
     articles: [
       {
         title: "What is the Pipeline?",
-        body:  "The Pipeline is your pre-enrollment sales board. Every new lead starts here and moves through stages: Lead → Contacted → Qualified → Proposal. Once someone enrolls in the program they exit the pipeline and appear in the Students view instead.",
+        body:  "The Pipeline is your pre-enrollment sales board. Every new lead starts here and moves through stages: Lead → Waiting to Meet → Contacted → Qualified → Proposal. Once someone enrolls in the program they exit the pipeline and appear in the Students view instead.",
       },
       {
         title: "How do I move a lead?",
@@ -61,7 +61,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "What do the stages mean?",
-        body:  "Lead — new contact, not yet reached out to.\nContacted — you've sent a message or had a first call.\nQualified — confirmed interest and they meet the program criteria.\nProposal — offer or acceptance discussion is in progress.\n\nLost contacts can be shown by toggling 'Show Lost' at the top of the board.",
+        body:  "Lead — new contact, not yet reached out to.\nWaiting to Meet — requested a free consultation (usually from the website or a direct-mail postcard) and needs a call scheduled. These arrive automatically from the /postcard consultation form.\nContacted — you've sent a message or had a first call.\nQualified — confirmed interest and they meet the program criteria.\nProposal — offer or acceptance discussion is in progress.\n\nLost contacts can be shown by toggling 'Show Lost' at the top of the board.",
       },
       {
         title: "What is the score badge?",
@@ -119,7 +119,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "What is Contact Type?",
-        body:  "Contact Type separates your contacts into four groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.",
+        body:  "Contact Type separates your contacts into groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Consultation — requested a free consultation call (often a parent, via the website or direct mail)\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.",
       },
       {
         title: "How do I add a new contact?",
