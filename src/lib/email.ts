@@ -75,7 +75,7 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
     },
     "re-engagement": { vars: { firstName: "Jordan" }, cta: "Open Dashboard →", ctaUrl: `${LMS_URL}/dashboard` },
     "assignment-reminder": {
-      vars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "Sunday, September 13" },
+      vars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "tomorrow night — Friday, September 11" },
       cta: "Open the Assignment →", ctaUrl: `${LMS_URL}/modules`,
     },
   };

@@ -108,11 +108,11 @@ const EMAILS: PlaybookEmail[] = [
   },
   {
     id: "assignment-reminder", name: "Assignment Due Reminder",
-    subject: "Jordan, your Module 1 assignment is due Sunday",
-    audience: "Students who haven't submitted", when: "9:00 AM ET, three days after each live session (Friday for Tuesday sessions)",
-    trigger: "Assignment due by end of session week (Sunday). One reminder per student per module; submitters never emailed.",
+    subject: "Jordan, your Module 1 assignment is due tomorrow night",
+    audience: "Students who haven't submitted", when: "9:00 AM ET the day before the Friday deadline (Thursday, for Tuesday sessions)",
+    trigger: "Assignment due Friday night of the session week. One reminder per student per module; submitters never emailed.",
     source: "LMS", guard: "Onboarded students only", templateKey: "assignment-reminder",
-    sampleVars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "Sunday, September 13" },
+    sampleVars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "tomorrow night — Friday, September 11" },
   },
   {
     id: "booking", name: "1-on-1 Booking Confirmation",
