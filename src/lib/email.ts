@@ -74,6 +74,10 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
       cta: "Open Dashboard →", ctaUrl: `${LMS_URL}/dashboard`,
     },
     "re-engagement": { vars: { firstName: "Jordan" }, cta: "Open Dashboard →", ctaUrl: `${LMS_URL}/dashboard` },
+    "assignment-reminder": {
+      vars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "Sunday, September 13" },
+      cta: "Open the Assignment →", ctaUrl: `${LMS_URL}/modules`,
+    },
   };
   const sample = SAMPLES[key];
   if (!sample) return { ok: false, reason: "No test sample for this template" };

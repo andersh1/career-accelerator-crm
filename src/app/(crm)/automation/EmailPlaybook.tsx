@@ -56,6 +56,7 @@ const CTA_BY_KEY: Record<string, string> = {
   "prework-reminder": "Go to Pre-work →",
   "session-reminder": "Open Dashboard →",
   "re-engagement": "Open Dashboard →",
+  "assignment-reminder": "Open the Assignment →",
 };
 
 const EMAILS: PlaybookEmail[] = [
@@ -106,6 +107,14 @@ const EMAILS: PlaybookEmail[] = [
     preview: wrap("Tonight · 6:30 PM ET — Module 1: Self", `<p style="color:#334155;font-size:14px;">Hi Jordan,</p><p><span style="background:#fffbeb;color:#92400e;font-weight:700;padding:3px 9px;border-radius:999px;font-size:12px;">⚠️ Your pre-work isn't in yet</span></p><p style="margin:14px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;color:#949598;">Have ready when you join</p><ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;"><li>Your submitted pre-work open in the LMS</li><li>One story you're ready to tell out loud</li></ul>`, { label: "Join tonight's session →" }),
   },
   {
+    id: "assignment-reminder", name: "Assignment Due Reminder",
+    subject: "Jordan, your Module 1 assignment is due Sunday",
+    audience: "Students who haven't submitted", when: "9:00 AM ET, three days after each live session (Friday for Tuesday sessions)",
+    trigger: "Assignment due by end of session week (Sunday). One reminder per student per module; submitters never emailed.",
+    source: "LMS", guard: "Onboarded students only", templateKey: "assignment-reminder",
+    sampleVars: { firstName: "Jordan", moduleNumber: "1", moduleTitle: "Self", dueDate: "Sunday, September 13" },
+  },
+  {
     id: "booking", name: "1-on-1 Booking Confirmation",
     subject: "📅 Your weekly 1-on-1 time is locked in (8 sessions)",
     audience: "Student + coach (both)", when: "Instantly on booking",
@@ -150,7 +159,7 @@ const EMAILS: PlaybookEmail[] = [
 const PHASES: { label: string; ids: string[] }[] = [
   { label: "Before enrollment", ids: ["intake", "app-alert"] },
   { label: "Enrollment (nothing sends until you choose)", ids: ["invite"] },
-  { label: "Weekly rhythm during the program", ids: ["prework-reminder", "session-tomorrow", "session-day", "booking", "weekly-digest", "nudge", "coach-digest"] },
+  { label: "Weekly rhythm during the program", ids: ["prework-reminder", "session-tomorrow", "session-day", "assignment-reminder", "booking", "weekly-digest", "nudge", "coach-digest"] },
   { label: "Close", ids: ["graduation"] },
 ];
 
