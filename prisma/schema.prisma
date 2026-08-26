@@ -466,6 +466,7 @@ model Lead {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([email])
   @@index([stage])
   @@index([deletedAt])
   @@index([deletedAt, updatedAt])
