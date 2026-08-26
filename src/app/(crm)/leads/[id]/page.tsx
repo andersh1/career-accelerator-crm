@@ -67,6 +67,9 @@ export default function LeadDetailPage() {
   const [movingStage,   setMovingStage]   = useState(false);
   const [lostReasonPrompt, setLostReasonPrompt] = useState<string | null>(null);
   const [crmUsers, setCrmUsers] = useState<{ id: string; name: string | null; email: string }[]>([]);
+  const [showFollowUpNudge, setShowFollowUpNudge] = useState(false);
+  const [draftingFollowUp,  setDraftingFollowUp]  = useState(false);
+  const [draft, setDraft] = useState<{ subject: string; body: string } | null>(null);
   useEffect(() => {
     fetch("/api/crm/users").then(r => r.json()).then(d => { if (Array.isArray(d)) setCrmUsers(d); }).catch(() => {});
   }, []);
@@ -141,10 +144,28 @@ export default function LeadDetailPage() {
       setActContent("");
       await load();
       success("Activity logged.");
+      if (actType === "CALL" || actType === "MEETING") setShowFollowUpNudge(true);
     } else {
       toastError("Failed to log activity");
     }
     setAddingAct(false);
+  }
+
+  async function draftFollowUp() {
+    setDraftingFollowUp(true);
+    try {
+      const res = await fetch(`/api/crm/leads/${id}/draft-followup`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.subject) {
+        setDraft({ subject: d.subject, body: d.body });
+        setShowFollowUpNudge(false);
+        setShowComposer(true);
+      } else {
+        toastError(d.error === "notConfigured" ? "AI drafting isn't configured." : "Couldn't draft the email — try again.");
+      }
+    } finally {
+      setDraftingFollowUp(false);
+    }
   }
 
   async function convertLead() {
@@ -645,12 +666,33 @@ export default function LeadDetailPage() {
           {/* Email Composer */}
           {showComposer && (
             <EmailComposer
+              key={draft ? draft.subject : "blank"}
               leadId={id}
               leadName={`${lead.firstName} ${lead.lastName}`}
               leadEmail={lead.email}
-              onSent={async () => { await load(); success("Email sent and logged to timeline."); }}
-              onClose={() => setShowComposer(false)}
+              initialSubject={draft?.subject}
+              initialBody={draft?.body}
+              onSent={async () => { setDraft(null); await load(); success("Email sent and logged to timeline."); }}
+              onClose={() => { setDraft(null); setShowComposer(false); }}
             />
+          )}
+
+          {/* Follow-up nudge after logging a call/meeting */}
+          {showFollowUpNudge && !showComposer && (
+            <div className="flex items-center gap-3 rounded-2xl border px-4 py-3" style={{ borderColor: "#d0e8e6", background: "#edf5f4" }}>
+              <Sparkles size={15} style={{ color: "#086c64" }} className="flex-shrink-0" />
+              <p className="text-sm flex-1" style={{ color: "#084f4a" }}>
+                Nice — want Claude to draft the follow-up email from your notes?
+              </p>
+              <button onClick={draftFollowUp} disabled={draftingFollowUp}
+                className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg transition disabled:opacity-60"
+                style={{ background: "#086c64" }}>
+                {draftingFollowUp ? "Drafting…" : "Draft follow-up"}
+              </button>
+              <button onClick={() => setShowFollowUpNudge(false)} className="text-xs font-medium" style={{ color: "#949598" }}>
+                Dismiss
+              </button>
+            </div>
           )}
 
           <div className="card shadow-sm p-5">

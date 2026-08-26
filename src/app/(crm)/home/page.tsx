@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import {
   CheckCircle2, Circle, AlertCircle, Clock, TrendingUp,
   Users, Zap, AlertTriangle, Activity, ChevronRight,
-  DollarSign, Loader2, RefreshCw, Target, BookOpen,
+  DollarSign, Loader2, RefreshCw, Target, BookOpen, Sparkles,
 } from "lucide-react";
 import { stageInfo, ACTIVITY_META } from "@/components/crm/constants";
 
@@ -119,6 +119,35 @@ export default function HomePage() {
       if (Array.isArray(d)) setMySessions(d);
     }).catch(() => {});
   }, []);
+
+  // ── AI daily brief ─────────────────────────────────────────────────────────
+  interface BriefItem { title: string; why: string; leadId: string | null; urgency: "high" | "medium" | "low" }
+  interface Brief { headline: string; items: BriefItem[]; generatedAt: string }
+  const [brief, setBrief] = useState<Brief | null>(null);
+  const [briefLoading, setBriefLoading] = useState(true);
+  const generateBrief = useCallback(async () => {
+    setBriefLoading(true);
+    try {
+      const res = await fetch("/api/crm/daily-brief", { method: "POST" });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.brief) setBrief(d.brief);
+      }
+    } catch {} finally { setBriefLoading(false); }
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/crm/daily-brief");
+        const d = res.ok ? await res.json() : null;
+        if (cancelled) return;
+        if (d?.brief) { setBrief(d.brief); setBriefLoading(false); }
+        else await generateBrief();
+      } catch { if (!cancelled) setBriefLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [generateBrief]);
 
   useEffect(() => {
     if (searchParams.get("denied") === "1") {
@@ -243,6 +272,53 @@ export default function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── LEFT column (2/3) ── */}
         <div className="lg:col-span-2 space-y-5">
+
+          {/* ── AI Daily Brief ── */}
+          <div className="rounded-2xl border p-5" style={{ borderColor: "#d0e8e6", background: "linear-gradient(135deg, #f4faf9 0%, #edf5f4 100%)" }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles size={15} style={{ color: "#086c64" }} />
+              <h2 className="font-bold" style={{ color: "#084f4a" }}>Today&apos;s Brief</h2>
+              <button
+                onClick={generateBrief}
+                disabled={briefLoading}
+                title="Regenerate"
+                className="ml-auto flex items-center gap-1 text-[11px] font-semibold transition disabled:opacity-50"
+                style={{ color: "#086c64" }}>
+                <RefreshCw size={11} className={briefLoading ? "animate-spin" : ""} />
+                {briefLoading ? "Thinking…" : "Refresh"}
+              </button>
+            </div>
+            {briefLoading && !brief ? (
+              <p className="text-sm py-2" style={{ color: "#949598" }}>Claude is reading the pipeline, tasks, and today&apos;s sessions…</p>
+            ) : brief ? (
+              <>
+                <p className="text-sm font-medium mb-3" style={{ color: "#14211f" }}>{brief.headline}</p>
+                <div className="space-y-2">
+                  {brief.items.map((item, i) => {
+                    const inner = (
+                      <div className="flex items-start gap-2.5 rounded-xl bg-white/80 border px-3.5 py-2.5 hover:shadow-sm transition"
+                        style={{ borderColor: "#e4e0d6" }}>
+                        <span className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: item.urgency === "high" ? "#dc2626" : item.urgency === "medium" ? "#d97706" : "#086c64" }} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#14211f" }}>{item.title}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "#5a6663" }}>{item.why}</p>
+                        </div>
+                      </div>
+                    );
+                    return item.leadId
+                      ? <Link key={i} href={`/leads/${item.leadId}`} className="block">{inner}</Link>
+                      : <div key={i}>{inner}</div>;
+                  })}
+                </div>
+                <p className="text-[10px] mt-2.5" style={{ color: "#949598" }}>
+                  Generated {new Date(brief.generatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET · refreshes daily
+                </p>
+              </>
+            ) : (
+              <p className="text-sm py-2" style={{ color: "#949598" }}>Brief unavailable — try Refresh.</p>
+            )}
+          </div>
 
           {/* ── New Applications ── */}
           {newApplications.length > 0 && (

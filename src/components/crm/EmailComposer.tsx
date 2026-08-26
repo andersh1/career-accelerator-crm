@@ -10,13 +10,15 @@ interface Props {
   leadEmail: string;
   onSent:   () => void;        // refresh timeline after send
   onClose:  () => void;
+  initialSubject?: string;
+  initialBody?:    string;
 }
 
-export default function EmailComposer({ leadId, leadName, leadEmail, onSent, onClose }: Props) {
+export default function EmailComposer({ leadId, leadName, leadEmail, onSent, onClose, initialSubject, initialBody }: Props) {
   const firstName = leadName.split(" ")[0] || leadName;
 
-  const [subject,    setSubject]    = useState("");
-  const [body,       setBody]       = useState("");
+  const [subject,    setSubject]    = useState(initialSubject ?? "");
+  const [body,       setBody]       = useState(initialBody ?? "");
   const [sending,    setSending]    = useState(false);
   const [error,      setError]      = useState("");
   const [showTpls,   setShowTpls]   = useState(false);
