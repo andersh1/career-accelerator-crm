@@ -114,6 +114,30 @@ export async function POST(req: NextRequest) {
 
   const isApplication = leadType?.trim() === "APPLICATION";
 
+  // Append city/state from ZIP (best-effort, never blocks the intake)
+  let city: string | null = null;
+  let state: string | null = null;
+  const cleanZip = zip?.trim().slice(0, 10) || null;
+  if (cleanZip && /^\d{5}/.test(cleanZip)) {
+    try {
+      const geoRes = await fetch(`https://api.zippopotam.us/us/${cleanZip.slice(0, 5)}`, {
+        signal: AbortSignal.timeout(2500),
+      });
+      if (geoRes.ok) {
+        const geo = await geoRes.json();
+        const place = geo?.places?.[0];
+        city  = place?.["place name"] ?? null;
+        state = place?.["state abbreviation"] ?? null;
+      }
+    } catch {
+      // ZIP lookup unavailable — save the ZIP alone
+    }
+  }
+
+  const normalizedRole = ["PARENT", "STUDENT"].includes(personaRole?.trim().toUpperCase() ?? "")
+    ? personaRole!.trim().toUpperCase()
+    : null;
+
   const lead = await prisma.lead.create({
     data: {
       firstName:   firstName.trim(),
@@ -134,6 +158,14 @@ export async function POST(req: NextRequest) {
       utmTerm:     utmTerm?.trim()      || null,
       promoCode:    promoCode?.trim().toUpperCase()    || null,
       referralCode: referralCode?.trim().toUpperCase() || null,
+      personaRole:  normalizedRole,
+      zip:          cleanZip,
+      city,
+      state,
+      studentFirstName: studentFirstName?.trim() || null,
+      studentLastName:  studentLastName?.trim()  || null,
+      studentEmail:     studentEmail?.trim().toLowerCase() || null,
+      studentPhone:     studentPhone?.trim()     || null,
     },
   });
 

@@ -147,7 +147,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "What is Contact Type?",
-        body:  "Contact Type separates your contacts into groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Consultation — requested a free consultation call (often a parent, via the website or direct mail)\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.",
+        body:  "Contact Type separates your contacts into groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Consultation — requested a free consultation call (often a parent, via the website or direct mail)\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.\n\nWebsite forms also record who filled out the form — a Parent or the Student (shown as a chip on the lead record; parents get a 'Their Student' section with the student's contact info) — plus their home ZIP code with city/state appended automatically.",
       },
       {
         title: "How do I add a new contact?",

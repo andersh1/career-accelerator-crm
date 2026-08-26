@@ -36,6 +36,10 @@ interface Lead {
   utmSource: string | null; utmMedium: string | null; utmCampaign: string | null; utmContent: string | null; utmTerm: string | null;
   promoCode: string | null;
   referralCode: string | null;
+  personaRole: string | null;
+  zip: string | null; city: string | null; state: string | null;
+  studentFirstName: string | null; studentLastName: string | null;
+  studentEmail: string | null; studentPhone: string | null;
   outcomeStatus: string | null; outcomeCompany: string | null; outcomeRole: string | null; outcomeSalary: number | null;
   outcomeStartDate: string | null; outcomeNotes: string | null; outcomeUpdatedAt: string | null;
   enrolledUserId: string | null;
@@ -330,7 +334,37 @@ export default function LeadDetailPage() {
                   LinkedIn Profile ↗
                 </a>
               )}
+              {lead.personaRole && (
+                <div className="flex items-center gap-2.5 text-sm" style={{ color: "#5a6663" }}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${lead.personaRole === "PARENT" ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700"}`}>
+                    {lead.personaRole === "PARENT" ? "Parent (submitted for their student)" : "Student"}
+                  </span>
+                </div>
+              )}
+              {(lead.zip || lead.city) && (
+                <div className="flex items-center gap-2.5 text-sm" style={{ color: "#5a6663" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#f1efe8" }}>
+                    📍
+                  </div>
+                  {[lead.city, lead.state].filter(Boolean).join(", ")}{lead.city ? " " : ""}{lead.zip}
+                </div>
+              )}
             </div>
+
+            {lead.personaRole === "PARENT" && (lead.studentFirstName || lead.studentEmail) && (
+              <div className="mt-4 pt-4 border-t" style={{ borderColor: "#e4e0d6" }}>
+                <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "#949598" }}>Their Student</p>
+                <p className="text-sm font-semibold" style={{ color: "#14211f" }}>
+                  {[lead.studentFirstName, lead.studentLastName].filter(Boolean).join(" ") || "Name not provided"}
+                </p>
+                {lead.studentEmail && (
+                  <a href={`mailto:${lead.studentEmail}`} className="block text-sm mt-1 hover:opacity-70" style={{ color: "#086c64" }}>{lead.studentEmail}</a>
+                )}
+                {lead.studentPhone && (
+                  <a href={`tel:${lead.studentPhone}`} className="block text-sm mt-0.5 hover:opacity-70" style={{ color: "#5a6663" }}>{lead.studentPhone}</a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Pipeline card */}
