@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || (session as { user?: { role?: string } }).user?.role !== "ADMIN")
+  if (!session || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN")
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   // ── Source summary ────────────────────────────────────────────────────────────

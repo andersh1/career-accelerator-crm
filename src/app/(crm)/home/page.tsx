@@ -428,14 +428,22 @@ export default function HomePage() {
         <div className="space-y-5">
 
           {/* My upcoming 1-on-1s (from the LMS) */}
-          {mySessions.length > 0 && (
-            <div className="card p-5">
+          <div className="card p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Clock size={15} style={{ color: "#086c64" }} />
                 <h2 className="font-bold" style={{ color: "#14211f" }}>My 1-on-1s</h2>
                 <a href="https://lms.vantagecareer.co/admin/1on1" target="_blank" rel="noreferrer"
                   className="ml-auto text-[11px] font-semibold" style={{ color: "#086c64" }}>All →</a>
               </div>
+              {mySessions.length === 0 && (
+                <div className="rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
+                  <p className="text-sm" style={{ color: "#14211f" }}>No upcoming sessions.</p>
+                  <p className="text-[11px] mt-1" style={{ color: "#949598" }}>
+                    Students book through your Calendly links — set them in{" "}
+                    <Link href="/settings" className="font-semibold" style={{ color: "#086c64" }}>Settings → Profile → Booking Links</Link>.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2.5">
                 {mySessions.slice(0, 5).map(s => (
                   <a key={s.id}
@@ -453,8 +461,7 @@ export default function HomePage() {
                   </a>
                 ))}
               </div>
-            </div>
-          )}
+          </div>
 
           {/* Pipeline snapshot */}
           <div className="card p-5">

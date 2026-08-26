@@ -18,6 +18,53 @@ interface Section {
 
 const sections: Section[] = [
   {
+    id: "ask-claude",
+    icon: Sparkles,
+    title: "Ask Claude",
+    color: "text-violet-600 bg-violet-50",
+    items: [
+      { title: "What it is", desc: "An AI assistant wired directly into the CRM database. Go to Ask Claude in the sidebar (CRM section) and ask in plain English — it can look up any student, read their application, pre-work, and assignments, and list who's missing work.", tip: "Admin only" },
+      { title: "Example questions", desc: "\"Who hasn't submitted Module 1 pre-work?\" · \"Summarize Rodrigo's application\" · \"Which students look at risk?\" — the suggestion chips on the page are one-click starters." },
+      { title: "Saving notes", desc: "Ask Claude can write notes to a student's record for you: say \"Add a note to Julia's record that…\" and choose lead activity (visible on the lead timeline) or private coach note (only coaches see it)." },
+    ],
+  },
+  {
+    id: "email-playbook",
+    icon: Mail,
+    title: "Email Playbook",
+    color: "text-orange-600 bg-orange-50",
+    items: [
+      { title: "What it is", desc: "Every automated student email lives in Automation → Email Playbook: application confirmation, LMS invite, pre-work reminder, session reminder, assignment reminder, re-engagement, plus switch-only sends (morning-of session brief, weekly digest, coach digest).", tip: "Admin only" },
+      { title: "Edit any template", desc: "Click a template card to open the editor. Change the subject or body — edits autosave, and the live preview on the right shows exactly what the student receives. Use {{firstName}}-style placeholders listed under the editor." },
+      { title: "Turn emails on/off", desc: "Each template has its own toggle. OFF means that email silently skips — nothing is queued or sent. Turn Student Invite ON before publishing a cohort, or invite emails won't go out." },
+      { title: "Test before enabling", desc: "Click \"Email me a test\" in any editor to send yourself that template with sample data, marked [TEST] in the subject." },
+      { title: "The master switch", desc: "No student emails send at all until their cohort is Published in Cohorts. Publish is the master switch; template toggles are the fine-grained control on top of it." },
+    ],
+  },
+  {
+    id: "students",
+    icon: Users,
+    title: "Students & Cohorts",
+    color: "text-green-700 bg-green-50",
+    items: [
+      { title: "Who shows under Students", desc: "Anyone converted from the pipeline with lead type Student, merged with their live LMS progress (pre-work, assignments, last activity)." },
+      { title: "Filter by cohort & status", desc: "Use the two dropdowns at the top of Students: pick a cohort, and switch between Active and Graduated. The header shows honest counts for each." },
+      { title: "Graduated stage", desc: "When a cohort finishes, move its students to the Graduated stage — they stay under Students for history and outcomes, but leave the active pipeline and all counts. The founding cohort lives there now." },
+      { title: "Closing out a cohort", desc: "Archive a finished cohort with the power icon on its card in Cohorts. (The Graduate button is different — it emails certificates.)" },
+    ],
+  },
+  {
+    id: "booking-links",
+    icon: Calendar,
+    title: "Booking Links (1-on-1s & Office Hours)",
+    color: "text-cyan-700 bg-cyan-50",
+    items: [
+      { title: "Where to set them", desc: "Settings → Profile → Booking Links. Two fields: your Calendly URL (coaching 1-on-1s — shows on the LMS 1-on-1 page) and your Office Hours URL (quick unstick sessions — shows on the LMS Office Hours page).", tip: "Per coach" },
+      { title: "If students see no booking option", desc: "The LMS hides a booking lane when its link is empty — set both URLs here and the buttons appear immediately." },
+      { title: "Your sessions at a glance", desc: "Booked 1-on-1s appear in the My 1-on-1s card on the CRM Home, with links to each student's call sheet." },
+    ],
+  },
+  {
     id: "leads",
     icon: Users,
     title: "Contacts & Leads",
@@ -238,7 +285,7 @@ const sections: Section[] = [
     items: [
       { title: "What automation rules do", desc: "Automation rules are background jobs that trigger on CRM events (like a lead moving to Applied) or run on a daily cron. They remove the most repetitive manual tasks.", tip: "Admin only" },
       { title: "Accessing rules", desc: "Go to Admin → Automation. Rules are pre-built and listed with an on/off toggle — flip the toggle to pause any rule without losing its config. Changes take effect immediately." },
-      { title: "Rule triggers", desc: "Stage-change rules fire the moment a lead is updated (e.g. 'Move to Enrolled → send welcome email'). Cron rules fire once daily at 8 AM UTC (e.g. 'Cold lead nudge → ping in Slack')." },
+      { title: "Rule triggers", desc: "Stage-change rules fire the moment a lead is updated (e.g. 'Move to Enrolled → send welcome email'). Cron rules fire on their daily schedules — see the Automated Jobs section below for exact times." },
       { title: "Outbound webhooks", desc: "The Webhooks section lets you register any HTTPS endpoint to receive a POST payload when CRM events happen — new lead, stage change, enrollment. Use this to connect the CRM to Zapier, Make, or your own backend." },
       { title: "Webhook payload", desc: "Each webhook POST sends { event, timestamp, data } with the full lead or enrollment object in data. Verify the X-CRM-Secret header against your secret to confirm the source." },
     ],
@@ -288,6 +335,7 @@ const sections: Section[] = [
       { title: "Daily notifications", desc: "Runs at 12 PM UTC — checks for cold leads (14+ days inactive) and queues CRM notifications." },
       { title: "Event reminders", desc: "Runs at 2 PM UTC daily — finds events 7 days out (sends 7-day reminder) and events 24 hours out (sends 24-hour reminder). Each reminder is sent once and flagged so it doesn't duplicate. Requires CRON_SECRET env var on Vercel.", tip: "Vercel cron" },
       { title: "Weekly report", desc: "Runs Monday at 8 AM UTC — sends the leadership digest to all Admins via email." },
+      { title: "Gmail sync", desc: "Runs at 9 AM UTC — pulls replies from the connected Gmail inbox onto lead timelines." },
     ],
   },
 ];

@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const crmRole = (session?.user as { crmRole?: string } | undefined)?.crmRole;
+  if (!session || crmRole !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   // Group leads by referralCode, count referrals and enrollments
   const groups = await prisma.lead.groupBy({

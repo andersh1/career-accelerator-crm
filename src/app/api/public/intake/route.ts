@@ -54,6 +54,12 @@ export async function POST(req: NextRequest) {
     utmTerm,
     promoCode,
     referralCode,
+    personaRole,
+    zip,
+    studentFirstName,
+    studentLastName,
+    studentEmail,
+    studentPhone,
   } = body as Record<string, string | undefined>;
 
   // Required field validation

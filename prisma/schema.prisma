@@ -110,6 +110,20 @@ model Lead {
   leadType    String?  @default("WAITLIST")
   // WAITLIST | APPLICATION | STUDENT | PARTNER | CONTACT
 
+  // Who filled out the form — parents increasingly submit on behalf of students
+  personaRole String?  // PARENT | STUDENT
+
+  // Home ZIP (the student's family home) + geo appended server-side from ZIP
+  zip         String?
+  city        String?
+  state       String?
+
+  // Student contact info when a PARENT submitted the form
+  studentFirstName String?
+  studentLastName  String?
+  studentEmail     String?
+  studentPhone     String?
+
   lostReason    String?
   assignedTo    String?  // admin user email
   priority      String   @default("NORMAL") // LOW | NORMAL | HIGH | URGENT

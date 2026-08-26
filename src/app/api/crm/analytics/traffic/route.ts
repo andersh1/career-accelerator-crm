@@ -8,7 +8,7 @@ const TEAM_ID     = "team_Nvu1yh8J9J7fl7hAoTRdV1i4";
 const BASE        = "https://api.vercel.com/v1/query/web-analytics";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
-  return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
+  return !session || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN";
 }
 
 async function vFetch(path: string, params: Record<string, string>) {

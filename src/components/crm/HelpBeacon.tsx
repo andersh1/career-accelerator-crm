@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Kanban, GraduationCap, BookOpen,
   UserRound, MessageSquare, Calendar, Mail, CheckSquare,
   Zap, BarChart2, LifeBuoy, ExternalLink, Users,
-  TrendingUp, Share2, Tag, Bug,
+  TrendingUp, Share2, Tag, Bug, Sparkles,
 } from "lucide-react";
 
 interface Article {
@@ -21,6 +21,34 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
+  {
+    label: "Ask Claude",
+    icon: <Sparkles size={14} />,
+    articles: [
+      {
+        title: "What is Ask Claude?",
+        body:  "An AI assistant wired directly into the CRM database — find it in the sidebar under CRM (admins only). Ask in plain English: \"Who hasn't submitted Module 1 pre-work?\", \"Summarize Rodrigo's application\", \"Which students look at risk?\" It reads real student records, applications, pre-work, and assignments before answering.",
+      },
+      {
+        title: "Can it write notes for me?",
+        body:  "Yes — say \"Add a note to Julia's record that…\" and choose where it goes: a lead activity (visible on the contact timeline) or a private coach note (only coaches see it in the LMS).",
+      },
+    ],
+  },
+  {
+    label: "Email Playbook",
+    icon: <Mail size={14} />,
+    articles: [
+      {
+        title: "Where do I see and edit automated emails?",
+        body:  "Automation → Email Playbook (admins only). Every automated student email lives there: application confirmation, LMS invite, pre-work reminder (Saturdays — pre-work is due Sunday night), session reminder, assignment reminder (Thursdays — assignments are due Friday night), re-engagement, plus the morning-of session brief, weekly digest, and coach digest.\n\nClick a card to edit subject and body — changes autosave and the live preview shows exactly what students receive. Use 'Email me a test' to check it in your own inbox first.",
+      },
+      {
+        title: "How do I stop an email from sending?",
+        body:  "Each template has its own ON/OFF toggle — OFF means it silently skips. Bigger picture: no student emails send at all until the cohort is Published. Publish is the master switch; the toggles are fine-grained control. One rule to remember: turn Student Invite ON before publishing a cohort, or login invites won't go out.",
+      },
+    ],
+  },
   {
     label: "Home Dashboard",
     icon: <LayoutDashboard size={14} />,
@@ -159,7 +187,11 @@ const SECTIONS: Section[] = [
     articles: [
       {
         title: "How does the coaching workflow work?",
-        body:  "After a 1-on-1 call: paste the Fathom transcript into Claude → Claude analyzes it and returns a coaching summary, blockers, next steps, and a draft follow-up email → review and approve → the note is saved to the student's CRM timeline and the email is sent.\n\nCoaching notes added in the LMS admin panel also sync here automatically.",
+        body:  "After a 1-on-1 call: open the student's call sheet in the LMS admin (Prework → the module → the student), paste the Fathom transcript into the Session Transcript box, and click 'Draft write-up & private notes'. Claude reads the transcript plus their pre-work and drafts a student-facing write-up (which you review and Send to Student) and candid private notes only coaches see.\n\nCoaching notes added in the LMS admin panel also sync here automatically.",
+      },
+      {
+        title: "Where do students book me?",
+        body:  "Two lanes: coaching 1-on-1s (your main Calendly) and Office Hours (quick unsticks). Both URLs are set per coach in Settings → Profile → Booking Links. If a URL is empty, the LMS hides that booking lane. Your upcoming sessions show in the My 1-on-1s card on Home.",
       },
       {
         title: "Where do coaching notes appear?",

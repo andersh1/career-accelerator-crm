@@ -190,6 +190,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           Open Networking CRM
         </a>
         <Link
+          href="/help"
+          onClick={() => setOpen(false)}
+          className={`sidebar-link ${isActive("/help") ? "active" : "inactive"}`}
+        >
+          <LifeBuoy size={15} className="flex-shrink-0" style={{ opacity: isActive("/help") ? 1 : 0.7 }} />
+          Help Center
+        </Link>
+        <Link
           href="/settings"
           onClick={() => setOpen(false)}
           className={`sidebar-link ${isActive("/settings") ? "active" : "inactive"}`}
