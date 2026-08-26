@@ -37,7 +37,7 @@ const baseNav = [
 ];
 
 const NAV_SECTIONS = [
-  { label: "CRM",          keys: ["/home", "/pipeline", "/students", "/cohorts", "/leads", "/tickets"] },
+  { label: "CRM",          keys: ["/home", "/ask", "/pipeline", "/students", "/cohorts", "/leads", "/tickets"] },
   { label: "Outreach",    keys: ["/tasks", "/sequences", "/blast"] },
   { label: "Growth",      keys: ["/events", "/referrals", "/promo-codes"] },
   { label: "Partnerships", keys: ["/partnerships/deals", "/partnerships/contacts"] },
