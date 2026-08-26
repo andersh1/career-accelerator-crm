@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -7,7 +7,7 @@ import {
   Kanban, TrendingUp, Settings, LogOut, Menu, X,
   CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap,
   UserRound, UsersRound, GraduationCap, AlertCircle, BookOpen,
-  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles,
+  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles, ChevronRight,
 } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
 import NotificationBell from "@/components/crm/NotificationBell";
@@ -44,10 +44,26 @@ const NAV_SECTIONS = [
   { label: "Admin",       keys: ["/outcomes", "/analytics", "/issues", "/team", "/automation"], adminOnly: true },
 ];
 
+const DEFAULT_COLLAPSED = ["Growth", "Partnerships", "Admin"];
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname          = usePathname();
   const { data: session } = useSession();
   const [open, setOpen]   = useState(false);
+  const [collapsed, setCollapsed] = useState<string[]>(DEFAULT_COLLAPSED);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("crm-nav-collapsed");
+      if (saved) setCollapsed(JSON.parse(saved));
+    } catch {}
+  }, []);
+  function toggleSection(label: string) {
+    setCollapsed(prev => {
+      const next = prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label];
+      try { localStorage.setItem("crm-nav-collapsed", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
   const isAdmin = (session?.user as { crmRole?: string } | undefined)?.crmRole === "ADMIN";
   const nav = baseNav.filter(item => !item.adminOnly || isAdmin);
 
@@ -130,12 +146,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {NAV_SECTIONS.filter(sec => !sec.adminOnly || isAdmin).map(section => {
           const sectionNav = nav.filter(item => section.keys.includes(item.href));
           if (!sectionNav.length) return null;
+          const hasActive = sectionNav.some(item => isActive(item.href));
+          const isCollapsed = collapsed.includes(section.label) && !hasActive;
           return (
             <div key={section.label}>
-              <p className="text-[9px] font-bold uppercase px-3 mb-1" style={{ color: "rgba(255,255,255,0.28)", letterSpacing: "0.14em" }}>
-                {section.label}
-              </p>
-              <div className="space-y-0.5">
+              <button
+                onClick={() => toggleSection(section.label)}
+                className="w-full flex items-center justify-between px-3 mb-1 group"
+                style={{ color: "rgba(255,255,255,0.28)" }}
+              >
+                <span className="text-[9px] font-bold uppercase" style={{ letterSpacing: "0.14em" }}>{section.label}</span>
+                <ChevronRight
+                  size={10}
+                  className={`transition-transform group-hover:opacity-100 ${isCollapsed ? "" : "rotate-90"}`}
+                  style={{ opacity: 0.6 }}
+                />
+              </button>
+              <div className="space-y-0.5" style={isCollapsed ? { display: "none" } : undefined}>
                 {sectionNav.map(({ href, label, icon: Icon }) => {
                   const active = isActive(href);
                   return (

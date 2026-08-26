@@ -71,7 +71,11 @@ export default function StudentsPage() {
   const cohortOptions = Array.from(new Set(students.map(s => s.cohort).filter(Boolean))).sort() as string[];
   const activeCount = students.filter(s => s.stage !== "GRADUATED").length;
   const gradCount   = students.filter(s => s.stage === "GRADUATED").length;
-  const filtered = students.filter(s => {
+  // Active students always sort ahead of graduated ones
+  const ranked = [...students].sort((a, b) =>
+    (a.stage === "GRADUATED" ? 1 : 0) - (b.stage === "GRADUATED" ? 1 : 0)
+  );
+  const filtered = ranked.filter(s => {
     if (cohortFilter && s.cohort !== cohortFilter) return false;
     if (statusFilter === "ACTIVE" && s.stage === "GRADUATED") return false;
     if (statusFilter === "GRADUATED" && s.stage !== "GRADUATED") return false;

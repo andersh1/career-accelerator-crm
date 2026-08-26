@@ -66,6 +66,10 @@ export default function LeadDetailPage() {
   const [showStageMenu, setShowStageMenu] = useState(false);
   const [movingStage,   setMovingStage]   = useState(false);
   const [lostReasonPrompt, setLostReasonPrompt] = useState<string | null>(null);
+  const [crmUsers, setCrmUsers] = useState<{ id: string; name: string | null; email: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/crm/users").then(r => r.json()).then(d => { if (Array.isArray(d)) setCrmUsers(d); }).catch(() => {});
+  }, []);
   const [lostReasonInput,  setLostReasonInput]  = useState("");
   const [convertCohortId, setConvertCohortId] = useState("");
   const [sendInvite,    setSendInvite]    = useState(true);
@@ -416,6 +420,25 @@ export default function LeadDetailPage() {
                   style={{ appearance: "none", WebkitAppearance: "none" }}>
                   {LEAD_TYPES.map(t => (
                     <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <span style={{ color: "#949598" }}>Owner</span>
+                <select
+                  value={lead.assignedTo ?? ""}
+                  onChange={async e => {
+                    await fetch(`/api/crm/leads/${id}`, {
+                      method: "PATCH", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ assignedTo: e.target.value || null }),
+                    });
+                    await load();
+                  }}
+                  className="text-xs font-semibold cursor-pointer border-0 bg-transparent focus:outline-none text-right"
+                  style={{ color: lead.assignedTo ? "#086c64" : "#949598", appearance: "none", WebkitAppearance: "none" }}>
+                  <option value="">— Unassigned —</option>
+                  {crmUsers.map(u => (
+                    <option key={u.id} value={u.email}>{u.name ?? u.email}</option>
                   ))}
                 </select>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { CheckCircle2, Circle, AlertCircle, Clock, Loader2, Phone, X, Send, Plus, Search, Pencil, Trash2, Check, UserCircle2 } from "lucide-react";
 import { stageInfo } from "@/components/crm/constants";
 import { useToast } from "@/lib/toast";
@@ -30,9 +31,12 @@ function dueLabel(dueAt: string | null) {
 
 export default function TasksPage() {
   const { success, error: toastError } = useToast();
+  const { data: session } = useSession();
+  const myEmail = session?.user?.email ?? "";
   const [tasks,   setTasks]   = useState<Task[]>([]);
   const [admins,  setAdmins]  = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [assigneeFilter, setAssigneeFilter] = useState<"all" | "mine" | "unassigned">("all");
 
   const [logTarget, setLogTarget] = useState<{ taskId: string; leadId: string; name: string } | null>(null);
   const [callNote,  setCallNote]  = useState("");
@@ -184,17 +188,22 @@ export default function TasksPage() {
   const startOfToday   = new Date(new Date().toDateString()); // midnight today
   const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
   // Mutually exclusive: overdue = before midnight today, today = midnight→midnight
-  const overdue  = tasks.filter(t => t.dueAt && new Date(t.dueAt) < startOfToday);
-  const today    = tasks.filter(t => {
+  const visibleTasks = tasks.filter(t => {
+    if (assigneeFilter === "mine")       return t.assignedTo === myEmail;
+    if (assigneeFilter === "unassigned") return !t.assignedTo;
+    return true;
+  });
+  const overdue  = visibleTasks.filter(t => t.dueAt && new Date(t.dueAt) < startOfToday);
+  const today    = visibleTasks.filter(t => {
     if (!t.dueAt) return false;
     const d = new Date(t.dueAt);
     return d >= startOfToday && d < startOfTomorrow;
   });
-  const upcoming = tasks.filter(t => {
+  const upcoming = visibleTasks.filter(t => {
     if (!t.dueAt) return false;
     return new Date(t.dueAt) >= startOfTomorrow;
   });
-  const noDue    = tasks.filter(t => !t.dueAt);
+  const noDue    = visibleTasks.filter(t => !t.dueAt);
 
   const Section = ({ label, items, accentStyle }: { label: string; items: Task[]; accentStyle: React.CSSProperties }) =>
     items.length === 0 ? null : (
@@ -396,7 +405,25 @@ export default function TasksPage() {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598", letterSpacing: "0.14em" }}>Vantage Career Accelerator</p>
           <h1 className="font-display font-semibold leading-tight" style={{ fontSize: "1.75rem", color: "#14211f" }}>Tasks</h1>
-          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>{tasks.length} open task{tasks.length !== 1 ? "s" : ""}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <p className="text-sm" style={{ color: "#949598" }}>{visibleTasks.length} open task{visibleTasks.length !== 1 ? "s" : ""}</p>
+            <div className="flex items-center gap-1 ml-1">
+              {([
+                { key: "all",        label: "All" },
+                { key: "mine",       label: "Mine" },
+                { key: "unassigned", label: "Unassigned" },
+              ] as const).map(chip => (
+                <button key={chip.key}
+                  onClick={() => setAssigneeFilter(chip.key)}
+                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition ${
+                    assigneeFilter === chip.key ? "border-transparent text-white" : "border-[#e4e0d6] hover:bg-[#f8f6f1]"
+                  }`}
+                  style={assigneeFilter === chip.key ? { background: "#086c64" } : { color: "#949598" }}>
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
