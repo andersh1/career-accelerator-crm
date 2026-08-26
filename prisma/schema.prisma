@@ -8,12 +8,81 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED DATABASE — READ BEFORE MIGRATING
+// The LMS and CRM apps BOTH point at the same Neon Postgres database (neondb).
+// This schema is the FULL model set for that database and is kept identical
+// (models only) in both repos:
+//   Career Accelerator LMS/prisma/schema.prisma
+//   Career Accelerator CRM/prisma/schema.prisma
+// When you change a model here, make the same change in the other repo's schema.
+// Never run `prisma db push --accept-data-loss`. Before any push, run:
+//   npx prisma migrate diff --from-url "$POSTGRES_URL_NON_POOLING" \
+//     --to-schema-datamodel prisma/schema.prisma --script
+// and read the SQL it prints.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Announcement {
+  id           String    @id @default(cuid())
+  title        String
+  body         String
+  emoji        String    @default("📣")
+  cohort       String?
+  pinned       Boolean   @default(false)
+  scheduledFor DateTime? // null = publish immediately
+  emailsSentAt DateTime? // null = emails not yet sent
+  createdAt    DateTime  @default(now())
+  createdBy    String
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  attended  Boolean  @default(false)
+  note      String?
+  markedAt  DateTime @default(now())
+
+  @@unique([userId, moduleId])
+}
+
+model CRMNotification {
+  id        String   @id @default(cuid())
+  type      String   // TASK_OVERDUE | LEAD_ENROLLED | NEW_INTAKE | LEAD_COLD | SEQUENCE_SENT
+  title     String
+  body      String?
+  leadId    String?
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
+}
+
+model CoachingNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  authorId  String   // admin user id who wrote it
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Cohort {
   id        String           @id @default(cuid())
   name      String
   isActive  Boolean          @default(true)
   capacity  Int?
-  startDate DateTime?
+  startDate DateTime? @db.Timestamptz(6)
   createdAt DateTime         @default(now())
   users     User[]
   schedules CohortSchedule[]
@@ -25,6 +94,7 @@ model CohortSchedule {
   cohort          Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   moduleId        String
   module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  startDate       DateTime?
   preworkDue      DateTime?
   sessionDate     DateTime?
   sessionLocation String?
@@ -33,53 +103,279 @@ model CohortSchedule {
   @@unique([cohortId, moduleId])
 }
 
-model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  name        String
-  password    String
-  role        String       @default("STUDENT")
-  cohort               String?
-  cohortId             String?
-  cohortRef            Cohort?   @relation(fields: [cohortId], references: [id])
-  onboardedAt          DateTime?
-  createdAt            DateTime     @default(now())
-  certificateIssuedAt  DateTime?
-  notionAccessToken    String?
-  notionWorkspaceName  String?
-  notionWorkspaceIcon  String?
-  twoFactorSecret      String?
-  twoFactorEnabled     Boolean   @default(false)
-  gmailRefreshToken    String?
-  gmailEmail           String?
-  gmailSyncedAt        DateTime?
-  crmRole              String?   // ADMIN | MEMBER — only set for CRM users; null = LMS-only
-  calendlyUrl          String?   // 1-on-1 coaching Calendly link — shown on the LMS 1-on-1 page
-  officeHoursUrl       String?   // office-hours Calendly link — shown on the LMS Office Hours page
-  referralCode         String?   @unique
-  submissions          Submission[]
-  progress             Progress[]
-  notes                Note[]
-  coachingNotes        CoachingNote[]
-  worksheetResponses   WorksheetResponse[]
-  surveyResponses      SurveyResponse[]
-  notifications        Notification[]
-  supportTickets       SupportTicket[]
-  passwordResetTokens  PasswordResetToken[]
-  bridgeTokens         CrmBridgeToken[]
-  attendanceRecords    AttendanceRecord[]
-  crmLead              Lead?
-  preworkSubmissions   PreworkSubmission[]
-  oneOnOneSlots        OneOnOneSlot[]       @relation("AdminSlots")
-  oneOnOneBookings     OneOnOneBooking[]    @relation("StudentBookings")
-  discussionPosts      DiscussionPost[]
-  discussionReplies    DiscussionReply[]
-  discussionReactions  DiscussionReaction[]
-  videoProgress        VideoProgress[]
-  sectionComments      SectionComment[]
+model CrmBridgeToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  targetUrl String    @default("/admin")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
-// ─── CRM ──────────────────────────────────────────────────────────────────────
+model CrmIssue {
+  id          String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  title       String
+  description String?
+  type        String   @default("BUG")      // BUG | DATA | OPS | FEATURE | OTHER
+  status      String   @default("BACKLOG")  // BACKLOG | TODO | IN_PROGRESS | DONE
+  priority    String   @default("NORMAL")   // LOW | NORMAL | HIGH | URGENT
+  assignee    String?                        // CRM user email
+  createdBy   String?                        // CRM user email
+  tags        String[] @default([])
+  linkedLeadId String?                       // optional link to a lead record
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([assignee])
+}
+
+model Deal {
+  id           String   @id @default(cuid())
+  title        String   // e.g. "Northwestern SPS — Fall 2026"
+  orgName      String   // university / firm name
+  status       String   @default("PROSPECTING")
+  // PROSPECTING | PROPOSAL_SENT | NEGOTIATING | SIGNED | ACTIVE | CLOSED_WON | CLOSED_LOST
+
+  contactLeadId String?  // FK to Lead (a CONTACT type lead — the person at the org)
+  contactLead   Lead?    @relation("DealContact", fields: [contactLeadId], references: [id])
+
+  seats        Int?     // number of seats being sold
+  pricePerSeat Int?     // USD, whole dollars
+  totalValue   Int?     // USD — can override seats×price for flat-fee deals
+  paymentType  String?  @default("ORG_INVOICE") // ORG_INVOICE | INDIVIDUAL | MIXED
+
+  assignedTo   String?  // admin user email
+  notes        String?
+  proposalSentAt DateTime?
+  signedAt     DateTime?
+  startDate    DateTime?
+
+  participants Lead[]   @relation("DealParticipants")
+  activities   DealActivity[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+}
+
+model DealActivity {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  type      String   // NOTE | EMAIL | CALL | MEETING | STATUS_CHANGE
+  content   String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+}
+
+model DirectMessage {
+  id        String   @id @default(cuid())
+  fromId    String
+  from      User     @relation("SentMessages", fields: [fromId], references: [id], onDelete: Cascade)
+  toId      String
+  to        User     @relation("ReceivedMessages", fields: [toId], references: [id], onDelete: Cascade)
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([fromId])
+  @@index([toId])
+  @@index([fromId, toId])
+}
+
+model DiscussionPost {
+  id        String               @id @default(cuid())
+  authorId  String
+  author    User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  moduleId  String?
+  module    Module?              @relation(fields: [moduleId], references: [id])
+  content   String
+  postType  String               @default("DISCUSSION")
+  isPinned  Boolean              @default(false)
+  isDeleted Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  replies   DiscussionReply[]
+  reactions DiscussionReaction[]
+
+  @@index([moduleId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model DiscussionReaction {
+  id        String         @id @default(cuid())
+  postId    String
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+}
+
+model DiscussionReply {
+  id        String         @id @default(cuid())
+  postId    String
+  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  isAnswer  Boolean        @default(false)
+  isDeleted Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  @@index([postId])
+}
+
+model EmailSequence {
+  id          String                    @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  steps       EmailSequenceStep[]
+  enrollments EmailSequenceEnrollment[]
+}
+
+model EmailSequenceEnrollment {
+  id          String        @id @default(cuid())
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sequenceId  String
+  sequence    EmailSequence @relation(fields: [sequenceId], references: [id])
+  currentStep Int           @default(1)
+  status      String        @default("ACTIVE") // ACTIVE | PAUSED | COMPLETED | CANCELLED
+  nextSendAt  DateTime?
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  @@unique([leadId, sequenceId])
+  @@index([status, nextSendAt])
+}
+
+model EmailSequenceStep {
+  id         String        @id @default(cuid())
+  sequenceId String
+  sequence   EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  stepNumber Int
+  subject    String
+  body       String
+  delayDays  Int           @default(0)
+
+  @@unique([sequenceId, stepNumber])
+  @@index([sequenceId])
+}
+
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  name         String
+  subject      String
+  body         String
+  placeholders String   @default("")
+  enabled      Boolean  @default(true)
+  editable     Boolean  @default(true)
+  updatedAt    DateTime @default(now()) @updatedAt
+  updatedBy    String?
+}
+
+model Event {
+  id                  String              @id @default(dbgenerated("(gen_random_uuid())::text"))
+  slug                String              @unique
+  title               String
+  description         String?
+  eventType           String              @default("IN_PERSON")  // IN_PERSON | ZOOM
+  speakerName         String?
+  speakerBio          String?
+  speakerTitle        String?
+  speakerImageUrl     String?
+  location            String?
+  venueAddress        String?
+  meetingUrl          String?
+  startsAt            DateTime @db.Timestamptz(6)
+  endsAt              DateTime? @db.Timestamptz(6)
+  timezone            String              @default("America/New_York")
+  maxCapacity         Int?
+  visibility          String              @default("PUBLIC")
+  active              Boolean             @default(true)
+  reminderSent7d      Boolean             @default(false)
+  reminderSent24h     Boolean             @default(false)
+  followUpSent        Boolean             @default(false)
+  confirmationMessage String?
+  createdAt           DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  registrations       EventRegistration[]
+
+  @@index([slug])
+  @@index([startsAt])
+  @@index([active, startsAt])
+}
+
+model EventRegistration {
+  id           String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+  leadId       String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  referralCode String?
+  contactType  String   @default("STUDENT")  // STUDENT | PARENT
+  attendedAt   DateTime? @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([eventId, email])
+  @@index([eventId])
+}
+
+model HelpArticle {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  category  String   @default("GENERAL")
+  published Boolean  @default(false)
+  pinned    Boolean  @default(false)
+  order     Int      @default(0)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, published])
+}
+
+model JobApplication {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   String
+  role      String
+  url       String?
+  // WISHLIST | APPLIED | PHONE_SCREEN | INTERVIEW | FINAL_ROUND | OFFER | REJECTED | WITHDRAWN
+  status    String    @default("WISHLIST")
+  source    String?   // LINKEDIN | REFERRAL | COLD_EMAIL | JOB_BOARD | COMPANY_SITE | EVENT | OTHER
+  salary    String?
+  location  String?
+  notes     String?
+  appliedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
+}
 
 model Lead {
   id          String   @id @default(cuid())
@@ -175,93 +471,6 @@ model Lead {
   @@index([deletedAt, updatedAt])
 }
 
-model PromoCode {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  label       String?
-  discountPct Int?      // 0–100 percent off; null = tracking-only / access code
-  maxUses     Int?      // null = unlimited
-  usedCount   Int       @default(0)
-  active      Boolean   @default(true)
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Task {
-  id          String    @id @default(cuid())
-  leadId      String
-  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  title       String
-  notes       String?
-  dueAt       DateTime?
-  completedAt DateTime?
-  createdBy   String?
-  assignedTo  String?
-  createdAt   DateTime  @default(now())
-
-  @@index([leadId])
-  @@index([dueAt])
-}
-
-model AppSetting {
-  key       String   @id
-  value     String
-  updatedAt DateTime @updatedAt
-}
-
-model CRMNotification {
-  id        String   @id @default(cuid())
-  type      String   // TASK_OVERDUE | LEAD_ENROLLED | NEW_INTAKE | LEAD_COLD | SEQUENCE_SENT
-  title     String
-  body      String?
-  leadId    String?
-  href      String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([read, createdAt])
-}
-
-model EmailSequence {
-  id          String                    @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean                   @default(true)
-  createdAt   DateTime                  @default(now())
-  steps       EmailSequenceStep[]
-  enrollments EmailSequenceEnrollment[]
-}
-
-model EmailSequenceStep {
-  id         String        @id @default(cuid())
-  sequenceId String
-  sequence   EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  stepNumber Int
-  subject    String
-  body       String
-  delayDays  Int           @default(0)
-
-  @@unique([sequenceId, stepNumber])
-  @@index([sequenceId])
-}
-
-model EmailSequenceEnrollment {
-  id          String        @id @default(cuid())
-  leadId      String
-  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  sequenceId  String
-  sequence    EmailSequence @relation(fields: [sequenceId], references: [id])
-  currentStep Int           @default(1)
-  status      String        @default("ACTIVE") // ACTIVE | PAUSED | COMPLETED | CANCELLED
-  nextSendAt  DateTime?
-  startedAt   DateTime      @default(now())
-  completedAt DateTime?
-
-  @@unique([leadId, sequenceId])
-  @@index([status, nextSendAt])
-}
-
 model LeadActivity {
   id        String    @id @default(cuid())
   leadId    String
@@ -280,18 +489,17 @@ model LeadActivity {
   @@index([type, createdAt])
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // FEEDBACK | APPROVED | NEEDS_REVISION | ANNOUNCEMENT
-  title     String
-  body      String?
-  href      String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+model LoginStreak {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak Int    @default(0)
+  longestStreak Int    @default(0)
+  lastLoginAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  @@index([userId, read])
+  @@unique([userId])
+  @@index([userId])
 }
 
 model Module {
@@ -303,6 +511,7 @@ model Module {
   week        Int
   icon        String?
   unlocked    Boolean      @default(true)
+  startDate       DateTime?
   preworkDue      DateTime?
   sessionDate     DateTime?
   sessionLocation String?
@@ -319,114 +528,6 @@ model Module {
   discussionPosts   DiscussionPost[]
 }
 
-model Section {
-  id            String           @id @default(cuid())
-  moduleId      String
-  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  type          String
-  title         String
-  content       String?
-  order         Int
-  notionPageId  String?
-  lastSyncedAt  DateTime?
-  resources     Resource[]
-  progress      Progress[]
-  comments      SectionComment[]
-}
-
-model Resource {
-  id        String          @id @default(cuid())
-  sectionId String
-  section   Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  type      String
-  title     String
-  url       String?
-  filePath  String?
-  order     Int             @default(0)
-  createdAt DateTime        @default(now())
-  videoProgress VideoProgress[]
-}
-
-model Submission {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  moduleId    String
-  module      Module   @relation(fields: [moduleId], references: [id])
-  title       String
-  content     String?
-  fileUrl     String?
-  fileName    String?
-  status          String   @default("PENDING")
-  feedback        String?
-  aiFeedback      String?
-  aiReviewedAt    DateTime?
-  studentReply    String?
-  studentRepliedAt DateTime?
-  submittedAt     DateTime @default(now())
-  reviewedAt      DateTime?
-}
-
-model Progress {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  moduleId    String
-  module      Module   @relation(fields: [moduleId], references: [id])
-  sectionId   String?
-  section     Section? @relation(fields: [sectionId], references: [id])
-  completedAt DateTime @default(now())
-
-  @@unique([userId, sectionId])
-}
-
-model WorksheetResponse {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moduleId    String
-  worksheetId String
-  rows        Json
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, moduleId, worksheetId])
-}
-
-model Announcement {
-  id           String    @id @default(cuid())
-  title        String
-  body         String
-  emoji        String    @default("📣")
-  cohort       String?
-  pinned       Boolean   @default(false)
-  scheduledFor DateTime? // null = publish immediately
-  emailsSentAt DateTime? // null = emails not yet sent
-  createdAt    DateTime  @default(now())
-  createdBy    String
-}
-
-model SurveyResponse {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moduleId    String
-  answers     Json
-  submittedAt DateTime @default(now())
-
-  // Individual rating fields (populated alongside answers Json)
-  overallRating      Int?
-  contentRating      Int?
-  facilitatorRating  Int?
-  practicalRating    Int?
-  wouldRecommend     Boolean?
-  biggestTakeaway    String?
-  improveSuggestion  String?
-  additionalComments String?
-
-  @@unique([userId, moduleId])
-}
-
 model Note {
   id        String   @id @default(cuid())
   userId    String
@@ -439,6 +540,59 @@ model Note {
   @@unique([userId, moduleId])
 }
 
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // FEEDBACK | APPROVED | NEEDS_REVISION | ANNOUNCEMENT
+  title     String
+  body      String?
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, type, createdAt])
+}
+
+model OneOnOneBooking {
+  id                 String       @id @default(cuid())
+  slotId             String       @unique
+  slot               OneOnOneSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  studentId          String
+  student            User         @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  moduleId           String
+  module             Module       @relation(fields: [moduleId], references: [id])
+  status             String       @default("CONFIRMED") // CONFIRMED | CANCELLED
+  preworkEmailSentAt DateTime?
+  zoomMeetingId      String?      // Zoom meeting ID
+  zoomJoinUrl        String?      // student join link
+  zoomStartUrl       String?      // host start link (Dan's link)
+  calendlyEventUri   String?      @unique // Calendly scheduled_event URI when booked via Calendly
+  createdAt          DateTime     @default(now())
+
+  @@unique([studentId, moduleId])
+  @@index([studentId])
+  @@index([moduleId])
+}
+
+model OneOnOneSlot {
+  id               String           @id @default(cuid())
+  adminId          String
+  admin            User             @relation("AdminSlots", fields: [adminId], references: [id], onDelete: Cascade)
+  startTime        DateTime
+  endTime          DateTime
+  moduleId         String?
+  module           Module?          @relation(fields: [moduleId], references: [id])
+  isBooked         Boolean          @default(false)
+  recurringGroupId String?
+  createdAt        DateTime         @default(now())
+  booking          OneOnOneBooking?
+
+  @@index([startTime])
+  @@index([adminId])
+}
+
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
@@ -449,87 +603,42 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 }
 
-model CrmBridgeToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String    @unique
-  targetUrl String    @default("/admin")
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-}
-
-model AttendanceRecord {
+model PaymentRecord {
   id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moduleId  String
-  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  attended  Boolean  @default(false)
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  amount    Int
   note      String?
-  markedAt  DateTime @default(now())
+  paidAt    DateTime @default(now())
+  createdBy String?
 
-  @@unique([userId, moduleId])
+  @@index([leadId])
 }
 
-model ReminderLog {
-  id        String   @id @default(cuid())
-  userId    String
-  moduleId  String
-  type      String   // PREWORK | SESSION
-  sentAt    DateTime @default(now())
+model PreworkAnswer {
+  id           String            @id @default(cuid())
+  submissionId String
+  submission   PreworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     PreworkQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer       String
 
-  @@unique([userId, moduleId, type])
+  @@unique([submissionId, questionId])
 }
 
-model SupportTicket {
-  id                 String          @id @default(cuid())
-  ticketNumber       Int             @unique @default(autoincrement())
-  userId             String
-  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject            String
-  category           String          // TECHNICAL | CONTENT | COACHING | BILLING | OTHER
-  description        String
-  status             String          @default("OPEN") // OPEN | IN_PROGRESS | WAITING | RESOLVED | CLOSED
-  priority           String          @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
-  assigneeId         String?         // admin userId
-  closedAt           DateTime?
-  lastActivityAt     DateTime        @default(now())
-  satisfactionRating Int?            // 1-5 after resolved
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  messages           TicketMessage[]
-
-  @@index([userId])
-  @@index([status])
-}
-
-model TicketMessage {
-  id         String        @id @default(cuid())
-  ticketId   String
-  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId   String
-  authorName String
-  authorRole String        // STUDENT | ADMIN
+model PreworkNote {
+  id         String   @id @default(cuid())
+  userId     String   // student
+  moduleId   String
+  sectionKey String   // "general" | "session-questions" | "answer:<questionId>" | "worksheet:<worksheetId>"
   content    String
-  isInternal Boolean       @default(false)
-  createdAt  DateTime      @default(now())
+  authorId   String   // admin who wrote it
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  user       User     @relation("PreworkNoteUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([ticketId])
+  @@unique([userId, moduleId, sectionKey])
 }
-
-model CoachingNote {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  authorId  String   // admin user id who wrote it
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ─── Prework ──────────────────────────────────────────────────────────────────
 
 model PreworkQuestion {
   id          String   @id @default(cuid())
@@ -563,181 +672,271 @@ model PreworkSubmission {
   @@index([userId])
 }
 
-model PreworkAnswer {
-  id           String            @id @default(cuid())
-  submissionId String
-  submission   PreworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  questionId   String
-  question     PreworkQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  answer       String
-
-  @@unique([submissionId, questionId])
+model ProgramTool {
+  id            String   @id @default(cuid())
+  name          String
+  description   String   @default("")
+  url           String?
+  emoji         String   @default("🛠️")
+  moduleNumbers Int[]    @default([])
+  active        Boolean  @default(true)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 }
 
-// ─── 1-on-1 Scheduling ───────────────────────────────────────────────────────
+model Progress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  sectionId   String?
+  section     Section? @relation(fields: [sectionId], references: [id])
+  completedAt DateTime @default(now())
 
-model OneOnOneSlot {
-  id               String           @id @default(cuid())
-  adminId          String
-  admin            User             @relation("AdminSlots", fields: [adminId], references: [id], onDelete: Cascade)
-  startTime        DateTime
-  endTime          DateTime
-  moduleId         String?
-  module           Module?          @relation(fields: [moduleId], references: [id])
-  isBooked         Boolean          @default(false)
-  recurringGroupId String?
-  createdAt        DateTime         @default(now())
-  booking          OneOnOneBooking?
-
-  @@index([startTime])
-  @@index([adminId])
+  @@unique([userId, sectionId])
+  @@index([userId, completedAt])
 }
 
-model OneOnOneBooking {
-  id                 String       @id @default(cuid())
-  slotId             String       @unique
-  slot               OneOnOneSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
-  studentId          String
-  student            User         @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
-  moduleId           String
-  module             Module       @relation(fields: [moduleId], references: [id])
-  status             String       @default("CONFIRMED") // CONFIRMED | CANCELLED
-  preworkEmailSentAt DateTime?
-  zoomMeetingId      String?
-  zoomJoinUrl        String?
-  zoomStartUrl       String?
-  createdAt          DateTime     @default(now())
-
-  @@unique([studentId, moduleId])
-  @@index([studentId])
-  @@index([moduleId])
+model PromoCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  label       String?
+  discountPct Int?      // 0–100 percent off; null = tracking-only / access code
+  maxUses     Int?      // null = unlimited
+  usedCount   Int       @default(0)
+  active      Boolean   @default(true)
+  expiresAt   DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 }
 
-// ─── Community / Discussion ───────────────────────────────────────────────────
-
-model DiscussionPost {
-  id        String               @id @default(cuid())
-  authorId  String
-  author    User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  moduleId  String?
-  module    Module?              @relation(fields: [moduleId], references: [id])
-  content   String
-  postType  String               @default("DISCUSSION")
-  isPinned  Boolean              @default(false)
-  isDeleted Boolean              @default(false)
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  replies   DiscussionReply[]
-  reactions DiscussionReaction[]
-
-  @@index([moduleId])
-  @@index([authorId])
-  @@index([createdAt])
-}
-
-model DiscussionReply {
-  id        String         @id @default(cuid())
-  postId    String
-  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String
-  isAnswer  Boolean        @default(false)
-  isDeleted Boolean        @default(false)
-  createdAt DateTime       @default(now())
-
-  @@index([postId])
-}
-
-model DiscussionReaction {
-  id        String         @id @default(cuid())
-  postId    String
-  post      DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+model ReminderLog {
+  id        String   @id @default(cuid())
   userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emoji     String
+  moduleId  String
+  type      String   // PREWORK | SESSION
+  sentAt    DateTime @default(now())
 
-  @@unique([postId, userId, emoji])
-  @@index([postId])
+  @@unique([userId, moduleId, type])
 }
 
-// ─── Help Center ─────────────────────────────────────────────────────────────
-
-model HelpArticle {
-  id        String   @id @default(cuid())
+model Resource {
+  id        String          @id @default(cuid())
+  sectionId String
+  section   Section         @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  type      String
   title     String
-  slug      String   @unique
-  content   String
-  category  String   @default("GENERAL")
-  published Boolean  @default(false)
-  pinned    Boolean  @default(false)
-  order     Int      @default(0)
-  views     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([category, published])
+  url       String?
+  filePath  String?
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+  videoProgress VideoProgress[]
 }
 
-// ─── Internal Course Issues ──────────────────────────────────────────────────
+model Section {
+  id            String           @id @default(cuid())
+  moduleId      String
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type          String
+  title         String
+  content       String?
+  order         Int
+  notionPageId  String?
+  lastSyncedAt  DateTime?
+  resources     Resource[]
+  progress      Progress[]
+  comments      SectionComment[]
+}
 
-
-// ─── Payment Records ─────────────────────────────────────────────────────────
-
-model PaymentRecord {
+model SectionComment {
   id        String   @id @default(cuid())
-  leadId    String
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  amount    Int
-  note      String?
-  paidAt    DateTime @default(now())
-  createdBy String?
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  moduleId  String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  isPinned  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  @@index([leadId])
+  @@index([sectionId])
+  @@index([moduleId])
 }
 
-// ─── Deals / Partnerships ─────────────────────────────────────────────────────
+model SessionTranscript {
+  id        String   @id @default(cuid())
+  userId    String
+  moduleId  String
+  content   String
+  authorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-model Deal {
-  id           String   @id @default(cuid())
-  title        String   // e.g. "Northwestern SPS — Fall 2026"
-  orgName      String   // university / firm name
-  status       String   @default("PROSPECTING")
-  // PROSPECTING | PROPOSAL_SENT | NEGOTIATING | SIGNED | ACTIVE | CLOSED_WON | CLOSED_LOST
+  @@unique([userId, moduleId])
+}
 
-  contactLeadId String?  // FK to Lead (a CONTACT type lead — the person at the org)
-  contactLead   Lead?    @relation("DealContact", fields: [contactLeadId], references: [id])
+model Submission {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  title       String
+  content     String?
+  fileUrl     String?
+  fileName    String?
+  status          String   @default("PENDING")
+  feedback        String?
+  aiFeedback      String?
+  aiReviewedAt    DateTime?
+  studentReply    String?
+  studentRepliedAt DateTime?
+  submittedAt     DateTime @default(now())
+  reviewedAt      DateTime?
+}
 
-  seats        Int?     // number of seats being sold
-  pricePerSeat Int?     // USD, whole dollars
-  totalValue   Int?     // USD — can override seats×price for flat-fee deals
-  paymentType  String?  @default("ORG_INVOICE") // ORG_INVOICE | INDIVIDUAL | MIXED
+model SupportTicket {
+  id                 String          @id @default(cuid())
+  ticketNumber       Int             @unique @default(autoincrement())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject            String
+  category           String          // TECHNICAL | CONTENT | COACHING | BILLING | OTHER
+  description        String
+  status             String          @default("OPEN") // OPEN | IN_PROGRESS | WAITING | RESOLVED | CLOSED
+  priority           String          @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  assigneeId         String?         // admin userId
+  closedAt           DateTime?
+  lastActivityAt     DateTime        @default(now())
+  satisfactionRating Int?            // 1-5 after resolved
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  messages           TicketMessage[]
 
-  assignedTo   String?  // admin user email
-  notes        String?
-  proposalSentAt DateTime?
-  signedAt     DateTime?
-  startDate    DateTime?
-
-  participants Lead[]   @relation("DealParticipants")
-  activities   DealActivity[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  @@index([userId])
   @@index([status])
 }
 
-model DealActivity {
-  id        String   @id @default(cuid())
-  dealId    String
-  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  type      String   // NOTE | EMAIL | CALL | MEETING | STATUS_CHANGE
-  content   String?
-  createdBy String?
-  createdAt DateTime @default(now())
+model SurveyResponse {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  answers     Json
+  submittedAt DateTime @default(now())
 
-  @@index([dealId])
+  // Individual rating fields (populated alongside answers Json)
+  overallRating      Int?
+  contentRating      Int?
+  facilitatorRating  Int?
+  practicalRating    Int?
+  wouldRecommend     Boolean?
+  biggestTakeaway    String?
+  improveSuggestion  String?
+  additionalComments String?
+
+  @@unique([userId, moduleId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title       String
+  notes       String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdBy   String?
+  assignedTo  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([dueAt])
+}
+
+model ThreeSixtyResponse {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  responderName String
+  relationship  String?
+  answers       Json
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model TicketMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorName String
+  authorRole String        // STUDENT | ADMIN
+  content    String
+  isInternal Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String
+  password    String
+  role        String       @default("STUDENT")
+  cohort               String?
+  cohortId             String?
+  cohortRef            Cohort?   @relation(fields: [cohortId], references: [id])
+  onboardedAt          DateTime?
+  xpPoints             Int          @default(0)
+  createdAt            DateTime     @default(now())
+  certificateIssuedAt  DateTime?
+  notionAccessToken    String?
+  notionWorkspaceName  String?
+  notionWorkspaceIcon  String?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean   @default(false)
+  timezone             String    @default("America/New_York")
+  crmRole              String?   // ADMIN | MEMBER — CRM access role; null = LMS-only student
+  calendlyUrl          String?   // coach Calendly scheduling link (admins only)
+  officeHoursUrl       String?   // office-hours Calendly link (admins only) — quick-help bookings
+  threeSixtyToken      String?   @unique // public 360-ask link token
+  threeSixtyResponses  ThreeSixtyResponse[]
+  gmailRefreshToken    String?
+  gmailEmail           String?
+  gmailSyncedAt        DateTime?
+  submissions          Submission[]
+  progress             Progress[]
+  notes                Note[]
+  coachingNotes        CoachingNote[]
+  worksheetResponses   WorksheetResponse[]
+  surveyResponses      SurveyResponse[]
+  notifications        Notification[]
+  supportTickets       SupportTicket[]
+  passwordResetTokens  PasswordResetToken[]
+  bridgeTokens         CrmBridgeToken[]
+  attendanceRecords    AttendanceRecord[]
+  crmLead              Lead?
+  preworkSubmissions   PreworkSubmission[]
+  oneOnOneSlots        OneOnOneSlot[]       @relation("AdminSlots")
+  oneOnOneBookings     OneOnOneBooking[]    @relation("StudentBookings")
+  discussionPosts      DiscussionPost[]
+  discussionReplies    DiscussionReply[]
+  discussionReactions  DiscussionReaction[]
+  videoProgress        VideoProgress[]
+  sectionComments      SectionComment[]
+  sentMessages         DirectMessage[]  @relation("SentMessages")
+  receivedMessages     DirectMessage[]  @relation("ReceivedMessages")
+  jobApplications      JobApplication[]
+  loginStreaks         LoginStreak[]
+  referralCode         String?   @unique
+
+  preworkNotesAbout PreworkNote[] @relation("PreworkNoteUser")
 }
 
 model VideoProgress {
@@ -759,131 +958,15 @@ model VideoProgress {
   @@index([moduleId])
 }
 
-model SectionComment {
-  id        String   @id @default(cuid())
-  sectionId String
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  moduleId  String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String
-  isPinned  Boolean  @default(false)
-  isDeleted Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([sectionId])
-  @@index([moduleId])
-}
-
-model Event {
-  id                  String              @id @default(cuid())
-  slug                String              @unique
-  title               String
-  description         String?
-  eventType           String              @default("IN_PERSON")  // IN_PERSON | ZOOM
-  speakerName         String?
-  speakerBio          String?
-  speakerTitle        String?
-  speakerImageUrl     String?
-  location            String?
-  venueAddress        String?
-  meetingUrl          String?
-  startsAt            DateTime
-  endsAt              DateTime?
-  timezone            String              @default("America/New_York")
-  maxCapacity         Int?
-  visibility          String              @default("PUBLIC")
-  active              Boolean             @default(true)
-  reminderSent7d      Boolean             @default(false)
-  reminderSent24h     Boolean             @default(false)
-  followUpSent        Boolean             @default(false)
-  confirmationMessage String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  registrations       EventRegistration[]
-
-  @@index([slug])
-  @@index([startsAt])
-  @@index([active, startsAt])
-}
-
-model EventRegistration {
-  id           String   @id @default(cuid())
-  eventId      String
-  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  firstName    String
-  lastName     String
-  email        String
-  phone        String?
-  leadId       String?
-  utmSource    String?
-  utmMedium    String?
-  utmCampaign  String?
-  referralCode String?
-  contactType  String   @default("STUDENT")  // STUDENT | PARENT
-  attendedAt   DateTime?
-  createdAt    DateTime @default(now())
-
-  @@unique([eventId, email])
-  @@index([eventId])
-}
-
-// ─── CRM Internal Issues ──────────────────────────────────────────────────────
-// Separate from LMS student support tickets — used by Dan, David, and Caleb
-// to track CRM data problems, ops flags, and feature requests.
-
-model CrmIssue {
+model WorksheetResponse {
   id          String   @id @default(cuid())
-  title       String
-  description String?
-  type        String   @default("BUG")      // BUG | DATA | OPS | FEATURE | OTHER
-  status      String   @default("BACKLOG")  // BACKLOG | TODO | IN_PROGRESS | DONE
-  priority    String   @default("NORMAL")   // LOW | NORMAL | HIGH | URGENT
-  assignee    String?                        // CRM user email
-  createdBy   String?                        // CRM user email
-  tags        String[]
-  linkedLeadId String?                       // optional link to a lead record
-  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  worksheetId String
+  rows        Json
   updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
-  @@index([status])
-  @@index([assignee])
-}
-
-model EmailTemplate {
-  id           String   @id @default(cuid())
-  key          String   @unique
-  name         String
-  subject      String
-  body         String
-  placeholders String   @default("")
-  enabled      Boolean  @default(true)
-  editable     Boolean  @default(true)
-  updatedAt    DateTime @default(now()) @updatedAt
-  updatedBy    String?
-}
-
-model PreworkNote {
-  id         String   @id @default(cuid())
-  userId     String
-  moduleId   String
-  sectionKey String
-  content    String
-  authorId   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([userId, moduleId, sectionKey])
-}
-
-model SessionTranscript {
-  id        String   @id @default(cuid())
-  userId    String
-  moduleId  String
-  content   String
-  authorId  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@unique([userId, moduleId])
+  @@unique([userId, moduleId, worksheetId])
 }

@@ -98,7 +98,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="text-[13px] font-semibold truncate leading-tight text-white">{userName}</p>
               )}
               <p className="text-[11px] truncate leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
-                {userEmail}
+                {isAdmin ? "CRM Admin" : "Member"} · {userEmail}
               </p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -114,14 +114,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <LogOut size={13} />
               </button>
             </div>
-          </div>
-          <div className="px-3 pb-2.5 -mt-1">
-            <span
-              className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.38)", letterSpacing: "0.12em" }}
-            >
-              {isAdmin ? "CRM Admin" : "Member"}
-            </span>
           </div>
         </div>
       )}
@@ -142,7 +134,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-1 overflow-y-auto scrollbar-thin space-y-4">
+      <nav className="flex-1 px-3 py-1 overflow-y-auto scrollbar-thin space-y-2.5">
         {NAV_SECTIONS.filter(sec => !sec.adminOnly || isAdmin).map(section => {
           const sectionNav = nav.filter(item => section.keys.includes(item.href));
           if (!sectionNav.length) return null;
