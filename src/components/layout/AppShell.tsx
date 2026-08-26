@@ -7,7 +7,7 @@ import {
   Kanban, TrendingUp, Settings, LogOut, Menu, X,
   CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap,
   UserRound, UsersRound, GraduationCap, AlertCircle, BookOpen,
-  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar,
+  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles,
 } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
 import NotificationBell from "@/components/crm/NotificationBell";
@@ -15,6 +15,7 @@ import HelpBeacon from "@/components/crm/HelpBeacon";
 
 const baseNav = [
   { href: "/home",       label: "Home",        icon: LayoutDashboard, adminOnly: false },
+  { href: "/ask",        label: "Ask Claude",  icon: Sparkles,        adminOnly: true  },
   { href: "/pipeline",   label: "Pipeline",    icon: Kanban,          adminOnly: false },
   { href: "/students",   label: "Students",    icon: GraduationCap,   adminOnly: false },
   { href: "/cohorts",   label: "Cohorts",     icon: BookOpen,        adminOnly: false },

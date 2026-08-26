@@ -540,6 +540,8 @@ model PreworkSubmission {
   module      Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   submittedAt DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  sessionQuestions String?
+  reviewedAt  DateTime?
   answers     PreworkAnswer[]
 
   @@unique([userId, moduleId])
@@ -845,4 +847,17 @@ model EmailTemplate {
   editable     Boolean  @default(true)
   updatedAt    DateTime @default(now()) @updatedAt
   updatedBy    String?
+}
+
+model PreworkNote {
+  id         String   @id @default(cuid())
+  userId     String
+  moduleId   String
+  sectionKey String
+  content    String
+  authorId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, moduleId, sectionKey])
 }
