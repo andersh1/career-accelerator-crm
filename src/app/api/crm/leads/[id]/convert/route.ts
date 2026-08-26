@@ -29,6 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { id: params.id },
       data: { stage: "ENROLLED", leadType: "STUDENT", enrolledUserId: existing.id, updatedAt: new Date() },
     });
+    // Pre-enrollment tasks are done by definition once the lead converts
+    await prisma.task.updateMany({
+      where: { leadId: params.id, completedAt: null },
+      data: { completedAt: new Date() },
+    });
     // Update cohort on existing user if provided
     if (cohortId) {
       const cohort = await prisma.cohort.findUnique({ where: { id: cohortId }, select: { name: true } });
@@ -83,6 +88,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   await prisma.lead.update({
     where: { id: params.id },
     data: { stage: "ENROLLED", leadType: "STUDENT", enrolledUserId: user.id, updatedAt: new Date() },
+  });
+
+  // Pre-enrollment tasks are done by definition once the lead converts
+  await prisma.task.updateMany({
+    where: { leadId: params.id, completedAt: null },
+    data: { completedAt: new Date() },
   });
 
   await prisma.leadActivity.create({

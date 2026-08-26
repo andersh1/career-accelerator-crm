@@ -19,6 +19,7 @@ interface Lead {
   company: string | null; jobTitle: string | null; stage: string;
   source: string | null; priority: string; tags: string[]; score: number;
   dealValue: number | null; createdAt: string; updatedAt: string;
+  assignedTo: string | null;
   enrolledUser: { id: string; name: string } | null;
   _count: { activities: number };
 }
@@ -73,6 +74,9 @@ export default function LeadsPage() {
   const [adminUsers,       setAdminUsers]       = useState<AdminUser[]>([]);
   const usersLoaded = useRef(false);
   const [sortBy,       setSortBy]       = useState<"updatedAt" | "createdAt" | "name" | "priority" | "score">("score");
+  const [sortDir,      setSortDir]      = useState<"desc" | "asc">("desc");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [quickFilter,  setQuickFilter]  = useState<"" | "hot" | "stale" | "unassigned">("");
   const [showForm,        setShowForm]        = useState(false);
   const [showFilters,  setShowFilters]  = useState(false);
   const [showImport,   setShowImport]   = useState(false);
@@ -213,6 +217,7 @@ export default function LeadsPage() {
     if (priorityFilter)   params.set("priority",   priorityFilter);
     if (assignedToFilter) params.set("assignedTo", assignedToFilter);
     if (search)           params.set("q",          search);
+    params.set("all", "true");
     const res  = await fetch(`/api/crm/leads?${params}`);
     const data = await res.json();
     setLeads(Array.isArray(data) ? data : (data.leads ?? []));
@@ -245,12 +250,22 @@ export default function LeadsPage() {
     };
   }, [load]);
 
-  const sorted = [...leads].sort((a, b) => {
-    if (sortBy === "score")     return (b.score ?? 0) - (a.score ?? 0);
-    if (sortBy === "name")      return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
-    if (sortBy === "priority")  return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
-    if (sortBy === "createdAt") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  const STALE_MS = 14 * 24 * 60 * 60 * 1000;
+  const quickFiltered = leads.filter(l => {
+    if (quickFilter === "hot")        return (l.score ?? 0) >= 70;
+    if (quickFilter === "stale")      return Date.now() - new Date(l.updatedAt).getTime() > STALE_MS;
+    if (quickFilter === "unassigned") return !l.assignedTo;
+    return true;
+  });
+
+  const sorted = [...quickFiltered].sort((a, b) => {
+    let cmp: number;
+    if      (sortBy === "score")     cmp = (b.score ?? 0) - (a.score ?? 0);
+    else if (sortBy === "name")      cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+    else if (sortBy === "priority")  cmp = (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);
+    else if (sortBy === "createdAt") cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    else                             cmp = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    return sortDir === "asc" ? -cmp : cmp;
   });
 
   // ── Selection ───────────────────────────────────────────────────────────────
@@ -524,22 +539,64 @@ export default function LeadsPage() {
           {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full ml-0.5" style={{ background: "#086c64" }} />}
         </button>
 
-        <button
-          onClick={() => {
-            const opts: Array<typeof sortBy> = ["score", "updatedAt", "createdAt", "name", "priority"];
-            setSortBy(prev => opts[(opts.indexOf(prev) + 1) % opts.length]);
-          }}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
-          {sortBy === "score" ? <Sparkles size={13} className="text-amber-500" /> : <ArrowUpDown size={13} />}
-          {sortLabels[sortBy]}
-          <ChevronDown size={12} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setSortMenuOpen(o => !o)}
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
+            {sortBy === "score" ? <Sparkles size={13} className="text-amber-500" /> : <ArrowUpDown size={13} />}
+            {sortLabels[sortBy]} {sortDir === "asc" ? "↑" : "↓"}
+            <ChevronDown size={12} />
+          </button>
+          {sortMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setSortMenuOpen(false)} />
+              <div className="absolute z-40 mt-1 w-48 bg-white rounded-xl border border-[#e4e0d6] shadow-lg py-1.5">
+                {(["score", "updatedAt", "createdAt", "name", "priority"] as const).map(opt => (
+                  <button key={opt}
+                    onClick={() => {
+                      if (sortBy === opt) setSortDir(d => d === "desc" ? "asc" : "desc");
+                      else { setSortBy(opt); setSortDir("desc"); }
+                      setSortMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-sm hover:bg-[#f8f6f1] transition flex items-center justify-between ${sortBy === opt ? "font-semibold" : ""}`}
+                    style={{ color: sortBy === opt ? "#086c64" : "#14211f" }}>
+                    {sortLabels[opt]}
+                    {sortBy === opt && <span className="text-xs">{sortDir === "asc" ? "↑ asc" : "↓ desc"}</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Save current filter */}
         {hasActiveFilters && (
           <button onClick={() => setSaveDialogOpen(true)}
             className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
             <BookmarkPlus size={14} /> Save view
+          </button>
+        )}
+      </div>
+
+      {/* Quick filters */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {([
+          { key: "hot",        label: "🔥 Hot",        count: leads.filter(l => (l.score ?? 0) >= 70).length },
+          { key: "stale",      label: "⏳ Stale 14d+", count: leads.filter(l => Date.now() - new Date(l.updatedAt).getTime() > STALE_MS).length },
+          { key: "unassigned", label: "👤 Unassigned", count: leads.filter(l => !l.assignedTo).length },
+        ] as const).map(chip => (
+          <button key={chip.key}
+            onClick={() => setQuickFilter(q => q === chip.key ? "" : chip.key)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+              quickFilter === chip.key ? "border-transparent text-white" : "border-[#e4e0d6] hover:bg-[#f8f6f1]"
+            }`}
+            style={quickFilter === chip.key ? { background: "#086c64" } : { color: "#949598" }}>
+            {chip.label} <span className="opacity-70">({chip.count})</span>
+          </button>
+        ))}
+        {quickFilter && (
+          <button onClick={() => setQuickFilter("")} className="text-xs font-medium underline" style={{ color: "#949598" }}>
+            Clear
           </button>
         )}
       </div>

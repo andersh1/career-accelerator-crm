@@ -170,6 +170,7 @@ export default function KanbanBoard() {
           <option value="WEBSITE">Website</option>
           <option value="INSTAGRAM">Instagram</option>
           <option value="COLD_OUTREACH">Cold Outreach</option>
+          <option value="DIRECT_MAIL">Direct Mail</option>
           <option value="PAID_AD">Paid Ad</option>
         </select>
         <div className="flex-1" />
@@ -277,9 +278,19 @@ export default function KanbanBoard() {
                       <span className="text-sm font-bold" style={{ color: "#14211f" }}>{stg.label}</span>
                       {isDraggable && <span className="text-[9px] font-normal" style={{ color: "#949598" }}>drag to move</span>}
                     </div>
-                    <span className="text-xs font-bold bg-white px-1.5 py-0.5 rounded-full" style={{ color: "#949598" }}>
-                      {stageLeads.length}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {(() => {
+                        const total = stageLeads.reduce((s, l) => s + (l.dealValue ?? 0), 0);
+                        return total > 0 ? (
+                          <span className="text-[10px] font-bold bg-white/70 px-1.5 py-0.5 rounded-full" style={{ color: "#086c64" }}>
+                            ${total >= 1000 ? `${Math.round(total / 1000)}k` : total.toLocaleString()}
+                          </span>
+                        ) : null;
+                      })()}
+                      <span className="text-xs font-bold bg-white px-1.5 py-0.5 rounded-full" style={{ color: "#949598" }}>
+                        {stageLeads.length}
+                      </span>
+                    </div>
                   </div>
 
                   <div className={`flex-1 space-y-2.5 overflow-y-auto pr-0.5 scrollbar-thin rounded-2xl transition-colors ${
