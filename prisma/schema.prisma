@@ -81,6 +81,7 @@ model Cohort {
   id        String           @id @default(cuid())
   name      String
   isActive  Boolean          @default(true)
+  founderMode Boolean        @default(false)
   capacity  Int?
   startDate DateTime? @db.Timestamptz(6)
   createdAt DateTime         @default(now())

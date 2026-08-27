@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
 import {
-  Plus, Edit2, Check, X, Loader2, Power, GraduationCap,
+  Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket,
   ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen,
   Calendar, Link2, MapPin, Save,
 } from "lucide-react";
@@ -45,7 +45,7 @@ interface Student {
 }
 
 interface Cohort {
-  id: string; name: string; isActive: boolean; capacity: number | null;
+  id: string; name: string; isActive: boolean; founderMode: boolean; capacity: number | null;
   startDate: string | null; createdAt: string;
   enrolled: number; fillPct: number | null; spotsLeft: number | null;
 }
@@ -143,6 +143,16 @@ export default function CohortsPage() {
     });
     const updated = await res.json();
     setCohorts(prev => prev.map(c => c.id === id ? { ...c, isActive: updated.isActive } : c));
+  }
+
+  async function toggleFounder(id: string, current: boolean) {
+    const res = await fetch(`/api/crm/cohorts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ founderMode: !current }),
+    });
+    const updated = await res.json();
+    setCohorts(prev => prev.map(c => c.id === id ? { ...c, founderMode: updated.founderMode } : c));
   }
 
   async function graduateCohort() {
@@ -355,6 +365,7 @@ export default function CohortsPage() {
                 onEditCancel={() => setEditingId(null)}
                 saving={saving === cohort.id}
                 onToggleActive={() => toggleActive(cohort.id, cohort.isActive)}
+                onToggleFounder={() => toggleFounder(cohort.id, cohort.founderMode)}
                 onGraduate={() => setGraduateTarget(cohort)}
                 onPublish={() => setPublishTarget(cohort)}
                 onAssignStudent={assignStudent}
@@ -396,6 +407,7 @@ export default function CohortsPage() {
                 onEditCancel={() => setEditingId(null)}
                 saving={saving === cohort.id}
                 onToggleActive={() => toggleActive(cohort.id, cohort.isActive)}
+                onToggleFounder={() => toggleFounder(cohort.id, cohort.founderMode)}
                 onGraduate={() => setGraduateTarget(cohort)}
                 onPublish={() => setPublishTarget(cohort)}
                 onAssignStudent={assignStudent}
@@ -509,6 +521,7 @@ interface CohortCardProps {
   onEditCancel: () => void;
   saving: boolean;
   onToggleActive: () => void;
+  onToggleFounder: () => void;
   onGraduate: () => void;
   onPublish: () => void;
   onAssignStudent: (studentId: string, cohortId: string, cohortName: string) => void;
@@ -520,7 +533,7 @@ function CohortCard({
   editing, editName, editCap, editStartDate,
   onEditStart, onEditName, onEditCap, onEditStartDate,
   onEditSave, onEditCancel, saving,
-  onToggleActive, onGraduate, onPublish,
+  onToggleActive, onToggleFounder, onGraduate, onPublish,
   onAssignStudent, reassigning,
 }: CohortCardProps) {
   const enrolled  = students.filter(s => s.cohortId === cohort.id);
@@ -714,6 +727,22 @@ function CohortCard({
             >
               <Power size={13} />
             </button>
+            {/* Founder Mode toggle */}
+            {cohort.isActive && (
+              <button
+                onClick={onToggleFounder}
+                title={cohort.founderMode
+                  ? "Founder Mode is ON — students see the founder dashboard layer. Click to turn off."
+                  : "Turn on Founder Mode — adds the momentum chip, weekly founder moves, and pipeline teaser to this cohort's student dashboard."}
+                className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition"
+                style={cohort.founderMode
+                  ? { background: "#086c64", color: "#ffffff" }
+                  : { background: "#f1efe8", color: "#949598" }}
+              >
+                <Rocket size={12} />
+                {cohort.founderMode ? "Founder Mode: ON" : "Founder Mode"}
+              </button>
+            )}
             {/* Publish to LMS */}
             {cohort.isActive && enrolled.length > 0 && (
               <button

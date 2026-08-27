@@ -22,6 +22,7 @@ export async function GET() {
     id:        c.id,
     name:      c.name,
     isActive:  c.isActive,
+    founderMode: c.founderMode,
     capacity:  c.capacity,
     startDate: c.startDate,
     createdAt: c.createdAt,
