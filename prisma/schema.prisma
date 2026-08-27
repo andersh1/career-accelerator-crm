@@ -906,6 +906,7 @@ model User {
   crmRole              String?   // ADMIN | MEMBER — CRM access role; null = LMS-only student
   calendlyUrl          String?   // coach Calendly scheduling link (admins only)
   officeHoursUrl       String?   // office-hours Calendly link (admins only) — quick-help bookings
+  mcpToken             String?   @unique // personal access token for the Claude MCP connector
   threeSixtyToken      String?   @unique // public 360-ask link token
   threeSixtyResponses  ThreeSixtyResponse[]
   gmailRefreshToken    String?
