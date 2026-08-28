@@ -189,7 +189,7 @@ export async function sendAdminApplicationAlert({
   leadId: string; notes: string | null;
 }) {
   if (!resend) return;
-  const subject = `New 3i NextGen application: ${firstName} ${lastName}`;
+  const subject = `New application: ${firstName} ${lastName}`;
   const leadUrl = `${CRM_URL}/leads/${leadId}`;
 
   // Parse notes into labeled rows for a clean preview
@@ -228,7 +228,7 @@ export async function sendAdminApplicationAlert({
   try {
     await resend.emails.send({
       from: FROM,
-      to: ["dan@10ximpact.co", "caleb@10ximpact.co"],
+      to: ["caleb@vantagecareer.co", "dan@vantagecareer.co"],
       subject,
       html: wrap(subject, body),
     });

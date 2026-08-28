@@ -82,6 +82,10 @@ model Cohort {
   name      String
   isActive  Boolean          @default(true)
   founderMode Boolean        @default(false)
+  orientationDate         DateTime? @db.Timestamptz(6)
+  orientationZoomLink     String?
+  orientationDeckUrl      String?
+  orientationRecordingUrl String?
   capacity  Int?
   startDate DateTime? @db.Timestamptz(6)
   createdAt DateTime         @default(now())

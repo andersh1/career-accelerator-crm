@@ -209,7 +209,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "How do I make sure I receive it?",
-        body:  "The digest goes to the email set in the ADMIN_NOTIFICATION_EMAIL environment variable (currently dan@10ximpact.co). It only fires on days when 1-on-1 sessions are booked in the LMS.",
+        body:  "The digest goes to each coach's own account email on days when that coach has 1-on-1 sessions booked in the LMS. Support tickets and fallback alerts go to caleb@vantagecareer.co.",
       },
     ],
   },

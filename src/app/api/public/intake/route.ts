@@ -186,8 +186,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Email Dan + Caleb for 3i NextGen applications
-  if (isApplication && source?.trim() === "3I_NEXTGEN") {
+  // Email Caleb + Dan for every new application, regardless of source
+  if (isApplication) {
     try {
       await sendAdminApplicationAlert({
         firstName: firstName.trim(),
