@@ -32,6 +32,23 @@ export async function renderTemplate(
   return { subject: subVars(t.subject, vars), bodyHtml: textToHtml(subVars(t.body, vars)) };
 }
 
+/**
+ * The Resend SDK resolves with { data, error } rather than throwing, so an
+ * unchecked send makes a rejected email look delivered. Route sends through
+ * this so failures are logged instead of vanishing.
+ */
+async function sendChecked(args: Parameters<NonNullable<typeof resend>["emails"]["send"]>[0]): Promise<void> {
+  if (!resend) {
+    console.error("[email] RESEND_API_KEY is not set — skipping send");
+    return;
+  }
+  const { error } = await resend.emails.send(args);
+  if (error) {
+    console.error("[email] send failed:", JSON.stringify(error));
+    throw new Error(`Resend rejected send: ${error.message ?? JSON.stringify(error)}`);
+  }
+}
+
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
 <body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -106,7 +123,7 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
     <p style="margin:0 0 8px;color:#94a3b8;font-size:12px;">This link expires in 1 hour. If you didn't request a reset, you can ignore this email.</p>
   `;
   try {
-    await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+    await sendChecked({ from: FROM, to, subject, html: wrap(subject, body) });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
@@ -135,7 +152,7 @@ export async function sendSequenceEmail({
     ? `<img src="${CRM_URL}/api/crm/email-open?aid=${activityId}" width="1" height="1" style="display:none" alt="" />`
     : "";
   try {
-    await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, htmlBody) + pixel + (unsubHtml ?? "") });
+    await sendChecked({ from: FROM, to, subject, html: wrap(subject, htmlBody) + pixel + (unsubHtml ?? "") });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
@@ -153,7 +170,7 @@ export async function sendIntakeConfirmationEmail({
     body: `Hey {{firstName}},\n\nWe received your application to **Vantage Career Accelerator** and we're excited to learn more about you. A member of our team will reach out within **1–2 business days** to talk through your goals and next steps.\n\n**What happens next:**\n1. We review your application\n2. A coach schedules a discovery call with you\n3. You get matched to the right cohort\n\nIn the meantime, feel free to reply to this email with any questions. We're rooting for you.`,
   }, { firstName });
   if (!t) return; // switched off in the Email Playbook
-  await resend.emails.send({ from: FROM, to, subject: t.subject, html: wrap(t.subject, t.bodyHtml) });
+  await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, t.bodyHtml) });
 }
 
 export async function sendGraduationEmail({
@@ -179,7 +196,7 @@ export async function sendGraduationEmail({
       Keep pushing. The best is ahead. We're rooting for you.
     </p>
   `;
-  await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+  await sendChecked({ from: FROM, to, subject, html: wrap(subject, body) });
 }
 
 export async function sendAdminApplicationAlert({
@@ -226,7 +243,7 @@ export async function sendAdminApplicationAlert({
     </a>
   `;
   try {
-    await resend.emails.send({
+    await sendChecked({
       from: FROM,
       to: ["caleb@vantagecareer.co", "dan@vantagecareer.co"],
       subject,
@@ -274,7 +291,7 @@ export async function sendCrmInviteEmail({
       Log in to CRM →
     </a>
   `;
-  await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+  await sendChecked({ from: FROM, to, subject, html: wrap(subject, body) });
 }
 
 export async function sendOutcomeFollowUpEmail({
@@ -302,7 +319,7 @@ export async function sendOutcomeFollowUpEmail({
     </p>
   `;
   try {
-    await resend.emails.send({ from: FROM, to, subject, html: wrap(subject, body) });
+    await sendChecked({ from: FROM, to, subject, html: wrap(subject, body) });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
@@ -328,5 +345,5 @@ export async function sendStudentInviteEmail({
       Set up my account →
     </a>
     <p style="margin:0;color:#94a3b8;font-size:12px;">This link expires in 7 days. If you didn't expect this email, you can ignore it.</p>`;
-  await resend.emails.send({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
+  await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
 }
