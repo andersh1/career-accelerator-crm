@@ -89,7 +89,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "What do the stages mean?",
-        body:  "Lead — new contact, not yet reached out to.\nWaiting to Meet — requested a free consultation (usually from the website or a direct-mail postcard) and needs a call scheduled. These arrive automatically from the /postcard consultation form.\nContacted — you've sent a message or had a first call.\nQualified — confirmed interest and they meet the program criteria.\nProposal — offer or acceptance discussion is in progress.\n\nLost contacts can be shown by toggling 'Show Lost' at the top of the board.",
+        body:  "Lead — new contact, not yet reached out to.\nWaiting to Meet — requested a consultation from the website and needs a call scheduled. These arrive automatically from the Schedule a Consultation form on vantagecareer.co.\nContacted — you've sent a message or had a first call.\nQualified — confirmed interest and they meet the program criteria.\nProposal — offer or acceptance discussion is in progress.\n\nLost contacts can be shown by toggling 'Show Lost' at the top of the board.",
       },
       {
         title: "What is the score badge?",
@@ -147,7 +147,7 @@ const SECTIONS: Section[] = [
       },
       {
         title: "What is Contact Type?",
-        body:  "Contact Type separates your contacts into groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Consultation — requested a free consultation call (often a parent, via the website or direct mail)\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.\n\nWebsite forms also record who filled out the form — a Parent or the Student (shown as a chip on the lead record; parents get a 'Their Student' section with the student's contact info) — plus their home ZIP code with city/state appended automatically.",
+        body:  "Contact Type separates your contacts into groups:\n• Waitlist — expressed interest, not yet applied\n• Application — submitted an application\n• Consultation — requested a free consultation call (often a parent, via the website or direct mail)\n• Stay in Touch — joined the mailing list from the website; nurture with newsletter/thought-leadership, not a sales follow-up\n• Student — currently enrolled in the program\n• Partner — company, university, or referral partner\n\nThis field drives what view a contact appears in.\n\nWebsite forms also record who filled out the form — a Parent or the Student (shown as a chip on the lead record; parents get a 'Their Student' section with the student's contact info) — plus their home ZIP code with city/state appended automatically.",
       },
       {
         title: "How do I add a new contact?",

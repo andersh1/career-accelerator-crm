@@ -532,6 +532,7 @@ model Module {
   oneOnOneSlots     OneOnOneSlot[]
   oneOnOneBookings  OneOnOneBooking[]
   discussionPosts   DiscussionPost[]
+  weeklyCheckins    WeeklyCheckin[]
 }
 
 model Note {
@@ -826,6 +827,56 @@ model SupportTicket {
   @@index([status])
 }
 
+model WeeklyCheckin {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  support     Int      // Q1, 1-5
+  blocker     String   // Q2, "Nothing" is valid
+  leastUseful String?  // Q3, optional on purpose
+  gate        String   // Q4, the module gate answer
+  submittedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, moduleId])
+}
+
+model OneOnOnePulse {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingId   String   @unique
+  clearAction String   // Yes | Sort of | No
+  unsaid      String?
+  submittedAt DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model InterventionFlag {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       String
+  owner      String    // DAN | CALEB
+  detail     String
+  dueBy      DateTime  @db.Timestamptz(6)
+  moduleId   String?
+  resolvedAt DateTime? @db.Timestamptz(6)
+  resolvedBy String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+model GrowthBattery {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  point       String   // ORIENTATION | MID | FINALE
+  answers     Json
+  submittedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, point])
+}
+
 model SurveyResponse {
   id          String   @id @default(cuid())
   userId      String
@@ -923,6 +974,10 @@ model User {
   coachingNotes        CoachingNote[]
   worksheetResponses   WorksheetResponse[]
   surveyResponses      SurveyResponse[]
+  growthBatteries      GrowthBattery[]
+  weeklyCheckins       WeeklyCheckin[]
+  oneOnOnePulses       OneOnOnePulse[]
+  interventionFlags    InterventionFlag[]
   notifications        Notification[]
   supportTickets       SupportTicket[]
   passwordResetTokens  PasswordResetToken[]
