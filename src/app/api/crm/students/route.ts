@@ -29,6 +29,24 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
 
+  // Care flags name a student as struggling, so they're admin-only — deliberately
+  // stricter than this endpoint's own gate. A MEMBER sees progress, not distress.
+  const flagsByUser = new Map<string, { kind: string; owner: string; detail: string; dueBy: Date }[]>();
+  if (crmRole === "ADMIN") {
+    const flags = await prisma.interventionFlag.findMany({
+      where: { resolvedAt: null, userId: { in: students.map(s => s.id) } },
+      orderBy: { dueBy: "asc" },
+      select: { userId: true, kind: true, owner: true, detail: true, dueBy: true },
+    });
+    for (const f of flags) {
+      const list = flagsByUser.get(f.userId) ?? [];
+      list.push({ kind: f.kind, owner: f.owner, detail: f.detail, dueBy: f.dueBy });
+      flagsByUser.set(f.userId, list);
+    }
+  }
+
+  const now = Date.now();
+
   return NextResponse.json(students.map(s => ({
     id: s.id,
     name: s.name,
@@ -40,5 +58,9 @@ export async function GET() {
     certificateIssuedAt: s.certificateIssuedAt,
     sectionsCompleted: s._count.progress,
     lastActiveAt: s.progress[0]?.completedAt ?? null,
+    openFlags: (flagsByUser.get(s.id) ?? []).map(f => ({
+      kind: f.kind, owner: f.owner, detail: f.detail,
+      dueBy: f.dueBy, overdue: f.dueBy.getTime() < now,
+    })),
   })));
 }

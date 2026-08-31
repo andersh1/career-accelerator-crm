@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   GraduationCap, Mail, Phone, Search, MessageSquare,
-  ExternalLink, Loader2, BookOpen, Activity,
+  ExternalLink, Loader2, BookOpen, Activity, AlertTriangle,
 } from "lucide-react";
 
 interface Student {
@@ -26,11 +26,17 @@ interface Student {
   sectionsCompleted?:  number;
   lastActiveAt?:       string | null;
   certificateIssuedAt?: string | null;
+  openFlags?:          OpenFlag[];
+}
+
+interface OpenFlag {
+  kind: string; owner: string; detail: string; dueBy: string; overdue: boolean;
 }
 
 interface LMSStudent {
   email: string; cohort: string | null; sectionsCompleted: number;
   lastActiveAt: string | null; certificateIssuedAt: string | null;
+  openFlags?: OpenFlag[];
 }
 
 export default function StudentsPage() {
@@ -57,7 +63,7 @@ export default function StudentsPage() {
         const lms = lmsMap.get(l.email.toLowerCase());
         const fallbackCohort = l.tags.includes("founding-cohort") ? "Founding Cohort (Summer 2026)" : null;
         return lms
-          ? { ...l, cohort: lms.cohort ?? fallbackCohort, sectionsCompleted: lms.sectionsCompleted, lastActiveAt: lms.lastActiveAt, certificateIssuedAt: lms.certificateIssuedAt }
+          ? { ...l, cohort: lms.cohort ?? fallbackCohort, sectionsCompleted: lms.sectionsCompleted, lastActiveAt: lms.lastActiveAt, certificateIssuedAt: lms.certificateIssuedAt, openFlags: lms.openFlags ?? [] }
           : { ...l, cohort: fallbackCohort };
       }));
     } else {
@@ -171,6 +177,35 @@ export default function StudentsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(s => (
             <div key={s.id} className="card shadow-sm hover:shadow-md hover:border-[#c9c4b8] transition-all p-5">
+              {/* Open care flags — admin-only; the API omits these for non-admins */}
+              {(s.openFlags?.length ?? 0) > 0 && (
+                <div className="mb-3 rounded-lg border px-3 py-2"
+                  style={{ background: s.openFlags!.some(f => f.overdue) ? "#fdeaea" : "#fff8ed",
+                           borderColor: s.openFlags!.some(f => f.overdue) ? "#f3c4c4" : "#fde68a" }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <AlertTriangle size={11} style={{ color: s.openFlags!.some(f => f.overdue) ? "#b91c1c" : "#b45309" }} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: s.openFlags!.some(f => f.overdue) ? "#b91c1c" : "#b45309" }}>
+                      {s.openFlags!.some(f => f.overdue) ? "Needs follow-up · overdue" : "Needs follow-up"}
+                    </span>
+                  </div>
+                  {s.openFlags!.slice(0, 2).map((f, i) => (
+                    <p key={i} className="text-[11px] leading-snug" style={{ color: "#5a6663" }}>
+                      {f.detail} <span style={{ color: "#949598" }}>({f.owner})</span>
+                    </p>
+                  ))}
+                  {s.openFlags!.length > 2 && (
+                    <p className="text-[10px] mt-0.5" style={{ color: "#949598" }}>
+                      +{s.openFlags!.length - 2} more
+                    </p>
+                  )}
+                  <a href="https://lms.vantagecareer.co/admin/flags" target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] font-semibold mt-1 inline-block" style={{ color: "#086c64" }}>
+                    Open the flags board &rarr;
+                  </a>
+                </div>
+              )}
+
               {/* Avatar + name */}
               <div className="flex items-start gap-3 mb-4">
                 <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${avatarColor(s.firstName + s.lastName)} flex items-center justify-center flex-shrink-0 shadow-sm`}>

@@ -37,11 +37,22 @@ const TOOLS = [
   },
   {
     name: "get_student",
-    description: "Full record for one student by name or email: application details, activity timeline, pre-work answers and session questions per module, assignment submissions with feedback, and private coach notes.",
+    description: "Full record for one student by name or email: open care flags (raised when they report struggling, hit a blocker, fail a module gate, or go quiet), application details, activity timeline, pre-work answers and session questions per module, assignment submissions with feedback, and private coach notes. Always lead with openFlags — a student can look fine on paper and still be asking for help.",
     inputSchema: {
       type: "object",
       properties: { query: { type: "string", description: "Student name or email" } },
       required: ["query"],
+    },
+  },
+  {
+    name: "list_open_flags",
+    description: "Every unresolved student-care flag across the program, most urgent first: who it's about, what was said, who owns the follow-up (DAN or CALEB), when it's due, and whether it's overdue. Use this to answer 'who needs attention?' or 'what's on my plate?'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        owner: { type: "string", description: "Optional filter: 'DAN' or 'CALEB'" },
+        overdueOnly: { type: "boolean", description: "Only flags past their follow-up deadline" },
+      },
     },
   },
   {
@@ -175,7 +186,7 @@ async function runTool(
   if (name === "get_student") {
     const u = await findStudent(String(input.query ?? ""));
     if (!u) return JSON.stringify({ error: "No student matched that name/email" });
-    const [lead, prework, submissions, progressCount, coachNotes] = await Promise.all([
+    const [lead, prework, submissions, progressCount, coachNotes, openFlags] = await Promise.all([
       prisma.lead.findFirst({
         where: { email: { equals: u.email, mode: "insensitive" } },
         select: {
@@ -201,9 +212,22 @@ async function runTool(
         where: { userId: u.id },
         select: { moduleId: true, sectionKey: true, content: true },
       }),
+      // Open care flags. Whoever is asking about this student needs to know
+      // they've said they're struggling BEFORE they read the assignment list.
+      prisma.interventionFlag.findMany({
+        where: { userId: u.id, resolvedAt: null },
+        orderBy: { dueBy: "asc" },
+        select: { kind: true, owner: true, detail: true, dueBy: true, createdAt: true },
+      }),
     ]);
+    const now = Date.now();
     return JSON.stringify({
       student: { name: u.name, email: u.email, cohort: u.cohort, onboarded: !!u.onboardedAt, sectionsCompleted: progressCount },
+      openFlags: openFlags.map(f => ({
+        kind: f.kind, owner: f.owner, detail: f.detail,
+        dueBy: f.dueBy, raisedAt: f.createdAt,
+        overdue: f.dueBy.getTime() < now,
+      })),
       application: lead,
       prework: prework.map(p => ({
         module: `M${p.module.number} ${p.module.title}`,
@@ -214,6 +238,28 @@ async function runTool(
       assignments: submissions,
       coachNotes,
     });
+  }
+
+  if (name === "list_open_flags") {
+    const owner = typeof input.owner === "string" ? input.owner.toUpperCase() : undefined;
+    const flags = await prisma.interventionFlag.findMany({
+      where: { resolvedAt: null, ...(owner === "DAN" || owner === "CALEB" ? { owner } : {}) },
+      orderBy: { dueBy: "asc" },
+      select: {
+        kind: true, owner: true, detail: true, dueBy: true, createdAt: true,
+        user: { select: { name: true, email: true, cohort: true } },
+      },
+    });
+    const now = Date.now();
+    const rows = flags
+      .map(f => ({
+        student: f.user.name, email: f.user.email, cohort: f.user.cohort,
+        kind: f.kind, owner: f.owner, detail: f.detail,
+        dueBy: f.dueBy, raisedAt: f.createdAt,
+        overdue: f.dueBy.getTime() < now,
+      }))
+      .filter(r => (input.overdueOnly === true ? r.overdue : true));
+    return JSON.stringify({ count: rows.length, flags: rows });
   }
 
   if (name === "list_missing_work") {
