@@ -80,7 +80,7 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
   const SAMPLES: Record<string, { vars: Record<string, string>; cta?: string; ctaUrl?: string }> = {
     "intake-confirmation": { vars: { firstName: "Jordan" } },
     "student-invite": {
-      vars: { firstName: "Jordan", cohortLine: "You're in **Career Accelerator — Cohort 2** — orientation is Tuesday, September 1." },
+      vars: { firstName: "Jordan", cohortLine: "You've been enrolled in the **Fellowship**." },
       cta: "Set up my account →", ctaUrl: LMS_URL,
     },
     "prework-reminder": {
@@ -335,7 +335,7 @@ export async function sendStudentInviteEmail({
   if (!resend) return;
   const t = await renderTemplate("student-invite", {
     subject: "Welcome to Vantage Career Accelerator — Set up your account",
-    body: `Hi {{firstName}},\n\nYou've been enrolled in the **Vantage Career Accelerator** program. Click below to set your password and access your student portal.\n\n{{cohortLine}}`,
+    body: `Hi {{firstName}},\n\nYou've been enrolled in the **Vantage Career Accelerator**. Click below to set your password and open your Fellow workspace.\n\n{{cohortLine}}`,
   }, {
     // The template greets with {{firstName}}. Passing the whole name rendered
     // "Matthew Schreiber — welcome." instead of "Matthew — welcome."
