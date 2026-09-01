@@ -353,6 +353,37 @@ export async function sendOutcomeFollowUpEmail({
   }
 }
 
+/**
+ * The module kick-off ("preamble") email — one per module, per cohort.
+ *
+ * Copy lives in the Email Playbook as module-preamble-1 … -8, so Dan can write
+ * and edit each one without a deploy. Sending is driven by CohortSchedule
+ * .preambleDate, which is set per cohort, so the same eight templates serve
+ * every future Fellowship on its own dates.
+ *
+ * Returns true only if an email actually went out (false when the template is
+ * switched off, which is how a module stays unsent until its copy is ready).
+ */
+export async function sendModulePreambleEmail({
+  to, studentName, moduleNumber, moduleTitle, preworkDue, sessionDate, moduleUrl,
+}: {
+  to: string; studentName: string | null; moduleNumber: number; moduleTitle: string;
+  preworkDue: string; sessionDate: string; moduleUrl: string;
+}): Promise<boolean> {
+  if (!resend) return false;
+  const firstName = (studentName || "there").trim().split(/\s+/)[0];
+  const t = await renderTemplate(`module-preamble-${moduleNumber}`, {
+    subject: `Module ${moduleNumber}: ${moduleTitle} — {{firstName}}, here is the week ahead`,
+    body: `{{firstName}} —\n\nModule {{moduleNumber}} — {{moduleTitle}} is open.\n\nYour pre-work is due {{preworkDue}}, and we are together live on {{sessionDate}}.`,
+  }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate });
+  if (!t) return false; // no copy written yet, or switched off
+
+  const body = `${t.bodyHtml}
+    <a href="${moduleUrl}" style="display:inline-block;margin:8px 0 4px;background:#086c64;color:#fff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">Open Module ${moduleNumber} →</a>`;
+  await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
+  return true;
+}
+
 export async function sendStudentInviteEmail({
   to, studentName, resetUrl, cohort,
 }: {

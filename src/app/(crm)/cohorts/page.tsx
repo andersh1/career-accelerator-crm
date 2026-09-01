@@ -67,6 +67,8 @@ interface ScheduleEntry {
   sessionDate:     string | null;
   sessionLocation: string | null;
   sessionZoomLink: string | null;
+  preambleDate:    string | null;
+  preambleSentAt:  string | null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -579,7 +581,7 @@ function CohortCard({
         const updated = await res.json();
         setSchedule(prev => prev?.map(r =>
           r.moduleId === moduleId
-            ? { ...r, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink }
+            ? { ...r, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt }
             : r
         ) ?? null);
         setEditingRow(null);
@@ -998,6 +1000,7 @@ function CohortCard({
                                   sessionDate:     toEasternInput(row.sessionDate),
                                   sessionLocation: row.sessionLocation ?? "",
                                   sessionZoomLink: row.sessionZoomLink ?? "",
+                                  preambleDate:    toEasternInput(row.preambleDate),
                                 });
                               }}
                               className="text-xs font-semibold px-2.5 py-1 rounded-lg transition"
@@ -1056,9 +1059,39 @@ function CohortCard({
                                 style={{ borderColor: "#e4e0d6", color: "#14211f" }}
                               />
                             </div>
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                <Send size={10} /> Kick-off email — sends 9:00 AM ET on this date
+                              </label>
+                              <input type="datetime-local"
+                                value={(rowDraft.preambleDate as string) ?? ""}
+                                onChange={e => setRowDraft(d => ({ ...d, preambleDate: e.target.value }))}
+                                className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                                style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                              />
+                              <p className="text-[10px] mt-1" style={{ color: "#949598" }}>
+                                Copy lives in Automation → Email Playbook as <span className="font-mono">module-preamble-{row.moduleNumber}</span>.
+                                Nothing sends while that template is switched off.
+                              </p>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            {row.preambleSentAt ? (
+                              <span className="text-xs flex items-center gap-1" style={{ color: "#086c64" }}>
+                                <Send size={10} />
+                                Kick-off sent {new Date(row.preambleSentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            ) : row.preambleDate ? (
+                              <span className="text-xs flex items-center gap-1" style={{ color: "#b45309" }}>
+                                <Send size={10} />
+                                Kick-off {new Date(row.preambleDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            ) : (
+                              <span className="text-xs flex items-center gap-1" style={{ color: "#949598" }}>
+                                <Send size={10} /> No kick-off scheduled
+                              </span>
+                            )}
                             {row.preworkDue ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
                                 <Calendar size={10} style={{ color: "#949598" }} />

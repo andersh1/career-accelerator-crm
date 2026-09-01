@@ -106,6 +106,10 @@ model CohortSchedule {
   sessionDate     DateTime?
   sessionLocation String?
   sessionZoomLink String?
+  /// When this module's kick-off email goes out. Null = not scheduled.
+  preambleDate    DateTime? @db.Timestamptz(6)
+  /// Stamped once sent, so a re-run cannot mail the cohort twice.
+  preambleSentAt  DateTime? @db.Timestamptz(6)
 
   @@unique([cohortId, moduleId])
 }
