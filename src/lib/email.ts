@@ -6,6 +6,7 @@ const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 // ── DB-backed templates (editable in Automation → Email Playbook) ────────────
 import { prisma } from "@/lib/prisma";
+import { publicCohortLabel } from "@/lib/cohort-label";
 function subVars(s: string, vars: Record<string, string>) {
   return s.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
@@ -339,7 +340,7 @@ export async function sendStudentInviteEmail({
     // The template greets with {{firstName}}. Passing the whole name rendered
     // "Matthew Schreiber — welcome." instead of "Matthew — welcome."
     firstName: (studentName || "there").trim().split(/\s+/)[0],
-    cohortLine: cohort ? `You've been enrolled in **${cohort}**.` : "",
+    cohortLine: cohort ? `You've been enrolled in the **${publicCohortLabel(cohort)}**.` : "",
   });
   if (!t) return; // switched off in the Email Playbook
   const body = `${t.bodyHtml}
