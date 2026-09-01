@@ -55,6 +55,7 @@ interface Student {
 interface Cohort {
   id: string; name: string; isActive: boolean; founderMode: boolean; capacity: number | null;
   startDate: string | null; createdAt: string;
+  publishedAt: string | null; invitesSent: number;
   enrolled: number; fillPct: number | null; spotsLeft: number | null;
 }
 
@@ -672,6 +673,22 @@ function CohortCard({
                 <span className="text-xs" style={{ color: "#949598" }}>
                   {cohort.enrolled} enrolled{cohort.capacity ? ` / ${cohort.capacity}` : ""}
                 </span>
+                {/* Was this cohort ever published? The roster pills describe where
+                    Fellows are, but said nothing about whether the invite run
+                    happened — so a published cohort read as untouched. */}
+                {cohort.publishedAt ? (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1"
+                    style={{ background: "#edf5f4", color: "#086c64" }}
+                    title={`${cohort.invitesSent} invite email${cohort.invitesSent === 1 ? "" : "s"} sent`}>
+                    ✓ Published {new Date(cohort.publishedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    {cohort.invitesSent > 0 ? ` · ${cohort.invitesSent} invited` : ""}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                    style={{ background: "#f1efe8", color: "#949598" }}>
+                    Not published
+                  </span>
+                )}
                 {/* LMS summary pills */}
                 {cohort.isActive && enrolled.length > 0 && (
                   <>

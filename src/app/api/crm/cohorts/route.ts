@@ -26,6 +26,8 @@ export async function GET() {
     capacity:  c.capacity,
     startDate: c.startDate,
     createdAt: c.createdAt,
+    publishedAt: c.publishedAt,
+    invitesSent: c.invitesSent,
     enrolled:  c._count.users,
     fillPct:   c.capacity ? Math.round((c._count.users / c.capacity) * 100) : null,
     spotsLeft: c.capacity != null ? Math.max(0, c.capacity - c._count.users) : null,

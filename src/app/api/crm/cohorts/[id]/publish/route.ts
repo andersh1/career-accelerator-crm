@@ -94,6 +94,12 @@ export async function POST(
     });
   }
 
+  // Record the publish itself so the cohort card can show it happened.
+  await prisma.cohort.update({
+    where: { id: params.id },
+    data: { publishedAt: cohort.publishedAt ?? new Date(), invitesSent: { increment: invitesSent } },
+  }).catch(() => {});
+
   return NextResponse.json({
     published: toPublish.length,
     invitesSent,
