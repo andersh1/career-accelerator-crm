@@ -38,6 +38,31 @@ export async function renderTemplate(
  * unchecked send makes a rejected email look delivered. Route sends through
  * this so failures are logged instead of vanishing.
  */
+/**
+ * Record an outbound email on the recipient's contact record.
+ *
+ * The LMS logs its automated mail this way; this app did not, so anything sent
+ * from the CRM's own sender — the student invites among them — went out with no
+ * trace on the contact. Never throws: logging must not stop a send.
+ */
+async function logEmailActivity(to: string | string[], subject: string, source = "TEMPLATE"): Promise<void> {
+  try {
+    for (const addr of (Array.isArray(to) ? to : [to]).filter(Boolean)) {
+      const lead = await prisma.lead.findFirst({
+        where: { email: { equals: addr, mode: "insensitive" }, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) continue;
+      await prisma.leadActivity.create({
+        data: { leadId: lead.id, type: "EMAIL", subject, emailTo: addr, source,
+                content: `Automated email: ${subject}` },
+      });
+    }
+  } catch (e) {
+    console.error("[email] activity log failed (send still succeeded):", e);
+  }
+}
+
 async function sendChecked(args: Parameters<NonNullable<typeof resend>["emails"]["send"]>[0]): Promise<void> {
   if (!resend) {
     console.error("[email] RESEND_API_KEY is not set — skipping send");
@@ -48,6 +73,7 @@ async function sendChecked(args: Parameters<NonNullable<typeof resend>["emails"]
     console.error("[email] send failed:", JSON.stringify(error));
     throw new Error(`Resend rejected send: ${error.message ?? JSON.stringify(error)}`);
   }
+  await logEmailActivity(args.to as string | string[], String(args.subject ?? ""));
 }
 
 function wrap(title: string, body: string) {

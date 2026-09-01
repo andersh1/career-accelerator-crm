@@ -13,10 +13,17 @@ import {
 
 type LmsStatus = "pending" | "invited" | "active" | "graduated";
 
+/**
+ * "Invited" means we sent them a set-up link — it used to key off onboardedAt,
+ * which publishing stamped on every student. Publishing no longer does that (it
+ * made them skip the welcome sequence), so invited now has its own field and
+ * this reads what actually happened rather than a side effect.
+ */
 function lmsStatus(s: Student): LmsStatus {
   if (s.certificateIssuedAt) return "graduated";
   if (s.onboardedAt && (s.sectionsCompleted > 0 || s.lastActiveAt)) return "active";
-  if (s.onboardedAt) return "invited";
+  if (s.onboardedAt) return "active";      // finished onboarding, not yet worked
+  if (s.invitedAt) return "invited";       // invite sent, not set up yet
   return "pending";
 }
 
@@ -39,6 +46,7 @@ const STATUS_COLOR: Record<LmsStatus, { bg: string; text: string; dot: string }>
 interface Student {
   id: string; name: string; email: string; cohort: string | null; cohortId: string | null;
   onboardedAt: string | null;
+  invitedAt: string | null;
   certificateIssuedAt: string | null;
   sectionsCompleted: number;
   lastActiveAt: string | null;

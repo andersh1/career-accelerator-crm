@@ -18,6 +18,7 @@ export async function GET() {
       cohort: true, cohortId: true,
       createdAt: true,
       onboardedAt: true,
+      invitedAt: true,
       certificateIssuedAt: true,
       _count: { select: { progress: true } },
       progress: {
@@ -55,6 +56,7 @@ export async function GET() {
     cohortId: s.cohortId,
     createdAt: s.createdAt,
     onboardedAt: s.onboardedAt,
+    invitedAt: s.invitedAt,
     certificateIssuedAt: s.certificateIssuedAt,
     sectionsCompleted: s._count.progress,
     lastActiveAt: s.progress[0]?.completedAt ?? null,

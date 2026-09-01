@@ -965,6 +965,7 @@ model User {
   mcpToken             String?   @unique // personal access token for the Claude MCP connector
   threeSixtyToken      String?   @unique // public 360-ask link token
   calendarToken        String?   @unique // self-authenticating calendar subscription feed
+  invitedAt            DateTime? @db.Timestamptz(6) // invite email sent; distinct from onboardedAt
   threeSixtyResponses  ThreeSixtyResponse[]
   gmailRefreshToken    String?
   gmailEmail           String?
