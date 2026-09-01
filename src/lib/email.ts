@@ -347,3 +347,112 @@ export async function sendStudentInviteEmail({
     <p style="margin:0;color:#94a3b8;font-size:12px;">This link expires in 7 days. If you didn't expect this email, you can ignore it.</p>`;
   await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Website funnel (consultation + stay in touch)
+//
+// These send from the CRM so the copy lives in Automation → Email Playbook
+// alongside the student emails. The LMS website posts to /api/public/intake
+// and this file does the sending.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SITE_URL = process.env.SITE_URL ?? "https://vantagecareer.co";
+const CONSULT_CALENDLY_URL =
+  process.env.CONSULT_CALENDLY_URL ?? "https://calendly.com/dan-sommer/vantage-consultation";
+
+/** Who gets internal lead alerts. Comma separated; defaults to Dan + Caleb. */
+export const LEAD_ALERT_EMAILS = (
+  process.env.LEAD_ALERT_EMAILS ?? "dan@vantagecareer.co,caleb@vantagecareer.co"
+).split(",").map(s => s.trim()).filter(Boolean);
+
+const ctaButton = (href: string, label: string) =>
+  `<p style="margin:26px 0 0;"><a href="${href}" style="display:inline-block;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 30px;border-radius:999px;text-decoration:none;">${label}</a></p>`;
+
+/** Confirmation to someone who requested a consultation. */
+export async function sendConsultationConfirmation({
+  to, firstName, isParent, alreadyBooked,
+}: { to: string; firstName: string; isParent: boolean; alreadyBooked?: boolean }) {
+  const t = await renderTemplate("consultation-confirmation", {
+    subject: "Your Vantage consultation — next steps",
+    body: `Hi {{firstName}},\n\nThanks for reaching out about the Vantage Fellowship. Your request is in.\n\n**What happens next:** a 30-minute conversation with Dan Sommer, who founded and led Trilogy Education to a $750M exit and now coaches every Fellow personally. He'll walk through what the eight weeks cover and give you a straight answer on whether it's a fit for {{who}} — no pressure, no pitch.\n\nJust reply to this email if anything comes up before you talk.`,
+  }, { firstName, who: isParent ? "your student" : "you" });
+  if (!t) return; // switched off in the Email Playbook
+
+  const body = t.bodyHtml + (alreadyBooked ? "" : ctaButton(CONSULT_CALENDLY_URL, "Choose a Time →"));
+  await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
+}
+
+/** Confirmation to someone who joined the mailing list. */
+export async function sendStayInTouchConfirmation({
+  to, firstName,
+}: { to: string; firstName: string }) {
+  const t = await renderTemplate("stay-in-touch-confirmation", {
+    subject: "You're on the Vantage list",
+    body: `Hi {{firstName}},\n\nYou're on the list. We'll send the occasional note on how students actually stand out in this job market — plus first word when new Fellowship dates open.\n\nNo spam, and you can unsubscribe any time.`,
+  }, { firstName });
+  if (!t) return;
+
+  await sendChecked({
+    from: FROM, to, subject: t.subject,
+    html: wrap(t.subject, t.bodyHtml + ctaButton(SITE_URL, "Explore the Fellowship →")),
+  });
+}
+
+const alertRow = (label: string, value: string) =>
+  `<tr><td style="padding:6px 0;color:#5a6663;font-size:13px;width:150px;">${label}</td><td style="padding:6px 0;font-weight:600;font-size:14px;">${value}</td></tr>`;
+
+/**
+ * Internal alert when someone submits a website form. Deliberately not a
+ * Playbook template — it is a structured field table, and it should not be
+ * possible to switch your own lead notifications off by accident.
+ */
+export async function sendLeadAlert({
+  firstName, lastName, email, phone, personaRole, academicYear, isSchedule, leadId,
+}: {
+  firstName: string; lastName: string; email: string; phone?: string | null;
+  personaRole?: string | null; academicYear?: string | null; isSchedule: boolean; leadId?: string | null;
+}) {
+  const label = isSchedule ? "Consultation request" : "Stay in Touch signup";
+  const body = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      ${alertRow("Name", `${firstName} ${lastName}`)}
+      ${personaRole ? alertRow("Role", personaRole === "PARENT" ? "Parent" : "Student") : ""}
+      ${alertRow("Email", `<a href="mailto:${email}" style="color:#086c64;">${email}</a>`)}
+      ${phone ? alertRow("Phone", `<a href="tel:${phone}" style="color:#086c64;">${phone}</a>`) : ""}
+      ${academicYear ? alertRow("Academic year", academicYear) : ""}
+    </table>
+    ${isSchedule ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They were sent to the scheduling link. You'll get a separate note if and when they actually book.</p>` : ""}
+    ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;
+  await sendChecked({
+    from: FROM, to: LEAD_ALERT_EMAILS,
+    subject: `${isSchedule ? "📅" : "✉️"} ${label} — ${firstName} ${lastName}`,
+    html: wrap(label, body),
+  });
+}
+
+/** Internal alert when a consultation is actually booked on Calendly. */
+export async function sendConsultationBookedAlert({
+  name, email, startTime, joinUrl, leadId, isNewLead,
+}: {
+  name: string; email: string; startTime: Date; joinUrl?: string | null;
+  leadId?: string | null; isNewLead?: boolean;
+}) {
+  const when = startTime.toLocaleString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short", timeZone: "America/New_York",
+  });
+  const body = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      ${alertRow("Name", name)}
+      ${alertRow("Email", `<a href="mailto:${email}" style="color:#086c64;">${email}</a>`)}
+      ${alertRow("When", when)}
+      ${joinUrl ? alertRow("Join", `<a href="${joinUrl}" style="color:#086c64;">Meeting link</a>`) : ""}
+    </table>
+    ${isNewLead ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They booked without going through the website form, so a new lead was created for them.</p>` : ""}
+    ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;
+  await sendChecked({
+    from: FROM, to: LEAD_ALERT_EMAILS,
+    subject: `✅ Consultation booked — ${name}`,
+    html: wrap("Consultation booked", body),
+  });
+}

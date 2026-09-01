@@ -7,7 +7,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendAdminApplicationAlert } from "@/lib/email";
+import {
+  sendAdminApplicationAlert,
+  sendLeadAlert,
+  sendConsultationConfirmation,
+  sendStayInTouchConfirmation,
+} from "@/lib/email";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -60,6 +65,7 @@ export async function POST(req: NextRequest) {
     studentLastName,
     studentEmail,
     studentPhone,
+    academicYear,
   } = body as Record<string, string | undefined>;
 
   // Required field validation
@@ -199,6 +205,30 @@ export async function POST(req: NextRequest) {
       });
     } catch (err) {
       console.error("[intake] Admin alert email failed:", err);
+    }
+  }
+
+  // Website funnel emails — the CRM owns this copy (Automation → Email Playbook).
+  // Never fail the request over email; the lead is already saved.
+  const isConsultation = leadType?.trim() === "CONSULTATION";
+  const isKeepInTouch  = leadType?.trim() === "KEEP_IN_TOUCH";
+  if (isConsultation || isKeepInTouch) {
+    const results = await Promise.allSettled([
+      sendLeadAlert({
+        firstName: firstName.trim(), lastName: lastName.trim(), email: normalizedEmail,
+        phone: phone?.trim() || null, personaRole: normalizedRole,
+        academicYear: academicYear?.trim() || null,
+        isSchedule: isConsultation, leadId: lead.id,
+      }),
+      isConsultation
+        ? sendConsultationConfirmation({
+            to: normalizedEmail, firstName: firstName.trim(),
+            isParent: normalizedRole === "PARENT",
+          })
+        : sendStayInTouchConfirmation({ to: normalizedEmail, firstName: firstName.trim() }),
+    ]);
+    for (const r of results) {
+      if (r.status === "rejected") console.error("[intake] funnel email failed:", r.reason);
     }
   }
 
