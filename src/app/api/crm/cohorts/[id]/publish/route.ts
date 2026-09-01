@@ -64,10 +64,17 @@ export async function POST(
         invitesSent++;
       }
 
-      await prisma.user.update({
-        where: { id: student.id },
-        data: { onboardedAt: student.onboardedAt ?? new Date() },
-      });
+      // Deliberately NOT setting onboardedAt here. Publishing invites a student;
+      // it does not mean they have been through onboarding. Stamping it on
+      // publish made every fellow skip the welcome sequence — including the
+      // Slack step — because the LMS treats a set onboardedAt as "already done".
+      // It is set when the student actually finishes the modal.
+      if (student.onboardedAt) {
+        await prisma.user.update({
+          where: { id: student.id },
+          data: { onboardedAt: student.onboardedAt },
+        });
+      }
     } catch (err) {
       errors.push(`${student.email}: ${err instanceof Error ? err.message : String(err)}`);
     }

@@ -964,6 +964,7 @@ model User {
   officeHoursUrl       String?   // office-hours Calendly link (admins only) — quick-help bookings
   mcpToken             String?   @unique // personal access token for the Claude MCP connector
   threeSixtyToken      String?   @unique // public 360-ask link token
+  calendarToken        String?   @unique // self-authenticating calendar subscription feed
   threeSixtyResponses  ThreeSixtyResponse[]
   gmailRefreshToken    String?
   gmailEmail           String?
@@ -996,6 +997,7 @@ model User {
   receivedMessages     DirectMessage[]  @relation("ReceivedMessages")
   jobApplications      JobApplication[]
   loginStreaks         LoginStreak[]
+  moduleViews          ModuleView[]
   referralCode         String?   @unique
 
   preworkNotesAbout PreworkNote[] @relation("PreworkNoteUser")
@@ -1031,4 +1033,16 @@ model WorksheetResponse {
   createdAt   DateTime @default(now())
 
   @@unique([userId, moduleId, worksheetId])
+}
+
+model ModuleView {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId  String
+  sectionId String?
+  viewedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
 }

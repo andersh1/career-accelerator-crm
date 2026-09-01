@@ -336,7 +336,9 @@ export async function sendStudentInviteEmail({
     subject: "Welcome to Vantage Career Accelerator — Set up your account",
     body: `Hi {{firstName}},\n\nYou've been enrolled in the **Vantage Career Accelerator** program. Click below to set your password and access your student portal.\n\n{{cohortLine}}`,
   }, {
-    firstName: studentName,
+    // The template greets with {{firstName}}. Passing the whole name rendered
+    // "Matthew Schreiber — welcome." instead of "Matthew — welcome."
+    firstName: (studentName || "there").trim().split(/\s+/)[0],
     cohortLine: cohort ? `You've been enrolled in **${cohort}**.` : "",
   });
   if (!t) return; // switched off in the Email Playbook
