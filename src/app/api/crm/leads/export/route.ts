@@ -57,6 +57,9 @@ export async function GET(req: NextRequest) {
     "First Name", "Last Name", "Email", "Phone", "Company", "Job Title",
     "LinkedIn URL", "Stage", "Source", "Priority", "Deal Value", "Payment Status",
     "Tags", "Notes", "Lost Reason", "Assigned To",
+    // UTM attribution — captured on the landing page. Without these, an export
+    // can say a lead came from "WEBSITE" but not which campaign brought them.
+    "UTM Source", "UTM Medium", "UTM Campaign", "UTM Content", "UTM Term",
     "LMS Student Name", "LMS Student Email",
     "Activity Count", "Created At", "Updated At",
   ];
@@ -78,6 +81,11 @@ export async function GET(req: NextRequest) {
     esc(l.notes),
     esc(l.lostReason),
     esc(l.assignedTo),
+    esc(l.utmSource),
+    esc(l.utmMedium),
+    esc(l.utmCampaign),
+    esc(l.utmContent),
+    esc(l.utmTerm),
     esc(l.enrolledUser?.name),
     esc(l.enrolledUser?.email),
     String(l._count.activities),
