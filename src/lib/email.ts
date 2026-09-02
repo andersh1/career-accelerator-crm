@@ -496,13 +496,34 @@ function preambleHtml(subject: string, bodyHtml: string, moduleNumber: number, m
 
 export async function sendModulePreambleEmail({
   to, studentName, moduleNumber, moduleTitle, preworkDue, sessionDate, moduleUrl,
+  ignoreEnabled = false,
 }: {
   to: string; studentName: string | null; moduleNumber: number; moduleTitle: string;
   preworkDue: string; sessionDate: string; moduleUrl: string;
+  /** Send even if the template is switched off — for an explicit "send now",
+   *  where the button press is the decision and the flag governs the cron. */
+  ignoreEnabled?: boolean;
 }): Promise<boolean> {
   if (!resend) return false;
   const firstName = (studentName || "there").trim().split(/\s+/)[0];
   const bookingUrl = await moduleBookingUrl(moduleUrl.split("/").pop() || null);
+
+  if (ignoreEnabled) {
+    const row = await prisma.emailTemplate.findUnique({
+      where: { key: `module-preamble-${moduleNumber}` },
+      select: { subject: true, body: true },
+    });
+    if (!row) return false;
+    const vars = { firstName, moduleNumber: String(moduleNumber), moduleTitle,
+                   preworkDue, sessionDate, bookingUrl };
+    const subject = subVars(row.subject, vars);
+    await sendChecked({
+      from: FROM, to, subject,
+      html: preambleHtml(subject, textToHtml(subVars(row.body, vars)), moduleNumber, moduleUrl),
+    });
+    return true;
+  }
+
   const t = await renderTemplate(`module-preamble-${moduleNumber}`, {
     subject: `Module ${moduleNumber}: ${moduleTitle} — {{firstName}}, here is the week ahead`,
     body: `{{firstName}} —\n\nModule {{moduleNumber}} — {{moduleTitle}} is open.\n\nYour pre-work is due {{preworkDue}}, and we are together live on {{sessionDate}}.`,

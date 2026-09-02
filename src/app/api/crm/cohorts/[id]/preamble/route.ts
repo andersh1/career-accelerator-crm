@@ -106,6 +106,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       preworkDue: fmt(row.preworkDue),
       sessionDate: fmt(row.sessionDate),
       moduleUrl: `${LMS_URL}/modules/${row.module.id}`,
+      // The button press is the decision; the enabled flag governs the cron.
+      ignoreEnabled: true,
     }).catch(() => false);
     if (ok) sent++; else failed.push(f.email);
   }
