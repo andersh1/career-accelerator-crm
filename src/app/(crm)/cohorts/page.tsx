@@ -557,6 +557,7 @@ function CohortCard({
   const [editingRow,   setEditingRow]   = useState<string | null>(null);
   const [rowDraft,     setRowDraft]     = useState<Partial<ScheduleEntry>>({});
   const [savingRow,    setSavingRow]    = useState<string | null>(null);
+  const [sendingPreamble, setSendingPreamble] = useState<string | null>(null);
 
   useEffect(() => {
     if (expanded && activeTab === "schedule" && schedule === null) {
@@ -568,6 +569,43 @@ function CohortCard({
         .finally(() => setSchedLoading(false));
     }
   }, [expanded, activeTab, schedule, cohort.id]);
+
+  /**
+   * Send a module's kick-off email to the whole cohort, now.
+   *
+   * Deliberately two calls: a dry run first, so the confirmation names the real
+   * recipients and their count rather than asking "are you sure?" about
+   * something nobody can see. Eleven people is small enough that sending to the
+   * wrong cohort is recoverable and embarrassing, and large enough that it is
+   * worth one look before it goes.
+   */
+  async function sendPreambleNow(moduleId: string, moduleNumber: number) {
+    setSendingPreamble(moduleId);
+    try {
+      const dry = await fetch(`/api/crm/cohorts/${cohort.id}/preamble`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId, dryRun: true }),
+      });
+      const d = await dry.json();
+      if (!dry.ok) { alert(d.error ?? "Could not prepare that send."); return; }
+
+      const names = d.wouldSendTo.map((f: { name: string | null; email: string }) => `  ${f.name ?? f.email}`).join("\n");
+      if (!confirm(`Send the Module ${moduleNumber} kick-off to ${d.count} Fellows in ${d.cohort}?\n\n${names}\n\nThis cannot be unsent.`)) return;
+
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/preamble`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId }),
+      });
+      const r = await res.json();
+      if (!res.ok) { alert(r.error ?? "Send failed."); return; }
+      alert(r.failed?.length
+        ? `Sent to ${r.sent} of ${r.of}. Failed: ${r.failed.join(", ")}`
+        : `Sent to all ${r.sent} Fellows.`);
+      setSchedule(prev => prev?.map(r => r.moduleId === moduleId ? { ...r, preambleSentAt: new Date().toISOString() } : r) ?? null);
+    } finally {
+      setSendingPreamble(null);
+    }
+  }
 
   async function saveRow(moduleId: string) {
     setSavingRow(moduleId);
@@ -1091,6 +1129,15 @@ function CohortCard({
                               <span className="text-xs flex items-center gap-1" style={{ color: "#949598" }}>
                                 <Send size={10} /> No kick-off scheduled
                               </span>
+                            )}
+                            {!row.preambleSentAt && (
+                              <button
+                                onClick={() => sendPreambleNow(row.moduleId, row.moduleNumber)}
+                                disabled={sendingPreamble === row.moduleId}
+                                className="text-xs font-semibold px-2 py-0.5 rounded-lg border hover:shadow-sm transition disabled:opacity-50"
+                                style={{ borderColor: "#e4e0d6", color: "#086c64" }}>
+                                {sendingPreamble === row.moduleId ? "Sending…" : "Send kick-off now"}
+                              </button>
                             )}
                             {row.preworkDue ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
