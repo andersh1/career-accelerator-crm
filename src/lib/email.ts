@@ -1,12 +1,13 @@
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.EMAIL_FROM ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
+const FROM = mailFrom();
 const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 // ── DB-backed templates (editable in Automation → Email Playbook) ────────────
 import { prisma } from "@/lib/prisma";
 import { publicCohortLabel } from "@/lib/cohort-label";
+import { mailFrom, mailReplyTo } from "@/lib/mail-from";
 function subVars(s: string, vars: Record<string, string>) {
   return s.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
@@ -85,7 +86,11 @@ async function sendChecked(args: Parameters<NonNullable<typeof resend>["emails"]
     console.error("[email] RESEND_API_KEY is not set — skipping send");
     return;
   }
-  const { error } = await resend.emails.send(args);
+  // Replies land in the shared inbox rather than at the From address, so a
+  // Fellow answering an automated email reaches a human. Callers that set their
+  // own replyTo (an applicant's address on an internal alert) keep theirs.
+  const withReply = { reply_to: mailReplyTo(), ...args };
+  const { error } = await resend.emails.send(withReply);
   if (error) {
     console.error("[email] send failed:", JSON.stringify(error));
     throw new Error(`Resend rejected send: ${error.message ?? JSON.stringify(error)}`);
@@ -368,6 +373,8 @@ export async function sendAdminApplicationAlert(args: {
     await sendChecked({
       from: FROM,
       to: ["caleb@vantagecareer.co", "dan@vantagecareer.co"],
+      // Hitting Reply on an alert about a person should reach that person.
+      reply_to: args.email,
       subject,
       html,
     });
@@ -700,7 +707,7 @@ export async function sendLeadAlert({
     ${isSchedule ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They were sent to the scheduling link. You'll get a separate note if and when they actually book.</p>` : ""}
     ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;
   await sendChecked({
-    from: FROM, to: LEAD_ALERT_EMAILS,
+    from: FROM, to: LEAD_ALERT_EMAILS, reply_to: email,
     subject: `${isSchedule ? "📅" : "✉️"} ${label} — ${firstName} ${lastName}`,
     html: wrap(label, body),
   });
@@ -727,7 +734,7 @@ export async function sendConsultationBookedAlert({
     ${isNewLead ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They booked without going through the website form, so a new lead was created for them.</p>` : ""}
     ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;
   await sendChecked({
-    from: FROM, to: LEAD_ALERT_EMAILS,
+    from: FROM, to: LEAD_ALERT_EMAILS, reply_to: email,
     subject: `✅ Consultation booked — ${name}`,
     html: wrap("Consultation booked", body),
   });

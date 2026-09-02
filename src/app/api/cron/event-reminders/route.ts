@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
+import { mailFrom } from "@/lib/mail-from";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.RESEND_FROM_EMAIL ?? "Vantage Career Accelerator <hello@vantagecareer.co>";
+const FROM   = mailFrom();
 
 function fmt(d: Date, tz: string, mode: "date" | "time") {
   return mode === "date"
