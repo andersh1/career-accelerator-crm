@@ -76,6 +76,21 @@ async function sendChecked(args: Parameters<NonNullable<typeof resend>["emails"]
   await logEmailActivity(args.to as string | string[], String(args.subject ?? ""));
 }
 
+/**
+ * Escape anything a person typed before it goes into an email's HTML.
+ *
+ * Applicants write "R&D", "pay > $60k", "<3" — unescaped, those silently break
+ * the layout of the message that lands in Dan's inbox, and the answer that
+ * broke it is the one you can no longer read.
+ */
+export function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
 <body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -226,55 +241,118 @@ export async function sendGraduationEmail({
   await sendChecked({ from: FROM, to, subject, html: wrap(subject, body) });
 }
 
-export async function sendAdminApplicationAlert({
+/**
+ * Application notes arrive as a plain-text block: some lines are "LABEL: value"
+ * pairs, others are a "LABEL:" heading followed by a free-text paragraph.
+ *
+ * Parsing this by blank line — as this used to — merged every adjacent one-line
+ * pair into a single row, so a real application arrived reading
+ * "YEAR: Junior MAJOR: Psych EXPECTED GRADUATION: ..." all under one heading.
+ * Lines are the unit here, not paragraphs.
+ */
+export function parseApplicationNotes(notes: string): { label: string; value: string; long: boolean }[] {
+  const out: { label: string; value: string; long: boolean }[] = [];
+  const lines = notes.split("\n");
+  // A label is SHOUTED — that's what distinguishes it from an applicant's prose.
+  // Parentheses may carry lowercase, because one of the real labels is
+  // "WHAT IS THE PROGRAM (their words):" and an uppercase-only rule dropped it
+  // into the body as though the applicant had typed it.
+  const LABEL = "[A-Z][A-Z0-9 '/&,.-]*(?:\\([^)]*\\)[A-Z0-9 '/&,.-]*)*";
+  const INLINE = new RegExp(`^(${LABEL}):[ \\t]+(.*\\S)\\s*$`);
+  const HEADING = new RegExp(`^(${LABEL}):[ \\t]*$`);
+
+  let pending: string | null = null;
+  let buffer: string[] = [];
+
+  const flush = () => {
+    if (pending) {
+      const value = buffer.join("\n").trim();
+      if (value) out.push({ label: pending, value, long: true });
+    }
+    pending = null;
+    buffer = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (/^=+.*=+$/.test(line.trim())) { flush(); continue; }   // === BANNER ===
+    const heading = HEADING.exec(line);
+    if (heading) { flush(); pending = heading[1]; continue; }
+    const inline = INLINE.exec(line);
+    if (inline && !pending) { out.push({ label: inline[1], value: inline[2], long: false }); continue; }
+    if (pending) { buffer.push(line); continue; }
+    // Stray prose with no heading — keep it rather than silently dropping it.
+    if (line.trim()) out.push({ label: "", value: line.trim(), long: true });
+  }
+  flush();
+  return out;
+}
+
+export function renderApplicationAlert({
   firstName, lastName, email, phone, leadId, notes,
 }: {
   firstName: string; lastName: string; email: string; phone: string | null;
   leadId: string; notes: string | null;
-}) {
-  if (!resend) return;
+}): { subject: string; html: string } {
   const subject = `New application: ${firstName} ${lastName}`;
   const leadUrl = `${CRM_URL}/leads/${leadId}`;
 
-  // Parse notes into labeled rows for a clean preview
-  const notesRows = notes
-    ? notes.split(/\n\n+/).map(block => {
-        const colonIdx = block.indexOf(":\n");
-        if (colonIdx === -1) {
-          const singleLine = block.indexOf(": ");
-          if (singleLine !== -1) return `<tr><td style="padding:6px 0;color:#949598;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${block.slice(0, singleLine)}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${block.slice(singleLine + 2)}</td></tr>`;
-          return "";
-        }
-        const label = block.slice(0, colonIdx);
-        const val = block.slice(colonIdx + 2).trim();
-        return `<tr><td style="padding:6px 0;color:#949598;font-size:12px;font-weight:700;width:140px;vertical-align:top;">${label}</td><td style="padding:6px 0;color:#334155;font-size:13px;">${val.replace(/\n/g, "<br/>")}</td></tr>`;
-      }).filter(Boolean).join("")
-    : "";
+  const parsed = notes ? parseApplicationNotes(notes) : [];
+  const facts = parsed.filter(p => !p.long && p.label);
+  const answers = parsed.filter(p => p.long);
+
+  // Short facts read as a scannable table; long answers get room to breathe
+  // instead of being squeezed into a 140px label column that wrapped to three
+  // lines and left the value floating beside it.
+  const factRows = facts.map(f => `
+    <tr>
+      <td style="padding:7px 14px 7px 0;color:#5a6663;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;vertical-align:top;">${esc(f.label)}</td>
+      <td style="padding:7px 0;color:#14211f;font-size:14px;vertical-align:top;">${esc(f.value)}</td>
+    </tr>`).join("");
+
+  const answerBlocks = answers.map(a => `
+    <div style="margin:0 0 16px;">
+      ${a.label ? `<p style="margin:0 0 3px;color:#5a6663;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">${esc(a.label)}</p>` : ""}
+      <p style="margin:0;color:#14211f;font-size:14px;line-height:1.65;white-space:pre-wrap;">${esc(a.value)}</p>
+    </div>`).join("");
 
   const body = `
     <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">
-      A new application was just submitted through the <strong>3i NextGen</strong> portal.
+      A new application just came in.
     </p>
-    <div style="background:#f0faf8;border:1px solid #b2e0da;border-radius:12px;padding:20px;margin:0 0 20px;">
-      <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#086c64;text-transform:uppercase;letter-spacing:1px;">Applicant</p>
-      <p style="margin:0;font-size:18px;font-weight:800;color:#14211f;">${firstName} ${lastName}</p>
-      <p style="margin:4px 0 0;font-size:13px;color:#5a6663;">${email}${phone ? ` · ${phone}` : ""}</p>
+    <div style="background:#f0faf8;border:1px solid #b2e0da;border-radius:12px;padding:20px;margin:0 0 22px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#086c64;text-transform:uppercase;letter-spacing:1px;">Applicant</p>
+      <p style="margin:0;font-size:18px;font-weight:800;color:#14211f;">${esc(firstName)} ${esc(lastName)}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#5a6663;">
+        <a href="mailto:${esc(email)}" style="color:#086c64;text-decoration:none;">${esc(email)}</a>${phone ? ` &middot; <a href="tel:${esc(phone)}" style="color:#086c64;text-decoration:none;">${esc(phone)}</a>` : ""}
+      </p>
     </div>
-    ${notesRows ? `
-    <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#949598;text-transform:uppercase;letter-spacing:1px;">Application Answers</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
-      ${notesRows}
+    ${factRows ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 24px;">
+      ${factRows}
     </table>` : ""}
-    <a href="${leadUrl}" style="display:inline-block;margin:0 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
-      View in CRM →
+    ${answerBlocks ? `
+    <p style="margin:0 0 12px;padding-top:18px;border-top:1px solid #e6e4df;font-size:11px;font-weight:700;color:#949598;text-transform:uppercase;letter-spacing:1px;">In their words</p>
+    ${answerBlocks}` : ""}
+    <a href="${leadUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+      View in CRM &rarr;
     </a>
   `;
+  return { subject, html: wrap(subject, body) };
+}
+
+export async function sendAdminApplicationAlert(args: {
+  firstName: string; lastName: string; email: string; phone: string | null;
+  leadId: string; notes: string | null;
+}) {
+  if (!resend) return;
+  const { subject, html } = renderApplicationAlert(args);
   try {
     await sendChecked({
       from: FROM,
       to: ["caleb@vantagecareer.co", "dan@vantagecareer.co"],
       subject,
-      html: wrap(subject, body),
+      html,
     });
   } catch { /* non-fatal */ }
 }
@@ -458,8 +536,15 @@ export async function sendStayInTouchConfirmation({
   });
 }
 
+/** Values here are typed by the public through website forms, so they are
+ *  escaped at the boundary rather than at each of the two dozen call sites. */
 const alertRow = (label: string, value: string) =>
-  `<tr><td style="padding:6px 0;color:#5a6663;font-size:13px;width:150px;">${label}</td><td style="padding:6px 0;font-weight:600;font-size:14px;">${value}</td></tr>`;
+  `<tr><td style="padding:6px 0;color:#5a6663;font-size:13px;width:150px;vertical-align:top;">${esc(label)}</td><td style="padding:6px 0;font-weight:600;font-size:14px;">${esc(value)}</td></tr>`;
+
+/** Same row, but the value is a link. Kept separate so alertRow can escape
+ *  everything it is given without a caller having to remember to. */
+const alertRowLink = (label: string, href: string, text: string) =>
+  `<tr><td style="padding:6px 0;color:#5a6663;font-size:13px;width:150px;vertical-align:top;">${esc(label)}</td><td style="padding:6px 0;font-weight:600;font-size:14px;"><a href="${esc(href)}" style="color:#086c64;">${esc(text)}</a></td></tr>`;
 
 /**
  * Internal alert when someone submits a website form. Deliberately not a
@@ -477,8 +562,8 @@ export async function sendLeadAlert({
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       ${alertRow("Name", `${firstName} ${lastName}`)}
       ${personaRole ? alertRow("Role", personaRole === "PARENT" ? "Parent" : "Student") : ""}
-      ${alertRow("Email", `<a href="mailto:${email}" style="color:#086c64;">${email}</a>`)}
-      ${phone ? alertRow("Phone", `<a href="tel:${phone}" style="color:#086c64;">${phone}</a>`) : ""}
+      ${alertRowLink("Email", `mailto:${email}`, email)}
+      ${phone ? alertRowLink("Phone", `tel:${phone}`, phone) : ""}
       ${academicYear ? alertRow("Academic year", academicYear) : ""}
     </table>
     ${isSchedule ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They were sent to the scheduling link. You'll get a separate note if and when they actually book.</p>` : ""}
@@ -504,9 +589,9 @@ export async function sendConsultationBookedAlert({
   const body = `
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       ${alertRow("Name", name)}
-      ${alertRow("Email", `<a href="mailto:${email}" style="color:#086c64;">${email}</a>`)}
+      ${alertRowLink("Email", `mailto:${email}`, email)}
       ${alertRow("When", when)}
-      ${joinUrl ? alertRow("Join", `<a href="${joinUrl}" style="color:#086c64;">Meeting link</a>`) : ""}
+      ${joinUrl ? alertRowLink("Join", joinUrl, "Meeting link") : ""}
     </table>
     ${isNewLead ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They booked without going through the website form, so a new lead was created for them.</p>` : ""}
     ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;

@@ -91,6 +91,7 @@ model Cohort {
   createdAt DateTime         @default(now())
   users     User[]
   schedules CohortSchedule[]
+  hotSeatSessions HotSeatSession[]
   publishedAt          DateTime? @db.Timestamptz(6) // when the cohort was published to the LMS
   invitesSent          Int       @default(0) // invite emails sent by that publish
 }
@@ -539,6 +540,7 @@ model Module {
   oneOnOneBookings  OneOnOneBooking[]
   discussionPosts   DiscussionPost[]
   weeklyCheckins    WeeklyCheckin[]
+  hotSeatSessions   HotSeatSession[]
 }
 
 model Note {
@@ -989,6 +991,9 @@ model User {
   oneOnOnePulses       OneOnOnePulse[]
   interventionFlags    InterventionFlag[]
   notifications        Notification[]
+  hotSeatTurns         HotSeatTurn[]
+  hotSeatReceived      HotSeatFeedback[]    @relation("HotSeatSubject")
+  hotSeatGiven         HotSeatFeedback[]    @relation("HotSeatAuthor")
   supportTickets       SupportTicket[]
   passwordResetTokens  PasswordResetToken[]
   bridgeTokens         CrmBridgeToken[]
@@ -1054,4 +1059,61 @@ model ModuleView {
 
   @@unique([userId, moduleId])
   @@index([userId])
+}
+
+/// One Hot Seat round: a cohort works through a module's spike statements out
+/// loud while the rest of the room files feedback in real time. Dan's fix for
+/// the engagement problem — nobody sits waiting for their turn.
+model HotSeatSession {
+  id        String    @id @default(cuid())
+  cohortId  String
+  cohort    Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  /// DRAFT (building the order) | OPEN (room is submitting) | CLOSED (feedback released)
+  status    String    @default("DRAFT")
+  createdBy String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  openedAt  DateTime? @db.Timestamptz(6)
+  closedAt  DateTime? @db.Timestamptz(6)
+  turns     HotSeatTurn[]
+  feedback  HotSeatFeedback[]
+
+  @@index([cohortId, moduleId])
+}
+
+/// A Fellow's slot in the running order. Set before the session so peers pick a
+/// name instead of typing one mid-room; `absent` covers whoever didn't show.
+model HotSeatTurn {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   HotSeatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position  Int
+  absent    Boolean @default(false)
+  /// The spike sentence as read to the room, captured so feedback stays legible later.
+  spikeLine String?
+
+  @@unique([sessionId, userId])
+}
+
+/// One peer's feedback on one Fellow's spike statement. `checks` holds the four
+/// rubric keys (c3–c6) so the survey, the LMS rubric and the deck stay one thing.
+/// Fellows read this anonymised; admins see the author.
+model HotSeatFeedback {
+  id            String   @id @default(cuid())
+  sessionId     String
+  session       HotSeatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  subjectUserId String
+  subject       User     @relation("HotSeatSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  authorUserId  String
+  author        User     @relation("HotSeatAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+  checks        Json?
+  comment       String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([sessionId, subjectUserId, authorUserId])
+  @@index([subjectUserId])
 }
