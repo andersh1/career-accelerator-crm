@@ -51,7 +51,7 @@ export const LEAD_TYPES = [
   { key: "WAITLIST",    label: "Waitlist",    color: "bg-sky-100 text-sky-700"         },
   { key: "APPLICATION", label: "Application", color: "bg-violet-100 text-violet-700"   },
   { key: "CONSULTATION", label: "Consultation", color: "bg-cyan-100 text-cyan-700"     },
-  { key: "KEEP_IN_TOUCH", label: "Stay in Touch", color: "bg-lime-100 text-lime-700"   },
+  { key: "KEEP_IN_TOUCH", label: "Program Info", color: "bg-lime-100 text-lime-700"    },
   { key: "STUDENT",     label: "Student",     color: "bg-emerald-100 text-emerald-700" },
   { key: "PARTNER",     label: "Partner",     color: "bg-amber-100 text-amber-700"     },
   { key: "PARENT",      label: "Parent",      color: "bg-orange-100 text-orange-700"   },
