@@ -73,8 +73,27 @@ export default function LeadsPage() {
   const [assignedToFilter, setAssignedToFilter] = useState(searchParams.get("assignedTo") ?? "");
   const [adminUsers,       setAdminUsers]       = useState<AdminUser[]>([]);
   const usersLoaded = useRef(false);
-  const [sortBy,       setSortBy]       = useState<"updatedAt" | "createdAt" | "name" | "priority" | "score">("score");
+  // Sort choice persists. It used to reset to "score" on every load, so setting
+  // "newest first" only lasted until you navigated away — which reads as the
+  // feature not existing.
+  type SortKey = "updatedAt" | "createdAt" | "name" | "priority" | "score";
+  const [sortBy,       setSortBy]       = useState<SortKey>("score");
   const [sortDir,      setSortDir]      = useState<"desc" | "asc">("desc");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("crm-leads-sort");
+      if (!saved) return;
+      const { by, dir } = JSON.parse(saved) as { by: SortKey; dir: "asc" | "desc" };
+      if (by) setSortBy(by);
+      if (dir) setSortDir(dir);
+    } catch { /* private mode */ }
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("crm-leads-sort", JSON.stringify({ by: sortBy, dir: sortDir })); }
+    catch { /* private mode */ }
+  }, [sortBy, sortDir]);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [quickFilter,  setQuickFilter]  = useState<"" | "hot" | "stale" | "unassigned">("");
   const [showForm,        setShowForm]        = useState(false);
@@ -544,7 +563,10 @@ export default function LeadsPage() {
             onClick={() => setSortMenuOpen(o => !o)}
             className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
             {sortBy === "score" ? <Sparkles size={13} className="text-amber-500" /> : <ArrowUpDown size={13} />}
-            {sortLabels[sortBy]} {sortDir === "asc" ? "↑" : "↓"}
+            {sortLabels[sortBy]}
+            {(sortBy === "createdAt" || sortBy === "updatedAt")
+              ? (sortDir === "asc" ? " ↑ oldest" : " ↓ newest")
+              : (sortDir === "asc" ? " ↑" : " ↓")}
             <ChevronDown size={12} />
           </button>
           {sortMenuOpen && (
@@ -561,7 +583,13 @@ export default function LeadsPage() {
                     className={`w-full text-left px-3.5 py-2 text-sm hover:bg-[#f8f6f1] transition flex items-center justify-between ${sortBy === opt ? "font-semibold" : ""}`}
                     style={{ color: sortBy === opt ? "#086c64" : "#14211f" }}>
                     {sortLabels[opt]}
-                    {sortBy === opt && <span className="text-xs">{sortDir === "asc" ? "↑ asc" : "↓ desc"}</span>}
+                    {sortBy === opt && (
+                      <span className="text-xs">
+                        {opt === "createdAt" || opt === "updatedAt"
+                          ? (sortDir === "asc" ? "↑ oldest" : "↓ newest")
+                          : (sortDir === "asc" ? "↑ asc" : "↓ desc")}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
