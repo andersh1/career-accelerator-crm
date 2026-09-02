@@ -972,6 +972,8 @@ model User {
   threeSixtyToken      String?   @unique // public 360-ask link token
   calendarToken        String?   @unique // self-authenticating calendar subscription feed
   invitedAt            DateTime? @db.Timestamptz(6) // invite email sent; distinct from onboardedAt
+  /// Per-person UI preferences that should follow the account, not the browser.
+  uiPrefs              Json?
   threeSixtyResponses  ThreeSixtyResponse[]
   gmailRefreshToken    String?
   gmailEmail           String?

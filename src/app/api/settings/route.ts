@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 export async function GET() {
@@ -13,9 +14,13 @@ export async function GET() {
   const userId = (session as { user: { id: string } }).user.id;
   const me = await prisma.user.findUnique({
     where: { id: userId },
-    select: { calendlyUrl: true, officeHoursUrl: true },
+    select: { calendlyUrl: true, officeHoursUrl: true, uiPrefs: true },
   });
-  return NextResponse.json({ calendlyUrl: me?.calendlyUrl ?? null, officeHoursUrl: me?.officeHoursUrl ?? null });
+  return NextResponse.json({
+    calendlyUrl: me?.calendlyUrl ?? null,
+    officeHoursUrl: me?.officeHoursUrl ?? null,
+    uiPrefs: me?.uiPrefs ?? null,
+  });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -29,7 +34,21 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json() as {
     name?: string; currentPassword?: string; newPassword?: string;
     calendlyUrl?: string | null; officeHoursUrl?: string | null;
+    uiPrefs?: Record<string, unknown>;
   };
+
+  // ── Per-person UI preferences ─────────────────────────────────────────────
+  // Merged, not replaced, so saving one preference cannot wipe another. These
+  // follow the account so a choice made on a laptop is there on a second machine.
+  if (body.uiPrefs !== undefined) {
+    const me = await prisma.user.findUnique({ where: { id: userId }, select: { uiPrefs: true } });
+    const current = (me?.uiPrefs ?? {}) as Record<string, unknown>;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { uiPrefs: { ...current, ...body.uiPrefs } as Prisma.InputJsonValue },
+    });
+    return NextResponse.json({ ok: true });
+  }
 
   // ── Booking links (Calendly) ──────────────────────────────────────────────
   if (body.calendlyUrl !== undefined || body.officeHoursUrl !== undefined) {

@@ -80,19 +80,41 @@ export default function LeadsPage() {
   const [sortBy,       setSortBy]       = useState<SortKey>("score");
   const [sortDir,      setSortDir]      = useState<"desc" | "asc">("desc");
 
+  // Local copy first so the list does not flash the default while the account
+  // preference loads, then the saved account preference wins. Stored per person,
+  // so David sorting newest-first changes nothing for Caleb or Dan.
+  const prefsLoaded = useRef(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("crm-leads-sort");
-      if (!saved) return;
-      const { by, dir } = JSON.parse(saved) as { by: SortKey; dir: "asc" | "desc" };
-      if (by) setSortBy(by);
-      if (dir) setSortDir(dir);
+      if (saved) {
+        const { by, dir } = JSON.parse(saved) as { by: SortKey; dir: "asc" | "desc" };
+        if (by) setSortBy(by);
+        if (dir) setSortDir(dir);
+      }
     } catch { /* private mode */ }
+
+    fetch("/api/settings")
+      .then(r => (r.ok ? r.json() : null))
+      .then((d: { uiPrefs?: { leadsSort?: { by: SortKey; dir: "asc" | "desc" } } } | null) => {
+        const s = d?.uiPrefs?.leadsSort;
+        if (s?.by) setSortBy(s.by);
+        if (s?.dir) setSortDir(s.dir);
+      })
+      .catch(() => {})
+      .finally(() => { prefsLoaded.current = true; });
   }, []);
 
   useEffect(() => {
     try { localStorage.setItem("crm-leads-sort", JSON.stringify({ by: sortBy, dir: sortDir })); }
     catch { /* private mode */ }
+    // Don't write back the default before the saved preference has loaded.
+    if (!prefsLoaded.current) return;
+    fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uiPrefs: { leadsSort: { by: sortBy, dir: sortDir } } }),
+    }).catch(() => {});
   }, [sortBy, sortDir]);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [quickFilter,  setQuickFilter]  = useState<"" | "hot" | "stale" | "unassigned">("");
