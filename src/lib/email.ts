@@ -10,11 +10,28 @@ import { publicCohortLabel } from "@/lib/cohort-label";
 function subVars(s: string, vars: Record<string, string>) {
   return s.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
+/**
+ * Template bodies are written as plain text with a little markdown:
+ * **bold** and [label](url).
+ *
+ * Links are rendered as their label rather than the raw address — a bare
+ * https://join.slack.com/t/…/zt-48k34ab9g-civMJn6c~osAUkgH9lvzLQ in the middle
+ * of a paragraph is unreadable and wraps badly on a phone. A bare URL left in
+ * the copy still becomes a clickable link, so nothing breaks if someone pastes
+ * one in.
+ */
 function textToHtml(t: string) {
-  const esc = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return esc.trim().split(/\n\n+/).map(p =>
+  const escaped = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const LINK = "color:#086c64;font-weight:600;text-decoration:underline;";
+  return escaped.trim().split(/\n\n+/).map(p =>
     `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">${p
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      // [label](url) first, so its url is not caught by the bare-URL pass below
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+               `<a href="$2" style="${LINK}">$1</a>`)
+      // A bare URL that is not already inside an href
+      .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
+               (_m, pre, url) => `${pre}<a href="${url}" style="${LINK}">${url}</a>`)
       .replace(/\n/g, "<br/>")}</p>`).join("");
 }
 export async function renderTemplate(
@@ -442,6 +459,26 @@ export async function sendOutcomeFollowUpEmail({
  * Returns true only if an email actually went out (false when the template is
  * switched off, which is how a module stays unsent until its copy is ready).
  */
+/**
+ * A 1:1 booking link tagged with the module it belongs to.
+ *
+ * The Calendly webhook reads utm_content to decide which module a booking
+ * belongs to, and falls back to the LOWEST-numbered module when it is missing.
+ * So an untagged link quietly files every 1:1 of the whole programme under
+ * Module 1. Nothing errors; the bookings just land in the wrong week.
+ */
+async function moduleBookingUrl(moduleId: string | null): Promise<string> {
+  const coach = await prisma.user.findFirst({
+    where: { role: "ADMIN", calendlyUrl: { not: null } },
+    select: { calendlyUrl: true },
+  });
+  const base = coach?.calendlyUrl;
+  if (!base) return `${LMS_URL}/1on1`;
+  if (!moduleId) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}utm_source=email&utm_content=${encodeURIComponent(moduleId)}`;
+}
+
 /** The preamble's final HTML. Shared by the real send and the preview, so what
  *  you approve in a preview is byte-for-byte what the cohort receives. */
 function preambleHtml(subject: string, bodyHtml: string, moduleNumber: number, moduleUrl: string): string {
@@ -458,10 +495,11 @@ export async function sendModulePreambleEmail({
 }): Promise<boolean> {
   if (!resend) return false;
   const firstName = (studentName || "there").trim().split(/\s+/)[0];
+  const bookingUrl = await moduleBookingUrl(moduleUrl.split("/").pop() || null);
   const t = await renderTemplate(`module-preamble-${moduleNumber}`, {
     subject: `Module ${moduleNumber}: ${moduleTitle} — {{firstName}}, here is the week ahead`,
     body: `{{firstName}} —\n\nModule {{moduleNumber}} — {{moduleTitle}} is open.\n\nYour pre-work is due {{preworkDue}}, and we are together live on {{sessionDate}}.`,
-  }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate });
+  }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate, bookingUrl });
   if (!t) return false; // no copy written yet, or switched off
 
   await sendChecked({
@@ -511,6 +549,7 @@ export async function sendModulePreamblePreview({
     moduleTitle: mod?.title ?? "",
     preworkDue: fmt(sched?.preworkDue),
     sessionDate: fmt(sched?.sessionDate),
+    bookingUrl: await moduleBookingUrl(mod?.id ?? null),
   };
 
   const subject = subVars(row.subject, vars);
@@ -519,6 +558,39 @@ export async function sendModulePreamblePreview({
 
   const { error } = await resend.emails.send({ from: FROM, to, subject: `[PREVIEW] ${subject}`, html });
   return error ? { ok: false, reason: error.message } : { ok: true };
+}
+
+/** The same preview, returned as HTML instead of mailed — so the copy can be
+ *  read without putting a message in anyone's inbox. */
+export async function renderModulePreamblePreview(
+  moduleNumber: number, firstName = "there",
+): Promise<string | null> {
+  const key = `module-preamble-${moduleNumber}`;
+  const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
+  if (!row) return null;
+
+  const mod = await prisma.module.findFirst({ where: { number: moduleNumber }, select: { id: true, title: true } });
+  const sched = mod
+    ? await prisma.cohortSchedule.findFirst({
+        where: { moduleId: mod.id, cohort: { isActive: true } },
+        select: { preworkDue: true, sessionDate: true }, orderBy: { preworkDue: "asc" },
+      })
+    : null;
+  const fmt = (d: Date | null | undefined) =>
+    d ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric" }).format(d)
+      : "the date on your dashboard";
+
+  const vars = {
+    firstName,
+    moduleNumber: String(moduleNumber),
+    moduleTitle: mod?.title ?? "",
+    preworkDue: fmt(sched?.preworkDue),
+    sessionDate: fmt(sched?.sessionDate),
+    bookingUrl: await moduleBookingUrl(mod?.id ?? null),
+  };
+  const subject = subVars(row.subject, vars);
+  return preambleHtml(subject, textToHtml(subVars(row.body, vars)), moduleNumber,
+                      `${LMS_URL}/modules/${mod?.id ?? ""}`);
 }
 
 export async function sendStudentInviteEmail({

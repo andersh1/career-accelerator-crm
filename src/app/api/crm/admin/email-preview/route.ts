@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { renderApplicationAlert } from "@/lib/email";
+import { renderApplicationAlert, renderModulePreamblePreview } from "@/lib/email";
 
 const SAMPLE_NOTES = [
   "=== FELLOWSHIP APPLICATION ===",
@@ -77,8 +77,15 @@ export async function GET(req: NextRequest) {
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 
+  const preamble = /^module-preamble-([1-8])$/.exec(template);
+  if (preamble) {
+    const html = await renderModulePreamblePreview(Number(preamble[1]), "Caleb");
+    if (!html) return NextResponse.json({ error: `${template} has no copy yet` }, { status: 404 });
+    return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  }
+
   return NextResponse.json(
-    { error: "Unknown template", available: ["application-alert"] },
+    { error: "Unknown template", available: ["application-alert", "module-preamble-1 … -8"] },
     { status: 404 },
   );
 }
