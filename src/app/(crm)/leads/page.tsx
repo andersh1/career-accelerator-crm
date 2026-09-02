@@ -584,8 +584,13 @@ export default function LeadsPage() {
           <button
             onClick={() => setSortMenuOpen(o => !o)}
             className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl border border-[#e4e0d6] hover:bg-[#f8f6f1] transition" style={{ color: "#949598" }}>
-            {sortBy === "score" ? <Sparkles size={13} className="text-amber-500" /> : <ArrowUpDown size={13} />}
-            {sortLabels[sortBy]}
+            {/* Always the sort icon. Swapping to a sparkle when Score was selected
+                made the control read as a Score feature rather than the sort
+                dropdown it is — and the label showed only the current value, so
+                "Score ↓" looked like a filter chip. */}
+            <ArrowUpDown size={13} />
+            <span style={{ color: "#949598" }}>Sort:</span>
+            <span style={{ color: "#14211f", fontWeight: 600 }}>{sortLabels[sortBy]}</span>
             {(sortBy === "createdAt" || sortBy === "updatedAt")
               ? (sortDir === "asc" ? " ↑ oldest" : " ↓ newest")
               : (sortDir === "asc" ? " ↑" : " ↓")}
