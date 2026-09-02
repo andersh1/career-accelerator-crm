@@ -442,6 +442,14 @@ export async function sendOutcomeFollowUpEmail({
  * Returns true only if an email actually went out (false when the template is
  * switched off, which is how a module stays unsent until its copy is ready).
  */
+/** The preamble's final HTML. Shared by the real send and the preview, so what
+ *  you approve in a preview is byte-for-byte what the cohort receives. */
+function preambleHtml(subject: string, bodyHtml: string, moduleNumber: number, moduleUrl: string): string {
+  const body = `${bodyHtml}
+    <a href="${moduleUrl}" style="display:inline-block;margin:8px 0 4px;background:#086c64;color:#fff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">Open Module ${moduleNumber} →</a>`;
+  return wrap(subject, body);
+}
+
 export async function sendModulePreambleEmail({
   to, studentName, moduleNumber, moduleTitle, preworkDue, sessionDate, moduleUrl,
 }: {
@@ -456,10 +464,61 @@ export async function sendModulePreambleEmail({
   }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate });
   if (!t) return false; // no copy written yet, or switched off
 
-  const body = `${t.bodyHtml}
-    <a href="${moduleUrl}" style="display:inline-block;margin:8px 0 4px;background:#086c64;color:#fff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">Open Module ${moduleNumber} →</a>`;
-  await sendChecked({ from: FROM, to, subject: t.subject, html: wrap(t.subject, body) });
+  await sendChecked({
+    from: FROM, to, subject: t.subject,
+    html: preambleHtml(t.subject, t.bodyHtml, moduleNumber, moduleUrl),
+  });
   return true;
+}
+
+/**
+ * Send one person a preview of a module preamble, exactly as the cohort would
+ * receive it — same renderer, same CTA, same wrapper.
+ *
+ * Deliberately ignores the template's enabled flag: the whole point is to read
+ * the copy before switching it on. The subject is prefixed so a preview can
+ * never be mistaken for the real thing sitting in an inbox.
+ */
+export async function sendModulePreamblePreview({
+  to, moduleNumber, firstName = "Caleb",
+}: { to: string; moduleNumber: number; firstName?: string }): Promise<{ ok: boolean; reason?: string }> {
+  if (!resend) return { ok: false, reason: "Email not configured" };
+
+  const key = `module-preamble-${moduleNumber}`;
+  const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
+  if (!row) return { ok: false, reason: `${key} not found` };
+
+  const mod = await prisma.module.findFirst({
+    where: { number: moduleNumber }, select: { id: true, title: true },
+  });
+  const sched = mod
+    ? await prisma.cohortSchedule.findFirst({
+        where: { moduleId: mod.id, cohort: { isActive: true } },
+        select: { preworkDue: true, sessionDate: true },
+        orderBy: { preworkDue: "asc" },
+      })
+    : null;
+
+  const fmt = (d: Date | null | undefined) =>
+    d ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric",
+        }).format(d)
+      : "the date on your dashboard";
+
+  const vars = {
+    firstName,
+    moduleNumber: String(moduleNumber),
+    moduleTitle: mod?.title ?? "",
+    preworkDue: fmt(sched?.preworkDue),
+    sessionDate: fmt(sched?.sessionDate),
+  };
+
+  const subject = subVars(row.subject, vars);
+  const html = preambleHtml(subject, textToHtml(subVars(row.body, vars)), moduleNumber,
+                            `${LMS_URL}/modules/${mod?.id ?? ""}`);
+
+  const { error } = await resend.emails.send({ from: FROM, to, subject: `[PREVIEW] ${subject}`, html });
+  return error ? { ok: false, reason: error.message } : { ok: true };
 }
 
 export async function sendStudentInviteEmail({
