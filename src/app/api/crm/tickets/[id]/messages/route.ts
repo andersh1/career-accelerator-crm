@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
+import { mailFrom, mailReplyTo } from "@/lib/mail-from";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -64,7 +65,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!internal && ticket.user.email && resend) {
     const lmsUrl = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
     await resend.emails.send({
-      from:    "Vantage Career Accelerator Support <noreply@career-accelerator.app>",
+      from:    mailFrom(),
+      reply_to: mailReplyTo(),
       to:      ticket.user.email,
       subject: `Re: [Ticket #${ticket.ticketNumber}] ${ticket.subject}`,
       html: `
@@ -81,13 +83,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               View & Reply →
             </a>
             <p style="margin-top:20px;font-size:12px;color:#94a3b8">
-              This is an automated message from Vantage Career Accelerator Support.<br/>
-              To reply, visit your support portal — do not reply to this email.
+              Replying in the portal keeps everything on your ticket. Replying to this
+              email reaches us too.
             </p>
           </div>
         </div>
       `,
-    }).catch(() => {});
+    }).then(r => {
+      // Resend resolves with { error } rather than throwing, so this used to
+      // report success while sending nothing — which is how replies to a
+      // Fellow's support ticket went missing without anyone noticing.
+      if (r?.error) console.error("[support reply] send failed:", JSON.stringify(r.error));
+    }).catch(e => console.error("[support reply] send threw:", e));
   }
 
   return NextResponse.json(message, { status: 201 });
