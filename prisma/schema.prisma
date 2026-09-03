@@ -1012,6 +1012,7 @@ model User {
   jobApplications      JobApplication[]
   loginStreaks         LoginStreak[]
   moduleViews          ModuleView[]
+  ledgerEvents         LedgerEvent[]
   referralCode         String?   @unique
 
   preworkNotesAbout PreworkNote[] @relation("PreworkNoteUser")
@@ -1116,4 +1117,30 @@ model HotSeatFeedback {
 
   @@unique([sessionId, subjectUserId, authorUserId])
   @@index([subjectUserId])
+}
+
+/// Append-only record of what each Fellow actually did.
+///
+/// Backs the one-year guarantee: a refund decision cannot rest on live rows,
+/// because those change. UPDATE and DELETE are refused by a database trigger,
+/// and each row carries the hash of the row before it, so tampering is
+/// detectable rather than merely discouraged. Corrections are new events.
+model LedgerEvent {
+  id             String   @id
+  seq            BigInt   @unique @default(autoincrement())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  cohortId       String?
+  moduleId       String?
+  type           String
+  occurredAt     DateTime @db.Timestamptz(6)
+  recordedAt     DateTime @default(now()) @db.Timestamptz(6)
+  source         String   @default("APP")
+  detail         Json?
+  idempotencyKey String   @unique
+  prevHash       String?
+  hash           String
+
+  @@index([userId])
+  @@index([cohortId, type])
 }
