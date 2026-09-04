@@ -1019,6 +1019,8 @@ model User {
   loginStreaks         LoginStreak[]
   moduleViews          ModuleView[]
   ledgerEvents         LedgerEvent[]
+  manualSignals        ManualSignal[]  @relation("ManualSignalSubject")
+  manualSignalsRecorded ManualSignal[] @relation("ManualSignalRecorder")
   referralCode         String?   @unique
 
   preworkNotesAbout PreworkNote[] @relation("PreworkNoteUser")
@@ -1148,5 +1150,31 @@ model LedgerEvent {
   hash           String
 
   @@index([userId])
+  @@index([cohortId, type])
+}
+
+/// An admin's attestation that something happened outside the app — Dan books a
+/// 1-on-1 over his own Calendly link, a Fellow emails their pre-work. Kept apart
+/// from the real rows so a manual mark is never mistaken for the thing itself,
+/// and mirrored into the append-only LedgerEvent so the guarantee record shows
+/// who asserted what, and when.
+model ManualSignal {
+  id           String   @id
+  userId       String
+  user         User     @relation("ManualSignalSubject", fields: [userId], references: [id], onDelete: Cascade)
+  cohortId     String?
+  /// "" means the signal is cohort-wide, not tied to a module. A sentinel, not
+  /// NULL: Postgres treats NULLs as distinct, so a nullable column here would
+  /// let the unique index admit duplicate cohort-wide marks.
+  moduleId     String   @default("")
+  type         String
+  occurredAt   DateTime @default(now()) @db.Timestamptz(6)
+  note         String?
+  recordedById String
+  recordedBy   User     @relation("ManualSignalRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, moduleId, type])
   @@index([cohortId, type])
 }
