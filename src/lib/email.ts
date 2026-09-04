@@ -711,10 +711,11 @@ const alertRowLink = (label: string, href: string, text: string) =>
  * possible to switch your own lead notifications off by accident.
  */
 export async function sendLeadAlert({
-  firstName, lastName, email, phone, personaRole, academicYear, isSchedule, leadId,
+  firstName, lastName, email, phone, personaRole, academicYear, isSchedule, leadId, landingPage,
 }: {
   firstName: string; lastName: string; email: string; phone?: string | null;
-  personaRole?: string | null; academicYear?: string | null; isSchedule: boolean; leadId?: string | null;
+  personaRole?: string | null; academicYear?: string | null; isSchedule: boolean;
+  leadId?: string | null; landingPage?: string | null;
 }) {
   const label = isSchedule ? "Consultation request" : "Stay in Touch signup";
   const body = `
@@ -724,6 +725,7 @@ export async function sendLeadAlert({
       ${alertRowLink("Email", `mailto:${email}`, email)}
       ${phone ? alertRowLink("Phone", `tel:${phone}`, phone) : ""}
       ${academicYear ? alertRow("Academic year", academicYear) : ""}
+      ${landingPage && landingPage !== "/" ? alertRow("Came from", landingPage) : ""}
     </table>
     ${isSchedule ? `<p style="margin:22px 0 0;color:#5a6663;font-size:14px;">They were sent to the scheduling link. You'll get a separate note if and when they actually book.</p>` : ""}
     ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;

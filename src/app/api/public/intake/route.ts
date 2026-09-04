@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     utmCampaign,
     utmContent,
     utmTerm,
+    landingPage,
     promoCode,
     referralCode,
     personaRole,
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest) {
       utmCampaign: utmCampaign?.trim() || null,
       utmContent:  utmContent?.trim()  || null,
       utmTerm:     utmTerm?.trim()      || null,
+      landingPage: landingPage?.trim() || null,
       promoCode:    promoCode?.trim().toUpperCase()    || null,
       referralCode: referralCode?.trim().toUpperCase() || null,
       personaRole:  normalizedRole,
@@ -219,6 +221,7 @@ export async function POST(req: NextRequest) {
         phone: phone?.trim() || null, personaRole: normalizedRole,
         academicYear: academicYear?.trim() || null,
         isSchedule: isConsultation, leadId: lead.id,
+        landingPage: landingPage?.trim() || null,
       }),
       isConsultation
         ? sendConsultationConfirmation({

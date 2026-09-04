@@ -34,6 +34,7 @@ interface Lead {
   linkedinUrl: string | null; stage: string; source: string | null; subSource: string | null; leadType: string | null;
   priority: string; paymentStatus: string | null; dealValue: number | null; assignedTo: string | null; tags: string[]; notes: string | null; lostReason: string | null;
   utmSource: string | null; utmMedium: string | null; utmCampaign: string | null; utmContent: string | null; utmTerm: string | null;
+  landingPage: string | null;
   promoCode: string | null;
   referralCode: string | null;
   personaRole: string | null;
@@ -504,6 +505,18 @@ export default function LeadDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Referred By</p>
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#fdf4f0", color: "#9a3412" }}>{lead.referralCode}</span>
+                  </div>
+                </div>
+              )}
+              {/* Which landing page brought them. Shown separately from UTM because
+                  custom pages (/frankel, /scarsdale) are handed out as bare URLs
+                  with no utm_* params — these leads have a landing page and
+                  nothing else, so it must not hide inside the UTM block. */}
+              {lead.landingPage && lead.landingPage !== "/" && (
+                <div className="pt-2 mt-1 border-t" style={{ borderColor: "#f0ede7" }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#949598" }}>Landing Page</span>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#eef6f5", color: "#086c64" }}>{lead.landingPage}</span>
                   </div>
                 </div>
               )}
