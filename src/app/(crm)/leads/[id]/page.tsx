@@ -35,6 +35,7 @@ interface Lead {
   priority: string; paymentStatus: string | null; dealValue: number | null; assignedTo: string | null; tags: string[]; notes: string | null; lostReason: string | null;
   utmSource: string | null; utmMedium: string | null; utmCampaign: string | null; utmContent: string | null; utmTerm: string | null;
   landingPage: string | null;
+  academicYear: string | null;
   promoCode: string | null;
   referralCode: string | null;
   personaRole: string | null;
@@ -506,6 +507,12 @@ export default function LeadDetailPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#fdf4f0", color: "#9a3412" }}>{lead.referralCode}</span>
                   </div>
+                </div>
+              )}
+              {lead.academicYear && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: "#949598" }}>Academic year</span>
+                  <span className="text-xs font-medium" style={{ color: "#5a6663" }}>{lead.academicYear}</span>
                 </div>
               )}
               {/* Which landing page brought them. Shown separately from UTM because

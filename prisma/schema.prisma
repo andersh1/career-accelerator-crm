@@ -415,6 +415,11 @@ model Lead {
   utmContent  String?
   utmTerm     String?
 
+  // Year of study, e.g. "Senior" or "Recent graduate". A real column rather
+  // than a line inside `notes`, so it can actually be filtered and exported —
+  // "how many recent grads applied" is a question worth being able to ask.
+  academicYear String?
+
   // Which landing page they arrived on, e.g. "/frankel" or "/scarsdale".
   // Custom landing pages are handed out as bare URLs (a counsellor's referral,
   // a printed card), so there are no utm_* params to read — the path is the

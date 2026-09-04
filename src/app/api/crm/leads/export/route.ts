@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
     "UTM Source", "UTM Medium", "UTM Campaign", "UTM Content", "UTM Term",
     // Custom landing pages are shared as bare URLs, so this is the only
     // attribution those leads carry.
+    "Academic Year",
     "Landing Page",
     "LMS Student Name", "LMS Student Email",
     "Activity Count", "Created At", "Updated At",
@@ -89,6 +90,7 @@ export async function GET(req: NextRequest) {
     esc(l.utmCampaign),
     esc(l.utmContent),
     esc(l.utmTerm),
+    esc(l.academicYear),
     esc(l.landingPage),
     esc(l.enrolledUser?.name),
     esc(l.enrolledUser?.email),

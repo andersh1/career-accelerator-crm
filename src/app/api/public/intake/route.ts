@@ -163,6 +163,7 @@ export async function POST(req: NextRequest) {
       utmCampaign: utmCampaign?.trim() || null,
       utmContent:  utmContent?.trim()  || null,
       utmTerm:     utmTerm?.trim()      || null,
+      academicYear: academicYear?.trim() || null,
       landingPage: landingPage?.trim() || null,
       promoCode:    promoCode?.trim().toUpperCase()    || null,
       referralCode: referralCode?.trim().toUpperCase() || null,
