@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Whitelist patchable fields to prevent mass-assignment
-  const ALLOWED = new Set(["firstName","lastName","email","phone","company","jobTitle","source","subSource","leadType","priority","paymentStatus","dealValue","assignedTo","tags","notes","lostReason","unsubscribed","enrolledUserId","outcomeStatus","outcomeCompany","outcomeRole","outcomeSalary","outcomeStartDate","outcomeNotes","outcomeUpdatedAt"]);
+  const ALLOWED = new Set(["firstName","lastName","email","phone","company","jobTitle","source","subSource","leadType","priority","paymentStatus","dealValue","assignedTo","tags","notes","lostReason","lostCategory","unsubscribed","enrolledUserId","outcomeStatus","outcomeCompany","outcomeRole","outcomeSalary","outcomeStartDate","outcomeNotes","outcomeUpdatedAt"]);
   const data: Record<string, unknown> = Object.fromEntries(
     Object.entries(rest).filter(([k]) => ALLOWED.has(k))
   );

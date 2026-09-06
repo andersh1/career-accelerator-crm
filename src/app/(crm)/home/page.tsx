@@ -55,6 +55,7 @@ interface HomeData {
   pipeline:       Record<string, PipelineStage>;
   cohortFill:     CohortFill[];
   lostReasons:    LostReason[];
+  deniedReasons:  LostReason[];
   lmsActivity?: {
     recentCompletions: LmsCompletion[];
     atRiskStudents:    AtRiskStudent[];
@@ -214,7 +215,7 @@ export default function HomePage() {
 
   if (!data) return null;
 
-  const { tasks, newApplications, hotLeads, staleLeads, recentActivity, pipeline, cohortFill, lostReasons, lmsActivity, summary } = data;
+  const { tasks, newApplications, hotLeads, staleLeads, recentActivity, pipeline, cohortFill, lostReasons, deniedReasons, lmsActivity, summary } = data;
   const startOfToday    = new Date(new Date().toDateString());
   const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
   const overdueTasks = tasks.filter(t => t.dueAt && new Date(t.dueAt) < startOfToday);
@@ -609,29 +610,41 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Why we lose */}
-          {lostReasons.length > 0 && (
+          {/* Why deals end — two charts, because losing a deal and turning
+              someone down are different questions with different fixes. */}
+          {(lostReasons.length > 0 || deniedReasons.length > 0) && (
             <div className="card p-5">
               <h2 className="font-bold flex items-center gap-2 mb-4" style={{ color: "#14211f" }}>
-                <AlertCircle size={15} className="text-red-400" /> Why We Lose
+                <AlertCircle size={15} className="text-red-400" /> Why Deals End
               </h2>
-              <div className="space-y-2.5">
-                {lostReasons.slice(0, 6).map(r => {
-                  const total = lostReasons.reduce((s, x) => s + x.count, 0);
-                  const pct   = Math.round((r.count / total) * 100);
-                  return (
-                    <div key={r.reason}>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="truncate font-medium" style={{ color: "#5a6663" }}>{r.reason}</span>
-                        <span className="flex-shrink-0 ml-2" style={{ color: "#949598" }}>{r.count} ({pct}%)</span>
-                      </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e4e0d6" }}>
-                        <div className="h-full bg-red-300 rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+
+              {([
+                { title: "Lost \u2014 they walked away", rows: lostReasons,   bar: "bg-red-300"    },
+                { title: "Denied \u2014 we said no",     rows: deniedReasons, bar: "bg-orange-300" },
+              ] as const).map(group => group.rows.length === 0 ? null : (
+                <div key={group.title} className="mb-4 last:mb-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "#949598" }}>
+                    {group.title}
+                  </p>
+                  <div className="space-y-2.5">
+                    {group.rows.slice(0, 6).map(r => {
+                      const total = group.rows.reduce((s, x) => s + x.count, 0);
+                      const pct   = Math.round((r.count / total) * 100);
+                      return (
+                        <div key={r.reason}>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="truncate font-medium" style={{ color: "#5a6663" }}>{r.reason}</span>
+                            <span className="flex-shrink-0 ml-2" style={{ color: "#949598" }}>{r.count} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e4e0d6" }}>
+                            <div className={`h-full ${group.bar} rounded-full`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

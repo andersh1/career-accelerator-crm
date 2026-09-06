@@ -117,10 +117,12 @@ export async function GET() {
       take: 5,
     }),
 
-    // Lost leads with reasons (for why-we-lose)
+    // Both endings, for the why-we-lose split. Rows with neither field are
+    // still counted, as "Not specified" — hiding them would make the chart look
+    // better than the data behind it actually is.
     prisma.lead.findMany({
-      where: { deletedAt: null, stage: "LOST", lostReason: { not: null } },
-      select: { lostReason: true },
+      where: { deletedAt: null, stage: { in: ["LOST", "DECLINED"] } },
+      select: { stage: true, lostCategory: true, lostReason: true },
     }),
 
     // Recent section completions (last 7 days)
@@ -168,15 +170,21 @@ export async function GET() {
     stageMap[lead.stage].value += lead.dealValue ?? 0;
   }
 
-  // Lost reason breakdown
-  const reasonMap: Record<string, number> = {};
-  for (const l of lostLeads) {
-    const r = l.lostReason?.trim() || "Not specified";
-    reasonMap[r] = (reasonMap[r] ?? 0) + 1;
-  }
-  const lostReasons = Object.entries(reasonMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([reason, count]) => ({ reason, count }));
+  // Two breakdowns, not one: a deal we lost and a person we turned down are
+  // different questions, and a single chart answers neither. Legacy rows have
+  // only the old free-text reason, so it stands in for the category.
+  const tally = (stage: string) => {
+    const map: Record<string, number> = {};
+    for (const l of lostLeads.filter(x => x.stage === stage)) {
+      const r = l.lostCategory?.trim() || l.lostReason?.trim() || "Not specified";
+      map[r] = (map[r] ?? 0) + 1;
+    }
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .map(([reason, count]) => ({ reason, count }));
+  };
+  const lostReasons   = tally("LOST");
+  const deniedReasons = tally("DECLINED");
 
   // Cohort fill
   const cohortFill = cohorts.map(c => ({
@@ -217,6 +225,7 @@ export async function GET() {
     pipeline: stageMap,
     cohortFill,
     lostReasons,
+    deniedReasons,
     lmsActivity: {
       recentCompletions,
       atRiskStudents,

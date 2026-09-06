@@ -443,6 +443,11 @@ model Lead {
   studentEmail     String?
   studentPhone     String?
 
+  /// Why a deal ended, split in two because they are different events: a LOST
+  /// deal is one the family walked away from, a DECLINED one is a person we
+  /// turned down. Category is a fixed list so the "why we lose" chart stays
+  /// countable; lostReason keeps the free-text detail behind it.
+  lostCategory  String?
   lostReason    String?
   assignedTo    String?  // admin user email
   priority      String   @default("NORMAL") // LOW | NORMAL | HIGH | URGENT

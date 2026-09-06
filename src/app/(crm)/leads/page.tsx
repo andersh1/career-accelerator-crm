@@ -8,7 +8,8 @@ import {
   ChevronDown, Upload, Download, Trash2, Tag, MoveRight, CheckSquare, Square,
   BookmarkPlus, Bookmark, X, AlertTriangle, Sparkles, Merge,
 } from "lucide-react";
-import { STAGES, SOURCES, NEXTGEN_SUB_SOURCES, stageInfo, sourceLabel } from "@/components/crm/constants";
+import { STAGES, SOURCES, NEXTGEN_SUB_SOURCES, stageInfo, sourceLabel, END_STAGES } from "@/components/crm/constants";
+import EndReasonModal from "@/components/crm/EndReasonModal";
 import LeadForm from "@/components/crm/LeadForm";
 import CsvImportModal from "@/components/crm/CsvImportModal";
 import { useToast } from "@/lib/toast";
@@ -154,14 +155,39 @@ export default function LeadsPage() {
   // Mobile header overflow menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Ending a deal from the list asks the same question the lead page asks.
+  // This path used to write the stage silently, which is why most closed deals
+  // carry no reason at all.
+  const [endPrompt, setEndPrompt] = useState<{ id: string; stage: string; name: string } | null>(null);
+  const [endBusy, setEndBusy] = useState(false);
+
   async function quickStageChange(leadId: string, newStage: string) {
     setStagingLeadId(null);
     setMobileStageLeadId(null);
+    if (END_STAGES.includes(newStage)) {
+      const l = leads.find(x => x.id === leadId);
+      setEndPrompt({ id: leadId, stage: newStage, name: l ? `${l.firstName} ${l.lastName}` : "This lead" });
+      return;
+    }
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
     await fetch(`/api/crm/leads/${leadId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stage: newStage }),
     });
+  }
+
+  async function confirmEndStage(category: string, note: string) {
+    if (!endPrompt) return;
+    setEndBusy(true);
+    const res = await fetch(`/api/crm/leads/${endPrompt.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: endPrompt.stage, lostCategory: category, lostReason: note || category }),
+    });
+    if (res.ok) {
+      setLeads(prev => prev.map(l => l.id === endPrompt.id ? { ...l, stage: endPrompt.stage } : l));
+      setEndPrompt(null);
+    }
+    setEndBusy(false);
   }
 
   // Recycle Bin
@@ -1160,6 +1186,16 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {endPrompt && (
+        <EndReasonModal
+          stage={endPrompt.stage}
+          name={endPrompt.name}
+          busy={endBusy}
+          onCancel={() => setEndPrompt(null)}
+          onConfirm={confirmEndStage}
+        />
       )}
     </div>
   );

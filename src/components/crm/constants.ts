@@ -10,9 +10,53 @@ export const STAGES = [
   { key: "COMPLETED",     label: "Enrolled",        color: "bg-teal-100 text-teal-700",     dot: "bg-teal-500"    },
   { key: "ENROLLED",      label: "Active Student",  color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
   { key: "GRADUATED",     label: "Graduated",   color: "bg-stone-100 text-stone-600",   dot: "bg-stone-400"   },
-  { key: "DECLINED",      label: "Declined",    color: "bg-orange-100 text-orange-700", dot: "bg-orange-500"  },
+  { key: "DECLINED",      label: "Denied",      color: "bg-orange-100 text-orange-700", dot: "bg-orange-500"  },
   { key: "LOST",          label: "Lost",        color: "bg-red-100 text-red-700",       dot: "bg-red-400"     },
 ] as const;
+
+/**
+ * Why a deal ended.
+ *
+ * Two lists, because Lost and Denied are not the same event and mixing them
+ * answers neither question. LOST is a deal the family walked away from — the
+ * thing we might have changed. DECLINED is a person we turned down — the thing
+ * we meant to do. Rolling them together produces a chart that says nothing
+ * about either.
+ *
+ * Fixed options rather than free text: typed reasons ("price", "Price too
+ * high", "too expensive") split one real cause into three slices and the chart
+ * stops being countable at exactly the point it starts to matter. The free-text
+ * note lives alongside in lostReason.
+ */
+export const END_REASONS: Record<string, { heading: string; blurb: string; options: string[] }> = {
+  LOST: {
+    heading: "Why did we lose this one?",
+    blurb: "They didn\u2019t move forward. Pick the closest cause \u2014 the detail goes in the note.",
+    options: [
+      "Price",
+      "Timing \u2014 waiting for a later cohort",
+      "Chose another program",
+      "Parent said no",
+      "Went silent",
+      "Couldn\u2019t commit the hours",
+      "Other",
+    ],
+  },
+  DECLINED: {
+    heading: "Why did we turn them down?",
+    blurb: "We said no. Pick the closest cause \u2014 the detail goes in the note.",
+    options: [
+      "Not a fit for the program",
+      "Too early in their career",
+      "Wouldn\u2019t do the work",
+      "Concerns from the interview",
+      "Other",
+    ],
+  },
+};
+
+/** Stages that end a deal and therefore need a reason on the way in. */
+export const END_STAGES = Object.keys(END_REASONS);
 
 export const SOURCES = [
   { key: "3I_NEXTGEN",      label: "3i NextGen"        },

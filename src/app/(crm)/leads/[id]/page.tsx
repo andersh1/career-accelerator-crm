@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import EndReasonModal from "@/components/crm/EndReasonModal";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +9,7 @@ import {
   Loader2, CheckCircle2, Trash2, Edit2, MessageSquare, Send,
   ChevronDown, UserCheck, Sparkles, FileText, PenLine, ExternalLink, X, Plus,
 } from "lucide-react";
-import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, LEAD_TYPES, NEXTGEN_SUB_SOURCES, stageInfo, sourceLabel, nextgenSubSourceLabel, leadTypeInfo } from "@/components/crm/constants";
+import { STAGES, ACTIVITY_TYPES, ACTIVITY_META, LEAD_TYPES, NEXTGEN_SUB_SOURCES, stageInfo, sourceLabel, nextgenSubSourceLabel, leadTypeInfo, END_STAGES } from "@/components/crm/constants";
 import LeadForm from "@/components/crm/LeadForm";
 import StudentProgressPanel from "@/components/crm/StudentProgressPanel";
 import TaskPanel from "@/components/crm/TaskPanel";
@@ -113,9 +114,11 @@ export default function LeadDetailPage() {
     });
   }, []);
 
-  async function moveStage(newStage: string, lostReason?: string) {
+  async function moveStage(newStage: string, ended?: { category: string; note: string }) {
     if (!lead) return;
-    if (newStage === "LOST" && lostReason === undefined) {
+    // Both terminal stages ask why. Denied used to slip through unrecorded,
+    // which made "why we lose" a chart about half the endings.
+    if (END_STAGES.includes(newStage) && !ended) {
       setShowStageMenu(false);
       setLostReasonPrompt(newStage);
       return;
@@ -124,7 +127,10 @@ export default function LeadDetailPage() {
     setShowStageMenu(false);
     const res = await fetch(`/api/crm/leads/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: newStage, ...(lostReason ? { lostReason } : {}) }),
+      body: JSON.stringify({
+        stage: newStage,
+        ...(ended ? { lostCategory: ended.category, lostReason: ended.note || ended.category } : {}),
+      }),
     });
     if (res.ok) {
       await load();
@@ -944,34 +950,13 @@ export default function LeadDetailPage() {
       </div>
 
       {lostReasonPrompt && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-base font-bold mb-1" style={{ color: "#14211f" }}>Why did this lead go cold?</h3>
-            <p className="text-xs mb-4" style={{ color: "#949598" }}>This populates the "Why We Lose" chart on the home dashboard.</p>
-            <textarea
-              value={lostReasonInput}
-              onChange={e => setLostReasonInput(e.target.value)}
-              rows={3}
-              placeholder="e.g. Price too high, timing not right, chose competitor…"
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-4"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => moveStage("LOST", lostReasonInput.trim() || "Not specified")}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-              >
-                Mark as Lost
-              </button>
-              <button
-                onClick={() => { setLostReasonPrompt(null); setLostReasonInput(""); }}
-                className="px-4 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 transition"
-                style={{ color: "#5a6663" }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <EndReasonModal
+          stage={lostReasonPrompt}
+          name={`${lead.firstName} ${lead.lastName}`}
+          busy={movingStage}
+          onCancel={() => { setLostReasonPrompt(null); setLostReasonInput(""); }}
+          onConfirm={(category, note) => moveStage(lostReasonPrompt, { category, note })}
+        />
       )}
 
       {showEdit && (
