@@ -1029,6 +1029,7 @@ model User {
   loginStreaks         LoginStreak[]
   moduleViews          ModuleView[]
   ledgerEvents         LedgerEvent[]
+  notionExports        NotionExport[]
   manualSignals        ManualSignal[]  @relation("ManualSignalSubject")
   manualSignalsRecorded ManualSignal[] @relation("ManualSignalRecorder")
   referralCode         String?   @unique
@@ -1187,4 +1188,26 @@ model ManualSignal {
 
   @@unique([userId, moduleId, type])
   @@index([cohortId, type])
+}
+
+/// The Notion database a Fellow owns for one worksheet.
+///
+/// Each export writes into the SAME database rather than making another page,
+/// so a tracker accumulates across the program instead of scattering into a
+/// dozen snapshots. The database lives in the Fellow's own workspace, created
+/// with their own token — we only remember its id so the next export can find
+/// it again. Nothing here survives them deleting it on their side, and nothing
+/// here gives us access after they disconnect.
+model NotionExport {
+  id          String   @id
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  worksheetId String
+  databaseId  String
+  url         String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, moduleId, worksheetId])
 }
