@@ -363,6 +363,11 @@ export function renderApplicationAlert({
   return { subject, html: wrap(subject, body) };
 }
 
+/** Who gets internal lead alerts. Comma separated; defaults to Dan + Caleb. */
+export const LEAD_ALERT_EMAILS = (
+  process.env.LEAD_ALERT_EMAILS ?? "dan@vantagecareer.co,caleb@vantagecareer.co"
+).split(",").map(s => s.trim()).filter(Boolean);
+
 export async function sendAdminApplicationAlert(args: {
   firstName: string; lastName: string; email: string; phone: string | null;
   leadId: string; notes: string | null;
@@ -372,7 +377,10 @@ export async function sendAdminApplicationAlert(args: {
   try {
     await sendChecked({
       from: FROM,
-      to: ["caleb@vantagecareer.co", "dan@vantagecareer.co"],
+      // Same list as every other lead alert, so who gets told about a new
+      // person is one setting rather than three — this one used to be
+      // hardcoded, which meant adding somebody needed a deploy.
+      to: LEAD_ALERT_EMAILS,
       // Hitting Reply on an alert about a person should reach that person.
       reply_to: args.email,
       subject,
@@ -657,10 +665,6 @@ const SITE_URL = process.env.SITE_URL ?? "https://vantagecareer.co";
 const CONSULT_CALENDLY_URL =
   process.env.CONSULT_CALENDLY_URL ?? "https://calendly.com/dan-sommer/vantage-consultation";
 
-/** Who gets internal lead alerts. Comma separated; defaults to Dan + Caleb. */
-export const LEAD_ALERT_EMAILS = (
-  process.env.LEAD_ALERT_EMAILS ?? "dan@vantagecareer.co,caleb@vantagecareer.co"
-).split(",").map(s => s.trim()).filter(Boolean);
 
 const ctaButton = (href: string, label: string) =>
   `<p style="margin:26px 0 0;"><a href="${href}" style="display:inline-block;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 30px;border-radius:999px;text-decoration:none;">${label}</a></p>`;
