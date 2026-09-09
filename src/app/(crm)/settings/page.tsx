@@ -45,6 +45,31 @@ export default function SettingsPage() {
   const isAdmin = (session?.user as { crmRole?: string } | undefined)?.crmRole === "ADMIN";
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
 
+  // Your own Claude connector URL. Fetched on demand and never rendered in
+  // full — the token IS the credential, so it goes to the clipboard rather
+  // than onto a screen that might be shared.
+  const [connectorUrl, setConnectorUrl] = useState<string | null>(null);
+  const [connectorBusy, setConnectorBusy] = useState(false);
+  const [connectorCopied, setConnectorCopied] = useState(false);
+  const [connectorRevealed, setConnectorRevealed] = useState(false);
+
+  async function loadConnector() {
+    setConnectorBusy(true);
+    try {
+      const r = await fetch("/api/crm/my-connector");
+      if (r.ok) setConnectorUrl((await r.json()).url);
+    } finally { setConnectorBusy(false); }
+  }
+
+  async function rotateConnector() {
+    if (!confirm("Issue a new URL? The current one stops working immediately and you'll need to update it in Claude.")) return;
+    setConnectorBusy(true);
+    try {
+      const r = await fetch("/api/crm/my-connector", { method: "POST" });
+      if (r.ok) { setConnectorUrl((await r.json()).url); setConnectorRevealed(false); }
+    } finally { setConnectorBusy(false); }
+  }
+
   const [name,    setName]    = useState(session?.user?.name ?? "");
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -601,6 +626,68 @@ export default function SettingsPage() {
       {/* Integrations tab */}
       {activeTab === "integrations" && (
         <div className="space-y-5">
+          <Section title="Your Claude connector">
+            <p className="text-xs -mt-2" style={{ color: "#949598" }}>
+              Lets you run the CRM from Claude — look up students, log calls, add leads, move stages.
+              This URL is personal to you: anything done through it is recorded as you.
+            </p>
+
+            <div className="rounded-xl border px-4 py-3" style={{ borderColor: "#f0d9a8", background: "#fdf8ec" }}>
+              <p className="text-xs font-semibold" style={{ color: "#a97b1f" }}>
+                Treat this like a password. Anyone with the URL can read and change the CRM as you —
+                don&apos;t paste it into a shared channel or a screenshot. If that happens, hit
+                &ldquo;Issue a new URL&rdquo; below and the old one dies instantly.
+              </p>
+            </div>
+
+            {!connectorUrl ? (
+              <button onClick={loadConnector} disabled={connectorBusy}
+                className="btn-primary text-sm px-4 py-2 rounded-xl inline-flex items-center gap-2 disabled:opacity-50">
+                {connectorBusy ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />}
+                Show my connector URL
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 min-w-0 truncate text-xs px-3 py-2.5 rounded-xl border"
+                        style={{ borderColor: "#e4e0d6", background: "#faf9f5", color: "#5a6663" }}>
+                    {connectorRevealed
+                      ? connectorUrl
+                      : `${connectorUrl.slice(0, connectorUrl.lastIndexOf("/") + 1)}${"•".repeat(24)}`}
+                  </code>
+                  <button onClick={() => setConnectorRevealed(v => !v)}
+                    className="text-xs font-semibold px-3 py-2.5 rounded-xl border shrink-0"
+                    style={{ borderColor: "#e4e0d6", color: "#5a6663" }}>
+                    {connectorRevealed ? "Hide" : "Reveal"}
+                  </button>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(connectorUrl); setConnectorCopied(true); setTimeout(() => setConnectorCopied(false), 2200); }}
+                    className="btn-primary text-xs font-semibold px-3 py-2.5 rounded-xl shrink-0 inline-flex items-center gap-1.5">
+                    {connectorCopied ? <><CheckCircle2 size={13} /> Copied</> : "Copy"}
+                  </button>
+                </div>
+
+                <div className="text-xs leading-relaxed" style={{ color: "#5a6663" }}>
+                  <p className="font-semibold mb-1" style={{ color: "#14211f" }}>Setting it up in Claude</p>
+                  <ol className="list-decimal ml-4 space-y-0.5">
+                    <li>claude.ai → Settings → Connectors → <strong>Add custom connector</strong></li>
+                    <li>Paste this URL. Name it <strong>Vantage CRM</strong>.</li>
+                    <li>Start a new chat and try &ldquo;who hasn&apos;t submitted pre-work for module 1?&rdquo;</li>
+                  </ol>
+                  <p className="mt-2" style={{ color: "#949598" }}>
+                    Already connected? After we ship new tools you need to reconnect, or start a fresh chat, to see them.
+                  </p>
+                </div>
+
+                <button onClick={rotateConnector} disabled={connectorBusy}
+                  className="text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"
+                  style={{ color: "#b45309" }}>
+                  <RefreshCw size={12} /> Issue a new URL
+                </button>
+              </div>
+            )}
+          </Section>
+
           <Section title="Gmail Integration">
             <p className="text-xs -mt-2" style={{ color: "#949598" }}>
               Connect your Gmail account to automatically log sent emails to lead timelines.
