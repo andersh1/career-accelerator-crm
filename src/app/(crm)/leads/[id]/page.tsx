@@ -27,6 +27,10 @@ interface Activity {
   metadata: string | null; createdBy: string | null; createdAt: string;
   subject?: string | null; emailTo?: string | null; source?: string | null;
   openedAt?: string | null;
+  /** Set for anything that happened inside a module — lets the record be read a module at a time. */
+  moduleNumber?: number | null;
+  /** PRIVATE = coach-only. On the record, but never said back to the participant. */
+  visibility?: string | null;
 }
 
 interface Lead {
@@ -86,6 +90,9 @@ export default function LeadDetailPage() {
   const [showTranscript, setShowTranscript] = useState(false);
   const [showAllActs, setShowAllActs] = useState(false);
   const [actFilter,   setActFilter]   = useState<"ALL" | "EMAIL" | "NOTE" | "CALL">("ALL");
+  // null = the whole record; a number = just that module, the way you would read
+  // a participant before a 1-on-1.
+  const [actModule,   setActModule]   = useState<number | null>(null);
   const [tagInput,    setTagInput]    = useState("");
   const [savingTag,   setSavingTag]   = useState(false);
 
@@ -809,13 +816,20 @@ export default function LeadDetailPage() {
 
           <div className="card shadow-sm overflow-hidden">
             {(() => {
-              const filtered = actFilter === "ALL"
+              const byType = actFilter === "ALL"
                 ? lead.activities
                 : lead.activities.filter(a =>
                     actFilter === "EMAIL" ? a.type === "EMAIL"
                     : actFilter === "NOTE" ? ["NOTE","CREATED"].includes(a.type)
                     : ["CALL","MEETING"].includes(a.type)
                   );
+              // Which modules this participant actually has history in.
+              const modulesPresent = Array.from(new Set(
+                lead.activities.map(a => a.moduleNumber).filter((n): n is number => !!n)
+              )).sort((a, b) => a - b);
+              const filtered = actModule === null
+                ? byType
+                : byType.filter(a => a.moduleNumber === actModule);
               const visible = showAllActs ? filtered : filtered.slice(0, 5);
               return (<>
             <div className="px-5 py-3.5 border-b flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: "#e4e0d6" }}>
@@ -837,6 +851,31 @@ export default function LeadDetailPage() {
                 ))}
               </div>
             </div>
+            {modulesPresent.length > 0 && (
+              <div className="px-5 py-2.5 border-b flex items-center gap-2 flex-wrap" style={{ borderColor: "#e4e0d6", background: "#faf9f5" }}>
+                <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#c9c4b8" }}>By module</span>
+                <button
+                  onClick={() => { setActModule(null); setShowAllActs(false); }}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+                  style={actModule === null ? { background: "#086c64", color: "#fff" } : { background: "#f1efe8", color: "#949598" }}
+                >
+                  Whole record
+                </button>
+                {modulesPresent.map(n => (
+                  <button
+                    key={n}
+                    onClick={() => { setActModule(n); setShowAllActs(true); }}
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition"
+                    style={actModule === n ? { background: "#086c64", color: "#fff" } : { background: "#f1efe8", color: "#949598" }}
+                  >
+                    Module {n}
+                    <span className="ml-1 opacity-60">
+                      {lead.activities.filter(a => a.moduleNumber === n).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             {lead.activities.length === 0 ? (
               <div className="p-10 text-center">
                 <MessageSquare size={24} className="mx-auto mb-2" style={{ color: "#c9c4b8" }} />
@@ -912,7 +951,19 @@ export default function LeadDetailPage() {
                             <span className="font-semibold" style={{ color: "#14211f" }}>{stageTo}</span>
                           </p>
                         ) : act.content ? (
-                          <NoteContent text={act.content} />
+                          act.visibility === "PRIVATE" ? (
+                            // Coach-only. On the record because the record is the
+                            // truth, boxed because it must never be read back to
+                            // the participant as though they had already seen it.
+                            <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: "#f0d9a8", background: "#fdf8ec" }}>
+                              <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "#a97b1f" }}>
+                                🔒 Private — coach eyes only, never shared with the participant
+                              </p>
+                              <NoteContent text={act.content} />
+                            </div>
+                          ) : (
+                            <NoteContent text={act.content} />
+                          )
                         ) : null}
                         {recordingUrl && (
                           <a

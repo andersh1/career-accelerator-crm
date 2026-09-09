@@ -512,10 +512,20 @@ model LeadActivity {
   metadata  String?   // JSON — used for stage_change { from, to }
   createdBy String?   // admin user id
   openedAt  DateTime? // set when tracking pixel is loaded (email opens)
+  /// Which module this belongs to, so the lead record can be read a module at a
+  /// time instead of as one long undifferentiated timeline. Null = not
+  /// module-scoped (consultations, stage changes, general coaching notes).
+  moduleNumber Int?
+  /// INTERNAL  — anything the team logs or the student did; safe to discuss.
+  /// PRIVATE   — coach-only notes. Never shown to the student and never quoted
+  ///             back to them; surfaced separately in the CRM so it cannot be
+  ///             mistaken for something they have already seen.
+  visibility String   @default("INTERNAL")
   createdAt DateTime  @default(now())
 
   @@index([leadId])
   @@index([type, createdAt])
+  @@index([leadId, moduleNumber])
 }
 
 model LoginStreak {
@@ -945,6 +955,9 @@ model ThreeSixtyResponse {
   responderName String
   relationship  String?
   answers       Json
+  /// LINK = the responder filled the public form themselves.
+  /// TYPED_IN = the Fellow collected it by text/in person and typed it up.
+  source        String   @default("LINK")
   createdAt     DateTime @default(now())
 
   @@index([userId])
