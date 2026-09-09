@@ -186,7 +186,12 @@ async function runTool(
   if (name === "get_student") {
     const u = await findStudent(String(input.query ?? ""));
     if (!u) return JSON.stringify({ error: "No student matched that name/email" });
-    const [lead, prework, submissions, progressCount, coachNotes, openFlags] = await Promise.all([
+    // Most modules have no pre-work QUESTIONS — the pre-work IS the worksheets
+    // (360 tracker, energy audit, story bank, access map…). Fetching only
+    // `answers` meant every module came back with an empty array and Claude
+    // reported it could not find the pre-work, while the student's actual work
+    // sat in worksheetResponse and threeSixtyResponse untouched.
+    const [lead, prework, worksheets, threeSixty, submissions, progressCount, coachNotes, openFlags] = await Promise.all([
       prisma.lead.findFirst({
         where: { email: { equals: u.email, mode: "insensitive" } },
         select: {
@@ -201,6 +206,15 @@ async function runTool(
           module: { select: { number: true, title: true } },
           answers: { include: { question: { select: { question: true, order: true } } } },
         },
+      }),
+      prisma.worksheetResponse.findMany({
+        where: { userId: u.id },
+        select: { worksheetId: true, rows: true, moduleId: true },
+      }),
+      prisma.threeSixtyResponse.findMany({
+        where: { userId: u.id },
+        orderBy: { createdAt: "asc" },
+        select: { responderName: true, relationship: true, answers: true, source: true },
       }),
       prisma.submission.findMany({
         where: { userId: u.id },
@@ -221,6 +235,12 @@ async function runTool(
       }),
     ]);
     const now = Date.now();
+    // WorksheetResponse stores only moduleId, so resolve labels once.
+    const mods = await prisma.module.findMany({ select: { id: true, number: true, title: true } });
+    const moduleLabel: Record<string, string> = Object.fromEntries(
+      mods.map(m => [m.id, `M${m.number} ${m.title}`]),
+    );
+
     return JSON.stringify({
       student: { name: u.name, email: u.email, cohort: u.cohort, onboarded: !!u.onboardedAt, sectionsCompleted: progressCount },
       openFlags: openFlags.map(f => ({
@@ -234,6 +254,26 @@ async function runTool(
         submittedAt: p.submittedAt,
         sessionQuestions: p.sessionQuestions,
         answers: [...p.answers].sort((a, b) => a.question.order - b.question.order).map(a => ({ q: a.question.question, a: a.answer })),
+      })),
+      // The worksheets, which for most modules ARE the pre-work. Empty rows are
+      // dropped so six filled rows read as six, not six plus fourteen blanks.
+      preworkWorksheets: worksheets
+        .map(w => ({
+          module: moduleLabel[w.moduleId] ?? "Unknown module",
+          worksheet: w.worksheetId,
+          rows: (Array.isArray(w.rows) ? w.rows : []).filter(
+            (r) => !!r && typeof r === "object" &&
+              Object.values(r as Record<string, unknown>).some(v => String(v ?? "").trim()),
+          ),
+        }))
+        .filter(w => w.rows.length > 0),
+      // The 360 in full — the answers people actually sent back, which is what
+      // Module 1's spike statement gets argued from.
+      threeSixty: threeSixty.map(r => ({
+        from: r.responderName,
+        relationship: r.relationship,
+        typedUpByStudent: r.source === "TYPED_IN",
+        answers: r.answers,
       })),
       assignments: submissions,
       coachNotes,
