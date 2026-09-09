@@ -120,6 +120,27 @@ const TOOLS = [
       required: ["leadQuery", "title"],
     },
   },
+  {
+    name: "create_lead",
+    description: "Add someone to the CRM pipeline — e.g. after a call, from a transcript or notes. Give whatever you actually heard; only email, first and last name are required. NEVER invent an email: if one was not stated, say so and ask rather than guessing, because the email is the record's identity and a wrong one creates a duplicate person. If the email already exists this does NOT overwrite the existing record — it appends what you pass as a timestamped note and returns the existing lead, so a half-heard detail can never clobber real pipeline data. Use `notes` for the substance of the conversation: what they want, their situation, timeline, objections.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email:        { type: "string", description: "Their email. Required — this is the record's identity. Ask rather than guess." },
+        firstName:    { type: "string" },
+        lastName:     { type: "string" },
+        phone:        { type: "string" },
+        company:      { type: "string", description: "Employer, or the school they attend" },
+        jobTitle:     { type: "string" },
+        academicYear: { type: "string", description: "e.g. Junior, Senior, Recent grad" },
+        linkedinUrl:  { type: "string" },
+        stage:        { type: "string", description: "Pipeline stage. Defaults to LEAD. One of: WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED, OFFER_SENT" },
+        source:       { type: "string", description: "Where they came from, e.g. Referral, Event, Inbound" },
+        notes:        { type: "string", description: "What was actually said — their goal, situation, timeline, objections. This becomes the first activity on the record." },
+      },
+      required: ["email", "firstName", "lastName"],
+    },
+  },
 ];
 
 // ── Tool implementations ─────────────────────────────────────────────────────
@@ -373,6 +394,86 @@ async function runTool(
       module: `M${b.module.number} ${b.module.title}`,
       startsAtET: b.slot.startTime.toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
     })));
+  }
+
+  if (name === "create_lead") {
+    const email = String(input.email ?? "").trim().toLowerCase();
+    const firstName = String(input.firstName ?? "").trim();
+    const lastName = String(input.lastName ?? "").trim();
+    if (!email || !firstName || !lastName) {
+      return JSON.stringify({ error: "email, firstName and lastName are all required" });
+    }
+    // Cheap sanity check. A malformed address is almost always a mis-heard one,
+    // and a bad identity is worse than no record.
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return JSON.stringify({ error: `"${email}" does not look like an email address. Ask for it rather than guessing.` });
+    }
+
+    const notes = String(input.notes ?? "").trim();
+    const stageIn = String(input.stage ?? "").trim().toUpperCase();
+    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","CONTACTED","APPLIED","STRATEGY_CALL","ADMITTED","OFFER_SENT"];
+    // Deliberately cannot set ENROLLED/COMPLETED/GRADUATED/DECLINED: those carry
+    // real consequences elsewhere and are not a transcript's call to make.
+    const stage = ALLOWED.includes(stageIn) ? stageIn : "LEAD";
+
+    const existing = await prisma.lead.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true, firstName: true, lastName: true, stage: true },
+    });
+
+    // Never overwrite. A half-heard detail must not clobber real pipeline data,
+    // so an existing record gets the new information appended as a note and the
+    // caller is told plainly that nothing was changed.
+    if (existing) {
+      if (notes) {
+        await prisma.leadActivity.create({
+          data: {
+            leadId: existing.id, type: "NOTE", source: "MCP_CLAUDE",
+            content: `🗣️ From a call, via Claude:\n${notes}`,
+          },
+        });
+      }
+      return JSON.stringify({
+        ok: true, created: false, existingLead: true,
+        lead: { id: existing.id, name: `${existing.firstName} ${existing.lastName}`, email, stage: existing.stage },
+        message: notes
+          ? "That email is already in the CRM. Nothing was overwritten — the notes were added to their timeline."
+          : "That email is already in the CRM. Nothing was created or changed.",
+      });
+    }
+
+    const lead = await prisma.lead.create({
+      data: {
+        email, firstName, lastName, stage,
+        phone:        String(input.phone ?? "").trim() || null,
+        company:      String(input.company ?? "").trim() || null,
+        jobTitle:     String(input.jobTitle ?? "").trim() || null,
+        academicYear: String(input.academicYear ?? "").trim() || null,
+        linkedinUrl:  String(input.linkedinUrl ?? "").trim() || null,
+        source:       String(input.source ?? "").trim() || "Claude (call notes)",
+        assignedTo:   admin.id,
+      },
+      select: { id: true },
+    });
+
+    await prisma.leadActivity.create({
+      data: {
+        leadId: lead.id, type: "CREATED", source: "MCP_CLAUDE",
+        content: `Lead created from call notes via Claude by ${admin.name ?? admin.email}.`,
+      },
+    });
+    if (notes) {
+      await prisma.leadActivity.create({
+        data: { leadId: lead.id, type: "NOTE", source: "MCP_CLAUDE", content: `🗣️ From a call, via Claude:\n${notes}` },
+      });
+    }
+
+    return JSON.stringify({
+      ok: true, created: true,
+      lead: { id: lead.id, name: `${firstName} ${lastName}`, email, stage },
+      url: `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/leads/${lead.id}`,
+      message: "Lead created. Open the URL to review and correct anything mis-heard.",
+    });
   }
 
   if (name === "save_note") {
