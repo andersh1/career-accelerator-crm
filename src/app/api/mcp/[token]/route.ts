@@ -141,6 +141,63 @@ const TOOLS = [
       required: ["email", "firstName", "lastName"],
     },
   },
+  {
+    name: "log_activity",
+    description: "Log a call, meeting or note on ANYONE in the CRM — prospect or enrolled student. Use this after a conversation to put what was said on their record. save_note only reaches enrolled students; this reaches everyone.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        leadQuery: { type: "string", description: "Their name or email" },
+        content:   { type: "string", description: "What was said. Write it as you would want to read it in six months." },
+        type:      { type: "string", description: "NOTE (default), CALL, or MEETING" },
+      },
+      required: ["leadQuery", "content"],
+    },
+  },
+  {
+    name: "update_lead",
+    description: "Move someone's pipeline stage and/or correct their details. Only pass the fields you are changing — anything omitted is left alone. Cannot set ENROLLED, COMPLETED, GRADUATED or DECLINED: those have consequences elsewhere and are done in the CRM by a person.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        leadQuery:    { type: "string", description: "Their name or email" },
+        stage:        { type: "string", description: "WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED or OFFER_SENT" },
+        reason:       { type: "string", description: "Why it moved — recorded on the timeline alongside the change" },
+        phone:        { type: "string" },
+        company:      { type: "string" },
+        jobTitle:     { type: "string" },
+        academicYear: { type: "string" },
+        linkedinUrl:  { type: "string" },
+        priority:     { type: "string", description: "HIGH, MEDIUM or LOW" },
+      },
+      required: ["leadQuery"],
+    },
+  },
+  {
+    name: "resolve_flag",
+    description: "Close a student-care flag once it has been dealt with. Use list_open_flags first to find it. Say what you actually did — that note is the record of the follow-up.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        studentQuery: { type: "string", description: "Student name or email" },
+        kind:         { type: "string", description: "Optional — the flag kind, if they have more than one open" },
+        whatYouDid:   { type: "string", description: "How it was resolved" },
+      },
+      required: ["studentQuery", "whatYouDid"],
+    },
+  },
+  {
+    name: "complete_task",
+    description: "Mark a follow-up task done. Matches on a fragment of the task title for that person.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        leadQuery: { type: "string", description: "Their name or email" },
+        titleLike: { type: "string", description: "Part of the task title, e.g. 'send offer'" },
+      },
+      required: ["leadQuery", "titleLike"],
+    },
+  },
 ];
 
 // ── Tool implementations ─────────────────────────────────────────────────────
@@ -170,7 +227,8 @@ async function findLead(query: string) {
         { lastName: { contains: q, mode: "insensitive" } },
       ],
     },
-    select: { id: true, firstName: true, lastName: true, email: true },
+    // stage is needed by update_lead to record what it moved FROM.
+    select: { id: true, firstName: true, lastName: true, email: true, stage: true },
   });
 }
 
@@ -474,6 +532,116 @@ async function runTool(
       url: `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/leads/${lead.id}`,
       message: "Lead created. Open the URL to review and correct anything mis-heard.",
     });
+  }
+
+  if (name === "log_activity") {
+    const lead = await findLead(String(input.leadQuery ?? ""));
+    if (!lead) return JSON.stringify({ error: "Nobody in the CRM matched that name or email" });
+    const content = String(input.content ?? "").trim();
+    if (!content) return JSON.stringify({ error: "Nothing to log" });
+    const t = String(input.type ?? "NOTE").toUpperCase();
+    const type = ["NOTE", "CALL", "MEETING"].includes(t) ? t : "NOTE";
+    await prisma.leadActivity.create({
+      data: { leadId: lead.id, type, source: "MCP_CLAUDE", content },
+    });
+    return JSON.stringify({ ok: true, loggedOn: `${lead.firstName} ${lead.lastName}`, type });
+  }
+
+  if (name === "update_lead") {
+    const lead = await findLead(String(input.leadQuery ?? ""));
+    if (!lead) return JSON.stringify({ error: "Nobody in the CRM matched that name or email" });
+
+    // Same whitelist as create_lead: the terminal stages carry consequences
+    // elsewhere (enrolment, graduation, loss reporting) and stay human-driven.
+    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","CONTACTED","APPLIED","STRATEGY_CALL","ADMITTED","OFFER_SENT"];
+    const stageIn = String(input.stage ?? "").trim().toUpperCase();
+    if (stageIn && !ALLOWED.includes(stageIn)) {
+      return JSON.stringify({
+        error: `Stage "${stageIn}" cannot be set from here. Allowed: ${ALLOWED.join(", ")}. Enrolment, graduation and denial are done in the CRM by a person.`,
+      });
+    }
+
+    const data: Record<string, string> = {};
+    for (const k of ["phone","company","jobTitle","academicYear","linkedinUrl"]) {
+      const v = String(input[k] ?? "").trim();
+      if (v) data[k] = v;
+    }
+    const pr = String(input.priority ?? "").trim().toUpperCase();
+    if (["HIGH","MEDIUM","LOW"].includes(pr)) data.priority = pr;
+    if (stageIn) data.stage = stageIn;
+
+    if (Object.keys(data).length === 0) {
+      return JSON.stringify({ error: "Nothing to change — pass a stage or at least one field." });
+    }
+
+    const before = lead.stage;
+    await prisma.lead.update({ where: { id: lead.id }, data });
+
+    // A stage move is the thing people ask "why?" about later, so record the
+    // move and the reason as one entry rather than a silent field change.
+    if (stageIn && stageIn !== before) {
+      await prisma.leadActivity.create({
+        data: {
+          leadId: lead.id, type: "STAGE_CHANGE", source: "MCP_CLAUDE",
+          metadata: JSON.stringify({ from: before, to: stageIn }),
+          content: String(input.reason ?? "").trim() || `Moved ${before} → ${stageIn} via Claude.`,
+        },
+      });
+    }
+    return JSON.stringify({
+      ok: true, lead: `${lead.firstName} ${lead.lastName}`,
+      changed: Object.keys(data), stageWas: before, stageNow: data.stage ?? before,
+    });
+  }
+
+  if (name === "resolve_flag") {
+    const u = await findStudent(String(input.studentQuery ?? ""));
+    if (!u) return JSON.stringify({ error: "No student matched that name/email" });
+    const whatYouDid = String(input.whatYouDid ?? "").trim();
+    if (!whatYouDid) return JSON.stringify({ error: "Say what you did — that note is the record of the follow-up." });
+
+    const kind = String(input.kind ?? "").trim();
+    const open = await prisma.interventionFlag.findMany({
+      where: { userId: u.id, resolvedAt: null, ...(kind ? { kind } : {}) },
+      orderBy: { dueBy: "asc" },
+      select: { id: true, kind: true, detail: true },
+    });
+    if (open.length === 0) return JSON.stringify({ error: `No open flags for ${u.name}${kind ? ` of kind ${kind}` : ""}.` });
+    if (open.length > 1 && !kind) {
+      return JSON.stringify({
+        error: `${u.name} has ${open.length} open flags — pass \`kind\` to say which.`,
+        openFlags: open.map(f => ({ kind: f.kind, detail: f.detail })),
+      });
+    }
+    await prisma.interventionFlag.update({
+      where: { id: open[0].id },
+      data: { resolvedAt: new Date(), resolvedBy: admin.id },
+    });
+    const lead = await prisma.lead.findFirst({ where: { enrolledUserId: u.id }, select: { id: true } });
+    if (lead) {
+      await prisma.leadActivity.create({
+        data: { leadId: lead.id, type: "NOTE", source: "MCP_CLAUDE",
+                content: `✅ Flag resolved (${open[0].kind}): ${whatYouDid}` },
+      });
+    }
+    return JSON.stringify({ ok: true, resolved: open[0].kind, student: u.name });
+  }
+
+  if (name === "complete_task") {
+    const lead = await findLead(String(input.leadQuery ?? ""));
+    if (!lead) return JSON.stringify({ error: "Nobody in the CRM matched that name or email" });
+    const like = String(input.titleLike ?? "").trim();
+    if (!like) return JSON.stringify({ error: "Say which task — pass part of its title." });
+    const open = await prisma.task.findMany({
+      where: { leadId: lead.id, completedAt: null, title: { contains: like, mode: "insensitive" } },
+      select: { id: true, title: true },
+    });
+    if (open.length === 0) return JSON.stringify({ error: `No open task on ${lead.firstName} ${lead.lastName} matching "${like}".` });
+    if (open.length > 1) {
+      return JSON.stringify({ error: "That matches more than one open task — be more specific.", matches: open.map(t => t.title) });
+    }
+    await prisma.task.update({ where: { id: open[0].id }, data: { completedAt: new Date() } });
+    return JSON.stringify({ ok: true, completed: open[0].title, on: `${lead.firstName} ${lead.lastName}` });
   }
 
   if (name === "save_note") {
