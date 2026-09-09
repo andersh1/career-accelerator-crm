@@ -314,10 +314,19 @@ async function runTool(
       }),
     ]);
     const now = Date.now();
+    // Which modules have had their pre-work released to the student — the
+    // difference between "we told them" and "we wrote it down".
+    const reviewedByModule: Record<string, Date | null> = Object.fromEntries(
+      prework.map(p => [p.moduleId, p.reviewedAt]),
+    );
+
     // WorksheetResponse stores only moduleId, so resolve labels once.
     const mods = await prisma.module.findMany({ select: { id: true, number: true, title: true } });
     const moduleLabel: Record<string, string> = Object.fromEntries(
       mods.map(m => [m.id, `M${m.number} ${m.title}`]),
+    );
+    const moduleNumberById: Record<string, number> = Object.fromEntries(
+      mods.map(m => [m.id, m.number]),
     );
 
     return JSON.stringify({
@@ -355,7 +364,31 @@ async function runTool(
         answers: r.answers,
       })),
       assignments: submissions,
-      coachNotes,
+      // Coach notes, each labelled with what the STUDENT has actually seen.
+      // They arrived as one flat list before, so a private read, a write-up
+      // they have already read, and feedback still sitting unreleased were
+      // indistinguishable — Claude could quote a private note back as though
+      // it had been said to them, or claim they had been told something that
+      // was never released.
+      coachNotes: coachNotes.map(n => {
+        const moduleNumber = moduleNumberById[n.moduleId] ?? null;
+        const released = !!reviewedByModule[n.moduleId];
+        const visibility =
+          n.sectionKey === "general"
+            ? "PRIVATE — coach-only. The student has NEVER seen this. Never quote or paraphrase it back to them."
+            : n.sectionKey === "session-writeup"
+              ? "SENT — the student has this write-up and has been notified."
+              : released
+                ? "SHARED — released to the student with their pre-work feedback."
+                : "NOT YET SENT — written, but not released. Marking the pre-work reviewed is what sends it.";
+        return {
+          module: moduleNumber ? `M${moduleNumber}` : null,
+          section: n.sectionKey,
+          visibility,
+          studentHasSeen: n.sectionKey !== "general" && (n.sectionKey === "session-writeup" || released),
+          content: n.content,
+        };
+      }),
     });
   }
 
