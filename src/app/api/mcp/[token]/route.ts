@@ -136,6 +136,7 @@ const TOOLS = [
         linkedinUrl:  { type: "string" },
         stage:        { type: "string", description: "Pipeline stage. Defaults to LEAD. One of: WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED, OFFER_SENT" },
         source:       { type: "string", description: "Where they came from, e.g. Referral, Event, Inbound" },
+        leadType:     { type: "string", description: "WHO THIS PERSON IS — get this right or they end up in the wrong list. Use CONTACT for anyone who is NOT a prospective student: referral partners, ecosystem people, university or employer contacts, advisors. CONTACT records live under Partnerships → Contacts and are kept out of the enrolment pipeline. Use APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH for actual prospective students. Defaults to WAITLIST (a prospect), so pass CONTACT explicitly for anyone who is not one." },
         notes:        { type: "string", description: "What was actually said — their goal, situation, timeline, objections. This becomes the first activity on the record." },
       },
       required: ["email", "firstName", "lastName"],
@@ -169,6 +170,7 @@ const TOOLS = [
         academicYear: { type: "string" },
         linkedinUrl:  { type: "string" },
         priority:     { type: "string", description: "HIGH, MEDIUM or LOW" },
+        leadType:     { type: "string", description: "Reclassify them. CONTACT = partner / referral source / ecosystem, moves them out of the enrolment pipeline into Partnerships → Contacts. Otherwise APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH." },
       },
       required: ["leadQuery"],
     },
@@ -533,9 +535,16 @@ async function runTool(
       });
     }
 
+    // Who they are decides which list they land in. Defaulting everyone to a
+    // prospect put referral partners and ecosystem contacts into the enrolment
+    // pipeline next to real applicants.
+    const TYPES = ["CONTACT","APPLICATION","CONSULTATION","WAITLIST","KEEP_IN_TOUCH"];
+    const typeIn = String(input.leadType ?? "").trim().toUpperCase();
+    const leadType = TYPES.includes(typeIn) ? typeIn : "WAITLIST";
+
     const lead = await prisma.lead.create({
       data: {
-        email, firstName, lastName, stage,
+        email, firstName, lastName, stage, leadType,
         phone:        String(input.phone ?? "").trim() || null,
         company:      String(input.company ?? "").trim() || null,
         jobTitle:     String(input.jobTitle ?? "").trim() || null,
@@ -561,9 +570,11 @@ async function runTool(
 
     return JSON.stringify({
       ok: true, created: true,
-      lead: { id: lead.id, name: `${firstName} ${lastName}`, email, stage },
+      lead: { id: lead.id, name: `${firstName} ${lastName}`, email, stage, leadType },
       url: `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/leads/${lead.id}`,
-      message: "Lead created. Open the URL to review and correct anything mis-heard.",
+      message: leadType === "CONTACT"
+        ? "Added as a CONTACT — they sit under Partnerships → Contacts, not in the enrolment pipeline."
+        : "Added to the enrolment pipeline as a prospective student. If they are actually a partner or referral source, say so and I'll reclassify them as a CONTACT.",
     });
   }
 
@@ -601,6 +612,8 @@ async function runTool(
     }
     const pr = String(input.priority ?? "").trim().toUpperCase();
     if (["HIGH","MEDIUM","LOW"].includes(pr)) data.priority = pr;
+    const lt = String(input.leadType ?? "").trim().toUpperCase();
+    if (["CONTACT","APPLICATION","CONSULTATION","WAITLIST","KEEP_IN_TOUCH"].includes(lt)) data.leadType = lt;
     if (stageIn) data.stage = stageIn;
 
     if (Object.keys(data).length === 0) {
