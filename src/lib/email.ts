@@ -715,10 +715,10 @@ const alertRowLink = (label: string, href: string, text: string) =>
  * possible to switch your own lead notifications off by accident.
  */
 export async function sendLeadAlert({
-  firstName, lastName, email, phone, personaRole, academicYear, isSchedule, leadId, landingPage,
+  firstName, lastName, email, phone, personaRole, academicYear, school, isSchedule, leadId, landingPage,
 }: {
   firstName: string; lastName: string; email: string; phone?: string | null;
-  personaRole?: string | null; academicYear?: string | null; isSchedule: boolean;
+  personaRole?: string | null; academicYear?: string | null; school?: string | null; isSchedule: boolean;
   leadId?: string | null; landingPage?: string | null;
 }) {
   const label = isSchedule ? "Consultation request" : "Stay in Touch signup";
@@ -728,6 +728,7 @@ export async function sendLeadAlert({
       ${personaRole ? alertRow("Role", personaRole === "PARENT" ? "Parent" : "Student") : ""}
       ${alertRowLink("Email", `mailto:${email}`, email)}
       ${phone ? alertRowLink("Phone", `tel:${phone}`, phone) : ""}
+      ${school ? alertRow("School", school) : ""}
       ${academicYear ? alertRow("Academic year", academicYear) : ""}
       ${landingPage && landingPage !== "/" ? alertRow("Came from", landingPage) : ""}
     </table>

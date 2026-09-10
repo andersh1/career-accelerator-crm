@@ -41,6 +41,7 @@ interface Lead {
   utmSource: string | null; utmMedium: string | null; utmCampaign: string | null; utmContent: string | null; utmTerm: string | null;
   landingPage: string | null;
   academicYear: string | null;
+  school: string | null;
   promoCode: string | null;
   referralCode: string | null;
   personaRole: string | null;
@@ -520,6 +521,12 @@ export default function LeadDetailPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-bold px-2 py-0.5 rounded" style={{ background: "#fdf4f0", color: "#9a3412" }}>{lead.referralCode}</span>
                   </div>
+                </div>
+              )}
+              {lead.school && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: "#949598" }}>School</span>
+                  <span className="text-xs font-medium truncate max-w-[150px]" style={{ color: "#5a6663" }}>{lead.school}</span>
                 </div>
               )}
               {lead.academicYear && (

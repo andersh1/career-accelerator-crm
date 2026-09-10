@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     studentEmail,
     studentPhone,
     academicYear,
+    school,
   } = body as Record<string, string | undefined>;
 
   // Required field validation
@@ -164,6 +165,7 @@ export async function POST(req: NextRequest) {
       utmContent:  utmContent?.trim()  || null,
       utmTerm:     utmTerm?.trim()      || null,
       academicYear: academicYear?.trim() || null,
+      school:       school?.trim() || null,
       landingPage: landingPage?.trim() || null,
       promoCode:    promoCode?.trim().toUpperCase()    || null,
       referralCode: referralCode?.trim().toUpperCase() || null,
@@ -221,6 +223,7 @@ export async function POST(req: NextRequest) {
         firstName: firstName.trim(), lastName: lastName.trim(), email: normalizedEmail,
         phone: phone?.trim() || null, personaRole: normalizedRole,
         academicYear: academicYear?.trim() || null,
+        school: school?.trim() || null,
         isSchedule: isConsultation, leadId: lead.id,
         landingPage: landingPage?.trim() || null,
       }),

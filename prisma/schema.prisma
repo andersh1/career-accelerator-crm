@@ -427,6 +427,10 @@ model Lead {
   // Year of study, e.g. "Senior" or "Recent graduate". A real column rather
   // than a line inside `notes`, so it can actually be filtered and exported —
   // "how many recent grads applied" is a question worth being able to ask.
+  /// Where they study or studied. Dan asks it on every call anyway; capturing
+  /// it at intake means he is not opening the conversation with admin.
+  school       String?
+
   academicYear String?
 
   // Which landing page they arrived on, e.g. "/frankel" or "/scarsdale".
