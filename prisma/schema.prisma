@@ -146,6 +146,10 @@ model CrmIssue {
   /// Where it came from, e.g. "Team call 2026-09-10". Work piles up from several
   /// calls a week and "which conversation was this?" is the first thing you ask.
   source      String?
+  /// Set when it moves to DONE. createdAt is when it landed, dueAt is when it
+  /// was wanted, closedAt is when it actually finished — the three you need to
+  /// see whether things are getting done or just getting added.
+  closedAt    DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 

@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   Bug, Zap, Database, Settings2, Sparkles, HelpCircle,
   Plus, X, ChevronDown, Loader2, Trash2, Pencil,
-  AlertTriangle, User, Tag, ExternalLink, ListChecks, CalendarClock } from "lucide-react";
+  AlertTriangle, User, Tag, ExternalLink, ListChecks, CalendarClock,
+  BookOpen, Megaphone, Handshake, Building2, Scale, GraduationCap } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ interface CrmIssue {
   tags:         string[];
   linkedLeadId: string | null;
   dueAt:        string | null;
+  closedAt:     string | null;
   notify:       string[];
   source:       string | null;
   createdAt:    string;
@@ -39,12 +41,19 @@ const COLUMNS = [
   { key: "DONE",        label: "Done",        color: "#059669", bg: "#f0fdf4" },
 ];
 
+// Categories, not bug-tracker types. Nine, chosen so that every task that has
+// actually come out of a call in the last month has one obvious home — and few
+// enough that the filter is still worth using.
 const TYPES = [
-  { key: "BUG",     label: "Bug",         Icon: Bug,       color: "text-red-600 bg-red-50 border-red-200"        },
-  { key: "DATA",    label: "Data Issue",  Icon: Database,  color: "text-purple-600 bg-purple-50 border-purple-200" },
-  { key: "OPS",     label: "Ops",         Icon: Settings2, color: "text-amber-600 bg-amber-50 border-amber-200"   },
-  { key: "FEATURE", label: "Feature",     Icon: Sparkles,  color: "text-blue-600 bg-blue-50 border-blue-200"      },
-  { key: "OTHER",   label: "Other",       Icon: HelpCircle,color: "text-slate-600 bg-slate-100 border-slate-200"  },
+  { key: "LMS",         label: "LMS Build",       Icon: BookOpen,   color: "text-teal-700 bg-teal-50 border-teal-200"       },
+  { key: "CRM",         label: "CRM Build",       Icon: Database,   color: "text-indigo-700 bg-indigo-50 border-indigo-200" },
+  { key: "CONTENT",     label: "Content",         Icon: Sparkles,   color: "text-violet-700 bg-violet-50 border-violet-200" },
+  { key: "MARKETING",   label: "Marketing",       Icon: Megaphone,  color: "text-pink-700 bg-pink-50 border-pink-200"       },
+  { key: "SALES",       label: "Sales",           Icon: Handshake,  color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  { key: "PARTNERSHIP", label: "Partnerships",    Icon: Building2,  color: "text-cyan-700 bg-cyan-50 border-cyan-200"       },
+  { key: "LEGAL",       label: "Legal & Finance", Icon: Scale,      color: "text-amber-700 bg-amber-50 border-amber-200"    },
+  { key: "STUDENTS",    label: "Student Success", Icon: GraduationCap, color: "text-blue-700 bg-blue-50 border-blue-200"    },
+  { key: "OPS",         label: "Ops",             Icon: Settings2,  color: "text-slate-600 bg-slate-100 border-slate-200"   },
 ];
 
 const PRIORITIES = [
@@ -190,14 +199,26 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
 
         {/* Due date beats created date for anything with one — an overdue task
             has to be readable without opening the card. */}
-        <span className="text-[10px] flex-1 truncate" style={{
-          color: issue.dueAt && new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? "#dc2626" : "#c9c4b8",
-          fontWeight: issue.dueAt && new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? 700 : 400,
-        }}>
-          {issue.dueAt
-            ? `${new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? "Overdue · " : "Due "}${new Date(issue.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-            : new Date(issue.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-        </span>
+        {/* One line, three possible dates: closed once it is done, otherwise
+            due, otherwise when it landed. Hover for all three. */}
+        {(() => {
+          const d = (x: string) => new Date(x).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          const overdue = !!issue.dueAt && new Date(issue.dueAt) < new Date() && issue.status !== "DONE";
+          const label = issue.status === "DONE" && issue.closedAt ? `Closed ${d(issue.closedAt)}`
+            : issue.dueAt ? `${overdue ? "Overdue · " : "Due "}${d(issue.dueAt)}`
+            : `Added ${d(issue.createdAt)}`;
+          const title = [
+            `Added ${d(issue.createdAt)}`,
+            issue.dueAt ? `Needed by ${d(issue.dueAt)}` : "No due date",
+            issue.closedAt ? `Closed ${d(issue.closedAt)}` : null,
+          ].filter(Boolean).join(" · ");
+          return (
+            <span className="text-[10px] flex-1 truncate" title={title}
+              style={{ color: overdue ? "#dc2626" : issue.status === "DONE" ? "#059669" : "#c9c4b8", fontWeight: overdue ? 700 : 400 }}>
+              {label}
+            </span>
+          );
+        })()}
 
         {issue.linkedLeadId && (
           <Link href={`/leads/${issue.linkedLeadId}`}
@@ -234,7 +255,7 @@ interface FormProps {
 function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
   const [title,       setTitle]       = useState(initial?.title       ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [type,        setType]        = useState(initial?.type        ?? "BUG");
+  const [type,        setType]        = useState(initial?.type        ?? "OPS");
   const [priority,    setPriority]    = useState(initial?.priority    ?? "NORMAL");
   const [assignee,    setAssignee]    = useState(initial?.assignee    ?? "");
   const [tagInput,    setTagInput]    = useState("");
@@ -261,7 +282,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#e4e0d6]"
           style={{ background: "#f8f6f1" }}>
           <div className="flex items-center gap-2">
-            <Bug size={16} style={{ color: "#086c64" }} />
+            <ListChecks size={16} style={{ color: "#086c64" }} />
             <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>
               {initial ? "Edit issue" : "New CRM issue"}
             </h2>
@@ -612,7 +633,7 @@ export default function IssuesPage() {
         <select value={filterType} onChange={e => setFilterType(e.target.value)}
           className="text-xs font-medium border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none"
           style={{ color: "#5a6663" }}>
-          <option value="">All types</option>
+          <option value="">All categories</option>
           {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
 

@@ -212,7 +212,7 @@ const TOOLS = [
         notify:      { type: "array", items: { type: "string" }, description: "Emails or first names of people who want progress. Everyone in the conversation who is not the owner is usually right." },
         dueAt:       { type: "string", description: "YYYY-MM-DD. Only if a date was actually said." },
         priority:    { type: "string", description: "LOW, NORMAL, HIGH or URGENT. Default NORMAL." },
-        type:        { type: "string", description: "OPS (default), FEATURE, BUG, DATA or OTHER." },
+        type:        { type: "string", description: "Category — pick the closest: LMS (LMS build), CRM (CRM build), CONTENT (curriculum, decks, prompts), MARKETING (website, copy, brand, lead gen), SALES (pipeline, consultations, offers, payments), PARTNERSHIP (orgs, referral and hiring partners), LEGAL (terms, privacy, finance, Ignition/QuickBooks), STUDENTS (chasing Fellows, coaching operations), OPS (anything else). Defaults to OPS." },
         status:      { type: "string", description: "BACKLOG (default), TODO, IN_PROGRESS or DONE." },
         tags:        { type: "array", items: { type: "string" }, description: "Grouping, e.g. legal, ignition, crm, marketing." },
         source:      { type: "string", description: "Which conversation this came from." },
@@ -229,6 +229,7 @@ const TOOLS = [
         assignee:    { type: "string", description: "Filter to one owner — email or first name." },
         status:      { type: "string", description: "BACKLOG, TODO, IN_PROGRESS, DONE, or ALL. Defaults to everything not DONE." },
         source:      { type: "string", description: "Filter to one conversation, matched loosely." },
+        type:        { type: "string", description: "Category: LMS, CRM, CONTENT, MARKETING, SALES, PARTNERSHIP, LEGAL, STUDENTS, OPS." },
         overdueOnly: { type: "boolean" },
       },
     },
@@ -650,7 +651,7 @@ async function runTool(
 
     const STATUS = ["BACKLOG","TODO","IN_PROGRESS","DONE"];
     const PRIORITY = ["LOW","NORMAL","HIGH","URGENT"];
-    const TYPE = ["BUG","DATA","OPS","FEATURE","OTHER"];
+    const TYPE = ["LMS","CRM","CONTENT","MARKETING","SALES","PARTNERSHIP","LEGAL","STUDENTS","OPS"];
     const pick = (v: unknown, allowed: string[], dflt: string) => {
       const x = String(v ?? "").trim().toUpperCase();
       return allowed.includes(x) ? x : dflt;
@@ -690,10 +691,11 @@ async function runTool(
         ...(st === "ALL" ? {} : st ? { status: st } : { status: { not: "DONE" } }),
         ...(assignee ? { assignee } : {}),
         ...(input.source ? { source: { contains: String(input.source), mode: "insensitive" } } : {}),
+        ...(input.type ? { type: String(input.type).toUpperCase() } : {}),
         ...(input.overdueOnly === true ? { dueAt: { lt: new Date() }, status: { not: "DONE" } } : {}),
       },
       orderBy: [{ dueAt: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
-      select: { title: true, status: true, priority: true, assignee: true, notify: true, dueAt: true, source: true, tags: true, description: true },
+      select: { title: true, status: true, priority: true, type: true, assignee: true, notify: true, dueAt: true, closedAt: true, createdAt: true, source: true, tags: true, description: true },
     });
     const now = Date.now();
     return JSON.stringify({

@@ -19,7 +19,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.title       !== undefined) data.title       = body.title?.trim() || undefined;
   if (body.description !== undefined) data.description = body.description?.trim() || null;
   if (body.type        !== undefined) data.type        = body.type;
-  if (body.status      !== undefined) data.status      = body.status;
+  if (body.status      !== undefined) {
+    data.status = body.status;
+    // Stamp the close date on the way in, clear it if something is reopened —
+    // "how long did that take" is only answerable if this is automatic.
+    data.closedAt = body.status === "DONE" ? new Date() : null;
+  }
   if (body.priority    !== undefined) data.priority    = body.priority;
   if (body.assignee    !== undefined) data.assignee    = body.assignee || null;
   if (body.tags        !== undefined) data.tags        = Array.isArray(body.tags) ? body.tags : [];
