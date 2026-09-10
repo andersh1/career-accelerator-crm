@@ -5,8 +5,7 @@ import Link from "next/link";
 import {
   Bug, Zap, Database, Settings2, Sparkles, HelpCircle,
   Plus, X, ChevronDown, Loader2, Trash2, Pencil,
-  AlertTriangle, User, Tag, ExternalLink,
-} from "lucide-react";
+  AlertTriangle, User, Tag, ExternalLink, ListChecks, CalendarClock } from "lucide-react";
 import { useToast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -241,6 +240,9 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
   const [tagInput,    setTagInput]    = useState("");
   const [tags,        setTags]        = useState<string[]>(initial?.tags ?? []);
   const [linkedLeadId, setLinkedLeadId] = useState(initial?.linkedLeadId ?? "");
+  const [dueAt,       setDueAt]       = useState(initial?.dueAt ? initial.dueAt.slice(0, 10) : "");
+  const [notify,      setNotify]      = useState<string[]>(initial?.notify ?? []);
+  const [source,      setSource]      = useState(initial?.source ?? "");
 
   function addTag(e: React.KeyboardEvent) {
     if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
@@ -330,6 +332,48 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             </select>
           </div>
 
+          {/* Due date + who wants to hear about progress */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>Due date</label>
+              <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
+                className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none"
+                style={{ color: "#14211f" }} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>Keep informed</label>
+              <select value="" onChange={e => { const v = e.target.value; if (v && !notify.includes(v)) setNotify([...notify, v]); }}
+                className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none"
+                style={{ color: "#14211f" }}>
+                <option value="">Add someone…</option>
+                {team.filter(t => t.email !== assignee && !notify.includes(t.email))
+                     .map(t => <option key={t.email} value={t.email}>{t.name ?? t.email}</option>)}
+              </select>
+              {notify.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {notify.map(n => (
+                    <button key={n} onClick={() => setNotify(notify.filter(x => x !== n))}
+                      className="text-[10px] px-2 py-0.5 rounded-full border"
+                      style={{ borderColor: "#e4e0d6", color: "#5a6663", background: "#f8f6f1" }}>
+                      {team.find(t => t.email === n)?.name ?? n} ×
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Where it came from */}
+          <div>
+            <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>
+              Source <span className="font-normal text-[10px]">(which call or conversation)</span>
+            </label>
+            <input value={source} onChange={e => setSource(e.target.value)}
+              placeholder="Team call 2026-09-10"
+              className="w-full text-sm border border-[#e4e0d6] rounded-xl px-3 py-2 bg-white focus:outline-none"
+              style={{ color: "#14211f" }} />
+          </div>
+
           {/* Tags */}
           <div>
             <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>
@@ -380,12 +424,12 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             Cancel
           </button>
           <button
-            onClick={() => onSave({ title, description: description || null, type, priority, assignee: assignee || null, tags, linkedLeadId: linkedLeadId || null })}
+            onClick={() => onSave({ title, description: description || null, type, priority, assignee: assignee || null, tags, linkedLeadId: linkedLeadId || null, dueAt: dueAt || null, notify, source: source || null })}
             disabled={!title.trim() || saving}
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 flex items-center gap-2"
             style={{ background: "#086c64" }}>
             {saving && <Loader2 size={13} className="animate-spin" />}
-            {initial ? "Save changes" : "Create issue"}
+            {initial ? "Save changes" : "Create task"}
           </button>
         </div>
       </div>
@@ -402,6 +446,13 @@ export default function IssuesPage() {
   const [loading, setLoading] = useState(true);
 
   // Filters
+  // Done collapses by default — it only grows, and a column you scroll past is
+  // a column that makes the other three harder to read.
+  const [doneOpen, setDoneOpen] = useState(false);
+  // The "don't miss things" control: one click to see only what is late or
+  // landing this week, across every column.
+  const [focus, setFocus] = useState<"" | "OVERDUE" | "WEEK" | "UNDATED">("");
+  const [filterSource, setFilterSource] = useState("");
   const [filterType,     setFilterType]     = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("");
@@ -425,7 +476,20 @@ export default function IssuesPage() {
   useEffect(() => { load(); }, [load]);
 
   // Filtered view
+  const nowMs = Date.now();
+  const weekMs = nowMs + 7 * 86400000;
+  const dueMs = (i: CrmIssue) => (i.dueAt ? new Date(i.dueAt).getTime() : null);
+
+  const overdueCount = issues.filter(i => i.status !== "DONE" && (dueMs(i) ?? Infinity) < nowMs).length;
+  const weekCount    = issues.filter(i => i.status !== "DONE" && (dueMs(i) ?? Infinity) >= nowMs && (dueMs(i) ?? Infinity) <= weekMs).length;
+  const undatedCount = issues.filter(i => i.status !== "DONE" && !i.dueAt).length;
+  const sources = Array.from(new Set(issues.map(i => i.source).filter((x): x is string => !!x))).sort();
+
   const filtered = issues.filter(i => {
+    if (filterSource && i.source !== filterSource) return false;
+    if (focus === "OVERDUE" && !(i.status !== "DONE" && (dueMs(i) ?? Infinity) < nowMs)) return false;
+    if (focus === "WEEK"    && !(i.status !== "DONE" && (dueMs(i) ?? Infinity) >= nowMs && (dueMs(i) ?? Infinity) <= weekMs)) return false;
+    if (focus === "UNDATED" && !(i.status !== "DONE" && !i.dueAt)) return false;
     if (filterType     && i.type     !== filterType)     return false;
     if (filterPriority && i.priority !== filterPriority) return false;
     if (filterAssignee && i.assignee !== filterAssignee) return false;
@@ -471,7 +535,7 @@ export default function IssuesPage() {
       const res = await fetch(`/api/crm/crm-issues/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setIssues(prev => prev.filter(i => i.id !== id));
-      success("Issue deleted");
+      success("Task deleted");
     } catch { toastError("Failed to delete issue"); }
   }
 
@@ -486,8 +550,8 @@ export default function IssuesPage() {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>Vantage Career Accelerator</p>
           <div className="flex items-center gap-2 mb-1">
-            <Bug size={18} style={{ color: "#086c64" }} />
-            <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>CRM Issues</h1>
+            <ListChecks size={18} style={{ color: "#086c64" }} />
+            <h1 className="text-xl font-display font-semibold" style={{ color: "#14211f" }}>Tasks</h1>
             {urgent > 0 && (
               <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200">
                 <AlertTriangle size={9} /> {urgent} urgent
@@ -495,7 +559,7 @@ export default function IssuesPage() {
             )}
           </div>
           <p className="text-sm" style={{ color: "#949598" }}>
-            Internal issues for Dan, David, and Caleb — separate from student support tickets.
+            Everything the team is working on that is not tied to one lead.
             {!loading && ` ${totalOpen} open`}
           </p>
         </div>
@@ -504,12 +568,47 @@ export default function IssuesPage() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition"
           style={{ background: "#086c64" }}
         >
-          <Plus size={15} /> New issue
+          <Plus size={15} /> New task
         </button>
+      </div>
+
+      {/* Focus bar — the answer to "make sure I don't miss things". One click
+          cuts the board to what is late or landing this week, across every
+          column, so nothing hides at the bottom of Backlog. */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {([
+          { key: "OVERDUE" as const, label: "Overdue",      n: overdueCount, fg: "#b91c1c", bg: "#fef2f2", br: "#fecaca" },
+          { key: "WEEK"    as const, label: "Due this week", n: weekCount,    fg: "#b45309", bg: "#fffbeb", br: "#fde68a" },
+          { key: "UNDATED" as const, label: "No date",      n: undatedCount, fg: "#5a6663", bg: "#f8f6f1", br: "#e4e0d6" },
+        ]).map(b => (
+          <button key={b.key}
+            onClick={() => setFocus(focus === b.key ? "" : b.key)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition"
+            style={focus === b.key
+              ? { background: b.fg, borderColor: b.fg, color: "#fff" }
+              : { background: b.bg, borderColor: b.br, color: b.fg }}>
+            {b.key === "OVERDUE" ? <AlertTriangle size={12} /> : <CalendarClock size={12} />}
+            {b.label}
+            <span className="tabular-nums">{b.n}</span>
+          </button>
+        ))}
+        {focus && (
+          <button onClick={() => setFocus("")} className="text-xs font-semibold underline underline-offset-2" style={{ color: "#949598" }}>
+            show everything
+          </button>
+        )}
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-5 flex-wrap">
+        {sources.length > 0 && (
+          <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
+            className="text-xs font-medium border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none"
+            style={{ color: "#5a6663" }}>
+            <option value="">All sources</option>
+            {sources.map(src => <option key={src} value={src}>{src}</option>)}
+          </select>
+        )}
         <select value={filterType} onChange={e => setFilterType(e.target.value)}
           className="text-xs font-medium border border-[#e4e0d6] rounded-lg px-3 py-1.5 bg-white focus:outline-none"
           style={{ color: "#5a6663" }}>
@@ -547,17 +646,35 @@ export default function IssuesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {COLUMNS.map(col => {
-            const colIssues = filtered.filter(i => i.status === col.key);
+            const RANK: Record<string, number> = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
+            const colIssues = filtered
+              .filter(i => i.status === col.key)
+              // Dated work first, soonest at the top — an undated backlog item
+              // should never sit above something due tomorrow.
+              .sort((a, b) => {
+                const da = a.dueAt ? new Date(a.dueAt).getTime() : Infinity;
+                const db = b.dueAt ? new Date(b.dueAt).getTime() : Infinity;
+                if (da !== db) return da - db;
+                return (RANK[a.priority] ?? 2) - (RANK[b.priority] ?? 2);
+              });
+            const isDone = col.key === "DONE";
+            const collapsed = isDone && !doneOpen;
             return (
               <div key={col.key}>
                 {/* Column header */}
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => isDone && setDoneOpen(v => !v)}
+                    className={`flex items-center gap-2 ${isDone ? "cursor-pointer" : "cursor-default"}`}
+                  >
                     <span className="w-2 h-2 rounded-full" style={{ background: col.color }} />
                     <span className="text-xs font-bold uppercase tracking-wide" style={{ color: col.color }}>
                       {col.label}
                     </span>
-                  </div>
+                    {isDone && (
+                      <ChevronDown size={12} style={{ color: col.color, transform: collapsed ? "rotate(-90deg)" : "none", transition: "transform .15s" }} />
+                    )}
+                  </button>
                   <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
                     style={{ background: col.bg, color: col.color }}>
                     {colIssues.length}
@@ -566,7 +683,13 @@ export default function IssuesPage() {
 
                 {/* Cards */}
                 <div className="space-y-2.5 min-h-[60px]">
-                  {colIssues.length === 0 ? (
+                  {collapsed ? (
+                    <button onClick={() => setDoneOpen(true)}
+                      className="w-full rounded-xl border border-dashed border-[#e4e0d6] py-3 text-[11px] font-semibold hover:bg-[#f8f6f1] transition"
+                      style={{ color: "#949598" }}>
+                      {colIssues.length} done · show
+                    </button>
+                  ) : colIssues.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-[#e4e0d6] h-16 flex items-center justify-center">
                       <span className="text-[11px]" style={{ color: "#c9c4b8" }}>Empty</span>
                     </div>
