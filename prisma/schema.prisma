@@ -137,6 +137,15 @@ model CrmIssue {
   createdBy   String?                        // CRM user email
   tags        String[] @default([])
   linkedLeadId String?                       // optional link to a lead record
+  /// When it needs doing. Null = no date, which is fine for a backlog item.
+  dueAt       DateTime?
+  /// Who wants to hear about progress — emails. Recorded and shown on the card;
+  /// nothing is sent yet. Notifying before the board is part of the routine is
+  /// how you get a noisy tool nobody opens.
+  notify      String[] @default([])
+  /// Where it came from, e.g. "Team call 2026-09-10". Work piles up from several
+  /// calls a week and "which conversation was this?" is the first thing you ask.
+  source      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 

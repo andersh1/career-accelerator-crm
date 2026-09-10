@@ -200,6 +200,55 @@ const TOOLS = [
       required: ["leadQuery", "titleLike"],
     },
   },
+  {
+    name: "create_issue",
+    description: "Put a piece of team work on the board at /issues — anything that is not tied to one lead. This is the home for work that comes out of calls: 'verify the Ignition bank account', 'draft the terms of use'. Give it an owner if one was named, a due date if one was said, and put everyone who wants to hear about progress in `notify`. Always set `source` to which conversation it came from, e.g. 'Team call 2026-09-10' — work arrives from several calls a week and knowing which one is the first thing anybody asks. When pulling several tasks out of a transcript, call this once per task.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title:       { type: "string", description: "What needs doing, as an action. Short." },
+        description: { type: "string", description: "The context — what was actually said, decisions made, anything the owner needs to not have to re-listen for." },
+        assignee:    { type: "string", description: "Owner's email or first name (caleb / dan / david). Leave out if nobody was named — do not guess." },
+        notify:      { type: "array", items: { type: "string" }, description: "Emails or first names of people who want progress. Everyone in the conversation who is not the owner is usually right." },
+        dueAt:       { type: "string", description: "YYYY-MM-DD. Only if a date was actually said." },
+        priority:    { type: "string", description: "LOW, NORMAL, HIGH or URGENT. Default NORMAL." },
+        type:        { type: "string", description: "OPS (default), FEATURE, BUG, DATA or OTHER." },
+        status:      { type: "string", description: "BACKLOG (default), TODO, IN_PROGRESS or DONE." },
+        tags:        { type: "array", items: { type: "string" }, description: "Grouping, e.g. legal, ignition, crm, marketing." },
+        source:      { type: "string", description: "Which conversation this came from." },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "list_issues",
+    description: "Read the team work board. Use it for 'what's on my plate', 'what's overdue', 'what came out of Wednesday's call'. Returns everything open by default, most urgent first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        assignee:    { type: "string", description: "Filter to one owner — email or first name." },
+        status:      { type: "string", description: "BACKLOG, TODO, IN_PROGRESS, DONE, or ALL. Defaults to everything not DONE." },
+        source:      { type: "string", description: "Filter to one conversation, matched loosely." },
+        overdueOnly: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "update_issue",
+    description: "Move a task along, reassign it, or mark it done. Matched on a fragment of its title; refuses when the fragment matches more than one so nothing is changed by accident.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        titleLike: { type: "string", description: "Part of the task title." },
+        status:    { type: "string", description: "BACKLOG, TODO, IN_PROGRESS or DONE." },
+        assignee:  { type: "string" },
+        dueAt:     { type: "string", description: "YYYY-MM-DD" },
+        priority:  { type: "string", description: "LOW, NORMAL, HIGH, URGENT" },
+        note:      { type: "string", description: "Progress to append to the description, with today's date." },
+      },
+      required: ["titleLike"],
+    },
+  },
 ];
 
 // ── Tool implementations ─────────────────────────────────────────────────────
@@ -576,6 +625,113 @@ async function runTool(
         ? "Added as a CONTACT — they sit under Partnerships → Contacts, not in the enrolment pipeline."
         : "Added to the enrolment pipeline as a prospective student. If they are actually a partner or referral source, say so and I'll reclassify them as a CONTACT.",
     });
+  }
+
+  // ── Team work board (/issues) ───────────────────────────────────────────────
+  // Names get typed as "dan", not an email address, so resolve loosely against
+  // the admin roster and fall back to whatever was said rather than dropping it.
+  async function resolvePerson(v: string): Promise<string | null> {
+    const q = v.trim();
+    if (!q) return null;
+    if (q.includes("@")) return q.toLowerCase();
+    const u = await prisma.user.findFirst({
+      where: {
+        OR: [{ role: "ADMIN" }, { crmRole: "ADMIN" }],
+        name: { contains: q, mode: "insensitive" },
+      },
+      select: { email: true },
+    });
+    return u?.email ?? q;
+  }
+
+  if (name === "create_issue") {
+    const title = String(input.title ?? "").trim();
+    if (!title) return JSON.stringify({ error: "A task needs a title." });
+
+    const STATUS = ["BACKLOG","TODO","IN_PROGRESS","DONE"];
+    const PRIORITY = ["LOW","NORMAL","HIGH","URGENT"];
+    const TYPE = ["BUG","DATA","OPS","FEATURE","OTHER"];
+    const pick = (v: unknown, allowed: string[], dflt: string) => {
+      const x = String(v ?? "").trim().toUpperCase();
+      return allowed.includes(x) ? x : dflt;
+    };
+
+    const assignee = input.assignee ? await resolvePerson(String(input.assignee)) : null;
+    const notifyIn = Array.isArray(input.notify) ? input.notify.map(String) : [];
+    const notify = (await Promise.all(notifyIn.map(resolvePerson)))
+      .filter((x): x is string => !!x && x !== assignee);
+
+    const dueRaw = String(input.dueAt ?? "").trim();
+    // 5pm ET, so a "Friday" task is not quietly due at midnight UTC Thursday.
+    const dueAt = /^\d{4}-\d{2}-\d{2}$/.test(dueRaw) ? new Date(`${dueRaw}T17:00:00-04:00`) : null;
+
+    const issue = await prisma.crmIssue.create({
+      data: {
+        title,
+        description: String(input.description ?? "").trim() || null,
+        status:   pick(input.status, STATUS, "BACKLOG"),
+        priority: pick(input.priority, PRIORITY, "NORMAL"),
+        type:     pick(input.type, TYPE, "OPS"),
+        assignee, notify, dueAt,
+        source: String(input.source ?? "").trim() || null,
+        tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
+        createdBy: admin.email,
+      },
+      select: { id: true, title: true, status: true, assignee: true, dueAt: true },
+    });
+    return JSON.stringify({ ok: true, issue, board: `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/issues` });
+  }
+
+  if (name === "list_issues") {
+    const st = String(input.status ?? "").trim().toUpperCase();
+    const assignee = input.assignee ? await resolvePerson(String(input.assignee)) : null;
+    const rows = await prisma.crmIssue.findMany({
+      where: {
+        ...(st === "ALL" ? {} : st ? { status: st } : { status: { not: "DONE" } }),
+        ...(assignee ? { assignee } : {}),
+        ...(input.source ? { source: { contains: String(input.source), mode: "insensitive" } } : {}),
+        ...(input.overdueOnly === true ? { dueAt: { lt: new Date() }, status: { not: "DONE" } } : {}),
+      },
+      orderBy: [{ dueAt: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
+      select: { title: true, status: true, priority: true, assignee: true, notify: true, dueAt: true, source: true, tags: true, description: true },
+    });
+    const now = Date.now();
+    return JSON.stringify({
+      count: rows.length,
+      issues: rows.map(r => ({ ...r, overdue: !!r.dueAt && r.dueAt.getTime() < now && r.status !== "DONE" })),
+    });
+  }
+
+  if (name === "update_issue") {
+    const like = String(input.titleLike ?? "").trim();
+    if (!like) return JSON.stringify({ error: "Say which task — part of its title." });
+    const matches = await prisma.crmIssue.findMany({
+      where: { title: { contains: like, mode: "insensitive" } },
+      select: { id: true, title: true, description: true, status: true },
+    });
+    if (matches.length === 0) return JSON.stringify({ error: `No task matching "${like}".` });
+    if (matches.length > 1) {
+      return JSON.stringify({ error: "That matches more than one task — be more specific.", matches: matches.map(m => m.title) });
+    }
+    const m = matches[0];
+
+    const data: Record<string, unknown> = {};
+    const st = String(input.status ?? "").trim().toUpperCase();
+    if (["BACKLOG","TODO","IN_PROGRESS","DONE"].includes(st)) data.status = st;
+    const pr = String(input.priority ?? "").trim().toUpperCase();
+    if (["LOW","NORMAL","HIGH","URGENT"].includes(pr)) data.priority = pr;
+    if (input.assignee) data.assignee = await resolvePerson(String(input.assignee));
+    const dueRaw = String(input.dueAt ?? "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dueRaw)) data.dueAt = new Date(`${dueRaw}T17:00:00-04:00`);
+    const note = String(input.note ?? "").trim();
+    if (note) {
+      const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+      data.description = `${m.description ? m.description + "\n\n" : ""}[${stamp}] ${note}`;
+    }
+    if (Object.keys(data).length === 0) return JSON.stringify({ error: "Nothing to change." });
+
+    await prisma.crmIssue.update({ where: { id: m.id }, data });
+    return JSON.stringify({ ok: true, task: m.title, was: m.status, changed: Object.keys(data) });
   }
 
   if (name === "log_activity") {

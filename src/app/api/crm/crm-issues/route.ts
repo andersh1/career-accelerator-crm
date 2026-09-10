@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { title, description, type, priority, assignee, tags, linkedLeadId } = body;
+  const { title, description, type, priority, assignee, tags, linkedLeadId, dueAt, notify, source } = body;
 
   if (!title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
       assignee:    assignee    || null,
       tags:        Array.isArray(tags) ? tags : [],
       linkedLeadId: linkedLeadId || null,
+      // 5pm ET, so a task due "Friday" is not quietly due at midnight UTC Thursday.
+      dueAt:       typeof dueAt === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dueAt)
+                     ? new Date(`${dueAt}T17:00:00-04:00`) : null,
+      notify:      Array.isArray(notify) ? notify : [],
+      source:      typeof source === "string" && source.trim() ? source.trim() : null,
       createdBy:   session.user?.email ?? null,
     },
   });

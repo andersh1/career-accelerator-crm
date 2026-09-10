@@ -22,6 +22,9 @@ interface CrmIssue {
   createdBy:    string | null;
   tags:         string[];
   linkedLeadId: string | null;
+  dueAt:        string | null;
+  notify:       string[];
+  source:       string | null;
   createdAt:    string;
   updatedAt:    string;
 }
@@ -156,6 +159,12 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
         </div>
       )}
 
+      {issue.source && (
+        <p className="text-[10px] truncate mb-1.5" style={{ color: "#c9c4b8" }} title={issue.source}>
+          from {issue.source}
+        </p>
+      )}
+
       {/* Footer: assignee + linked lead + actions */}
       <div className="flex items-center gap-2 pt-1 border-t border-[#f1efe8]">
         {issue.assignee ? (
@@ -171,8 +180,24 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
           </div>
         )}
 
-        <span className="text-[10px] flex-1 truncate" style={{ color: "#c9c4b8" }}>
-          {new Date(issue.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        {/* Who else is waiting on this. Recorded, not notified — the point is
+            that you can see at a glance who to tell when it moves. */}
+        {issue.notify?.length > 0 && (
+          <span className="text-[10px] flex-shrink-0" style={{ color: "#949598" }}
+                title={`Keep informed: ${issue.notify.join(", ")}`}>
+            +{issue.notify.length}
+          </span>
+        )}
+
+        {/* Due date beats created date for anything with one — an overdue task
+            has to be readable without opening the card. */}
+        <span className="text-[10px] flex-1 truncate" style={{
+          color: issue.dueAt && new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? "#dc2626" : "#c9c4b8",
+          fontWeight: issue.dueAt && new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? 700 : 400,
+        }}>
+          {issue.dueAt
+            ? `${new Date(issue.dueAt) < new Date() && issue.status !== "DONE" ? "Overdue · " : "Due "}${new Date(issue.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+            : new Date(issue.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </span>
 
         {issue.linkedLeadId && (

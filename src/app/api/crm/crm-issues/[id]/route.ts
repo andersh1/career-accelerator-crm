@@ -24,6 +24,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.assignee    !== undefined) data.assignee    = body.assignee || null;
   if (body.tags        !== undefined) data.tags        = Array.isArray(body.tags) ? body.tags : [];
   if (body.linkedLeadId !== undefined) data.linkedLeadId = body.linkedLeadId || null;
+  if (body.dueAt  !== undefined) data.dueAt  = typeof body.dueAt === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.dueAt)
+                                                 ? new Date(`${body.dueAt}T17:00:00-04:00`) : null;
+  if (body.notify !== undefined) data.notify = Array.isArray(body.notify) ? body.notify : [];
+  if (body.source !== undefined) data.source = body.source?.trim() || null;
 
   const issue = await prisma.crmIssue.update({
     where: { id: params.id },
