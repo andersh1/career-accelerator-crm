@@ -23,6 +23,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendModulePreambleEmail } from "@/lib/email";
 
+// The send loop now spaces requests out (Resend's 10/sec cap) and retries a
+// failure once, so a full cohort needs more than the default budget.
+export const maxDuration = 60;
+
 const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 function fmt(d: Date | null): string {
@@ -97,8 +101,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const failed: string[] = [];
   let sent = 0;
-  for (const f of fellows) {
-    const ok = await sendModulePreambleEmail({
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const sendOne = (f: (typeof fellows)[number]) =>
+    sendModulePreambleEmail({
       to: f.email,
       studentName: f.name,
       moduleNumber: row.module.number,
@@ -109,6 +114,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // The button press is the decision; the enabled flag governs the cron.
       ignoreEnabled: true,
     }).catch(() => false);
+
+  // Resend caps us at 10 requests/second. A tight loop over a full cohort trips
+  // that and silently drops whoever lands on the 11th slot — which is exactly
+  // how one Fellow missed the M2 kick-off. Space the sends out to stay well
+  // under the limit, and give any failure one retry after a short backoff so a
+  // momentary 429 (or an Outlook greylist) doesn't cost someone the email.
+  for (let i = 0; i < fellows.length; i++) {
+    const f = fellows[i];
+    if (i > 0) await sleep(150);
+    let ok = await sendOne(f);
+    if (!ok) { await sleep(1200); ok = await sendOne(f); }
     if (ok) sent++; else failed.push(f.email);
   }
 
