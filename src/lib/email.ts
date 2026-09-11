@@ -22,18 +22,50 @@ function subVars(s: string, vars: Record<string, string>) {
  * one in.
  */
 function textToHtml(t: string) {
-  const escaped = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const LINK = "color:#086c64;font-weight:600;text-decoration:underline;";
-  return escaped.trim().split(/\n\n+/).map(p =>
-    `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.7;">${p
+  // Escape + inline formatting (bold, links) for a single line of copy.
+  const inline = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       // [label](url) first, so its url is not caught by the bare-URL pass below
       .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
                `<a href="$2" style="${LINK}">$1</a>`)
       // A bare URL that is not already inside an href
       .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g,
-               (_m, pre, url) => `${pre}<a href="${url}" style="${LINK}">${url}</a>`)
-      .replace(/\n/g, "<br/>")}</p>`).join("");
+               (_m: string, pre: string, url: string) => `${pre}<a href="${url}" style="${LINK}">${url}</a>`);
+
+  const isBullet = (line: string) => /^\s*[•\-*]\s+/.test(line);
+
+  return t.trim().split(/\n\n+/).map(block => {
+    // Split each block into runs of consecutive bullet vs. plain lines, so a
+    // lead line ("A few quick things:") can sit directly above its bullets.
+    const segments: { bullets: boolean; lines: string[] }[] = [];
+    for (const line of block.split(/\n/)) {
+      const b = isBullet(line);
+      const last = segments[segments.length - 1];
+      if (last && last.bullets === b) last.lines.push(line);
+      else segments.push({ bullets: b, lines: [line] });
+    }
+    return segments.map((seg, i) => {
+      if (seg.bullets) {
+        // Two-cell layout per item: the marker gets its own column so wrapped
+        // text hangs under the text, never back under the dot.
+        const items = seg.lines.map((l, j) => {
+          const pb = j === seg.lines.length - 1 ? 0 : 9;
+          const text = inline(l.replace(/^\s*[•\-*]\s+/, ""));
+          return `<tr>` +
+            `<td style="width:14px;padding:0 10px ${pb}px 0;color:#086c64;font-size:15px;line-height:1.6;vertical-align:top;">•</td>` +
+            `<td style="padding:0 0 ${pb}px;color:#334155;font-size:15px;line-height:1.6;vertical-align:top;">${text}</td>` +
+            `</tr>`;
+        }).join("");
+        return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px;border-collapse:collapse;">${items}</table>`;
+      }
+      // A plain line that leads directly into bullets hugs them; otherwise it is
+      // a narrative paragraph with full spacing.
+      const mb = segments[i + 1]?.bullets ? 7 : 16;
+      return `<p style="margin:0 0 ${mb}px;color:#334155;font-size:15px;line-height:1.7;">${seg.lines.map(inline).join("<br/>")}</p>`;
+    }).join("");
+  }).join("");
 }
 export async function renderTemplate(
   key: string,
