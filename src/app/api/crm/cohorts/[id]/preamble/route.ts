@@ -43,8 +43,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { moduleId, dryRun, force } = await req.json() as
-    { moduleId?: string; dryRun?: boolean; force?: boolean };
+  const { moduleId, dryRun, force, resendTo } = await req.json() as
+    { moduleId?: string; dryRun?: boolean; force?: boolean; resendTo?: string };
   if (!moduleId) return NextResponse.json({ error: "moduleId is required" }, { status: 400 });
 
   const row = await prisma.cohortSchedule.findFirst({
@@ -55,6 +55,37 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
   });
   if (!row) return NextResponse.json({ error: "No schedule row for that module" }, { status: 404 });
+
+  // Targeted recovery: re-send to ONE Fellow who was dropped from the batch
+  // (a transient Resend 429 cost someone the kick-off). This deliberately does
+  // not touch preambleSentAt — the batch already went out — so it can run after
+  // "Already sent" without re-mailing the whole cohort, and never sends to
+  // anyone outside this cohort's roster.
+  if (resendTo) {
+    const tpl = await prisma.emailTemplate.findUnique({
+      where: { key: `module-preamble-${row.module.number}` },
+      select: { body: true },
+    });
+    if (!tpl || /\[Dan writes/.test(tpl.body)) {
+      return NextResponse.json({ error: `module-preamble-${row.module.number} still has placeholder copy` }, { status: 400 });
+    }
+    const one = await prisma.user.findFirst({
+      where: { cohortId: params.id, role: "STUDENT", email: { equals: resendTo, mode: "insensitive" } },
+      select: { name: true, email: true },
+    });
+    if (!one) return NextResponse.json({ error: `${resendTo} is not a Fellow in this cohort` }, { status: 404 });
+    const ok = await sendModulePreambleEmail({
+      to: one.email,
+      studentName: one.name,
+      moduleNumber: row.module.number,
+      moduleTitle: row.module.title,
+      preworkDue: fmt(row.preworkDue),
+      sessionDate: fmt(row.sessionDate),
+      moduleUrl: `${LMS_URL}/modules/${row.module.id}`,
+      ignoreEnabled: true,
+    }).catch(() => false);
+    return NextResponse.json({ ok, resendTo: one.email, name: one.name }, { status: ok ? 200 : 502 });
+  }
 
   if (row.preambleSentAt && !force) {
     return NextResponse.json({
