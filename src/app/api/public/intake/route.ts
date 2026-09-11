@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { routeLead, ownerName } from "@/lib/lead-routing";
 import {
   sendAdminApplicationAlert,
   sendLeadAlert,
@@ -146,8 +147,13 @@ export async function POST(req: NextRequest) {
     ? personaRole!.trim().toUpperCase()
     : null;
 
+  // Route to an owner on the way in — consultations to Dan, enquiries to David.
+  const resolvedLeadType = leadType?.trim() ?? "WAITLIST";
+  const owner = routeLead(resolvedLeadType);
+
   const lead = await prisma.lead.create({
     data: {
+      assignedTo:  owner,
       firstName:   firstName.trim(),
       lastName:    lastName.trim(),
       email:       normalizedEmail,
@@ -156,7 +162,7 @@ export async function POST(req: NextRequest) {
       jobTitle:    jobTitle?.trim() || null,
       stage:       stage?.trim()    ?? "LEAD",
       source:      source?.trim()   ?? "WEBSITE",
-      leadType:    leadType?.trim() ?? "WAITLIST",
+      leadType:    resolvedLeadType,
       priority:    isApplication ? "HIGH" : "NORMAL",
       notes:       notes?.trim()    || null,
       utmSource:   utmSource?.trim()   || null,
@@ -196,6 +202,16 @@ export async function POST(req: NextRequest) {
       content: isApplication ? "Submitted application via web form" : "Submitted via web form",
     },
   });
+
+  if (owner) {
+    await prisma.leadActivity.create({
+      data: {
+        leadId:  lead.id,
+        type:    "NOTE",
+        content: `Auto-assigned to ${ownerName(owner)} (${resolvedLeadType.toLowerCase().replace(/_/g, " ")})`,
+      },
+    }).catch(() => {});
+  }
 
   // Email Caleb + Dan for every new application, regardless of source
   if (isApplication) {

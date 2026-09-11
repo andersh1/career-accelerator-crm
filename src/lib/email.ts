@@ -395,9 +395,16 @@ export function renderApplicationAlert({
   return { subject, html: wrap(subject, body) };
 }
 
-/** Who gets internal lead alerts. Comma separated; defaults to Dan + Caleb. */
+/**
+ * Who gets internal lead alerts. Comma separated.
+ *
+ * Everyone is copied on every alert regardless of who the lead is routed to —
+ * David asked to stay copied on consultations as well as his own enquiries.
+ * Ownership is `Lead.assignedTo` (see lib/lead-routing.ts); this is only who
+ * hears about it.
+ */
 export const LEAD_ALERT_EMAILS = (
-  process.env.LEAD_ALERT_EMAILS ?? "dan@vantagecareer.co,caleb@vantagecareer.co"
+  process.env.LEAD_ALERT_EMAILS ?? "dan@vantagecareer.co,caleb@vantagecareer.co,david@vantagecareer.co"
 ).split(",").map(s => s.trim()).filter(Boolean);
 
 export async function sendAdminApplicationAlert(args: {

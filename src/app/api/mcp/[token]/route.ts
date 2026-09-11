@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeLead } from "@/lib/lead-routing";
 
 export const maxDuration = 60;
 
@@ -617,6 +618,10 @@ async function runTool(
     const lead = await prisma.lead.create({
       data: {
         email, firstName, lastName, stage, leadType,
+        // Routing rules first, then whoever dictated it. Must be an EMAIL —
+        // a user id here reads as unassigned in the owner dropdown, the
+        // assignee filter and the per-rep analytics alike.
+        assignedTo:   routeLead(leadType) ?? admin.email,
         phone:        String(input.phone ?? "").trim() || null,
         company:      String(input.company ?? "").trim() || null,
         jobTitle:     String(input.jobTitle ?? "").trim() || null,
@@ -626,7 +631,6 @@ async function runTool(
         tags:         (Array.isArray(input.labels) ? input.labels : [])
                         .map(x => String(x).toUpperCase())
                         .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH"].includes(x)),
-        assignedTo:   admin.id,
         organizationId: await (async () => {
           const nm = String(input.organization ?? "").trim();
           if (!nm) return null;

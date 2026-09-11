@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeScore } from "@/lib/scoring";
 import { fireWebhook } from "@/lib/webhooks";
+import { routeLead } from "@/lib/lead-routing";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
   return !session || (session as { user?: { role?: string } }).user?.role !== "ADMIN";
@@ -122,7 +123,8 @@ export async function POST(req: NextRequest) {
       priority:      priority      || "NORMAL",
       paymentStatus: paymentStatus || "UNPAID",
       dealValue:     typeof dealValue === "number" ? dealValue : 0,
-      assignedTo:    assignedTo    || null,
+      // An explicit owner always wins; otherwise fall back to the routing rules.
+      assignedTo:    assignedTo    || routeLead(leadType || "WAITLIST"),
       tags:          Array.isArray(tags) ? tags : [],
       notes:         notes || null,
     },

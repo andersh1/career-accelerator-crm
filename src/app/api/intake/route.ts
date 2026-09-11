@@ -12,6 +12,7 @@ import { enrichFromEmail } from "@/lib/enrichment";
 import { sendIntakeConfirmationEmail } from "@/lib/email";
 import { sendSlack, newIntakeBlocks } from "@/lib/slack";
 import { rateLimit } from "@/lib/rate-limit";
+import { routeLead, ownerName } from "@/lib/lead-routing";
 
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
@@ -98,8 +99,17 @@ export async function POST(req: NextRequest) {
     } catch { /* non-fatal */ }
   }
 
+  // This endpoint carries no lead type of its own, so it falls to the schema
+  // default — a waitlist enquiry, which is David's.
+  const resolvedLeadType = typeof body.leadType === "string" && body.leadType.trim()
+    ? body.leadType.trim()
+    : "WAITLIST";
+  const owner = routeLead(resolvedLeadType);
+
   const lead = await prisma.lead.create({
     data: {
+      assignedTo: owner,
+      leadType:   resolvedLeadType,
       firstName: first,
       lastName:  last,
       email:     email.toLowerCase().trim(),
@@ -122,6 +132,16 @@ export async function POST(req: NextRequest) {
       content: `Submitted interest form (source: ${source})${resolvedCompany ? ` — enriched company: ${resolvedCompany}` : ""}`,
     },
   });
+
+  if (owner) {
+    await prisma.leadActivity.create({
+      data: {
+        leadId:  lead.id,
+        type:    "NOTE",
+        content: `Auto-assigned to ${ownerName(owner)} (${resolvedLeadType.toLowerCase().replace(/_/g, " ")})`,
+      },
+    }).catch(() => {});
+  }
 
   // Fire a CRM notification for new intake
   await prisma.cRMNotification.create({

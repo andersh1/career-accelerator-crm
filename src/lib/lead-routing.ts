@@ -1,0 +1,33 @@
+/**
+ * Who owns a new lead the moment it lands.
+ *
+ * Agreed on the Sept 10 call: program-info enquiries go to David, consultation
+ * bookings go to Dan. David stays copied on the alert email for both — that is
+ * the LEAD_ALERT_EMAILS list, not this file.
+ *
+ * `Lead.assignedTo` stores an EMAIL, not a user id — the owner dropdown, the
+ * assignee filter and the per-rep analytics all compare against `User.email`.
+ * A user id in that column reads as unassigned everywhere.
+ *
+ * Anything not listed here is deliberately left unassigned: an application is
+ * a different conversation from an enquiry, and nobody has said whose it is.
+ */
+export const DAN   = "dan@vantagecareer.co";
+export const DAVID = "david@vantagecareer.co";
+
+const ROUTES: Record<string, string> = {
+  CONSULTATION:  DAN,
+  KEEP_IN_TOUCH: DAVID,
+  WAITLIST:      DAVID,
+  CONTACT:       DAVID,
+};
+
+/** Email of the admin who should own this lead, or null to leave it open. */
+export function routeLead(leadType?: string | null): string | null {
+  return ROUTES[(leadType ?? "").trim().toUpperCase()] ?? null;
+}
+
+/** Human-readable first name, for the activity line that records the routing. */
+export function ownerName(email: string): string {
+  return email === DAN ? "Dan" : email === DAVID ? "David" : email;
+}
