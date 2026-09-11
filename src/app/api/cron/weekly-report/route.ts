@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { mailFrom } from "@/lib/mail-from";
+import { FUNNEL_STAGES, STAGE_PROXIMITY, STAGE_PROBABILITY, STAGE_HEX, stageLabel } from "@/components/crm/constants";
 
 const resend  = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM    = mailFrom();
@@ -28,19 +29,12 @@ function pct(a: number, b: number) {
   return b > 0 ? Math.round((a / b) * 100) : 0;
 }
 
-const STAGE_PROB: Record<string, number> = {
-  LEAD: 0.05, CONTACTED: 0.15, STRATEGY_CALL: 0.35, OFFER_SENT: 0.65, ENROLLED: 1, LOST: 0,
-};
-
-const STAGE_LABEL: Record<string, string> = {
-  LEAD: "New Lead", CONTACTED: "Contacted", STRATEGY_CALL: "Interviewed",
-  OFFER_SENT: "Offer Sent", ENROLLED: "Enrolled", LOST: "Lost",
-};
-
-const STAGE_COLOR: Record<string, string> = {
-  LEAD: "#94a3b8", CONTACTED: "#3b82f6", STRATEGY_CALL: "#8b5cf6",
-  OFFER_SENT: "#f59e0b", ENROLLED: "#10b981", LOST: "#ef4444",
-};
+// All three follow the board. They used to be local copies that named a stage
+// which no longer exists and had no entry for Consultation or Application, so
+// those rows of the email rendered blank and counted for nothing.
+const STAGE_PROB  = STAGE_PROBABILITY;
+const STAGE_LABEL = stageLabel;
+const STAGE_COLOR = STAGE_HEX;
 
 export async function GET(req: NextRequest) {
   if (!authOk(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -87,16 +81,15 @@ export async function GET(req: NextRequest) {
   }).length;
 
   // ── Funnel snapshot ────────────────────────────────────────────────────────
-  const FUNNEL = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED"];
-  const funnel = FUNNEL.map(s => ({
+  const funnel = FUNNEL_STAGES.map(s => ({
     stage: s,
     count: leads.filter(l => l.stage === s).length,
   }));
   const maxFunnel = Math.max(...funnel.map(f => f.count), 1);
 
   // ── Top leads to focus on (high score, not enrolled/lost) ─────────────────
-  // Sort by stage proximity to enrolled (OFFER_SENT > STRATEGY_CALL > CONTACTED > LEAD), then recency
-  const STAGE_ORDER: Record<string, number> = { OFFER_SENT: 0, STRATEGY_CALL: 1, CONTACTED: 2, LEAD: 3 };
+  // Sort by stage proximity to enrolled, then recency
+  const STAGE_ORDER = STAGE_PROXIMITY;
   const focusLeads = [...leads]
     .filter(l => !["ENROLLED", "LOST"].includes(l.stage))
     .sort((a, b) => {
@@ -122,7 +115,7 @@ export async function GET(req: NextRequest) {
     const color  = STAGE_COLOR[f.stage] ?? "#94a3b8";
     return `
       <tr>
-        <td style="padding:4px 0;font-size:12px;color:#475569;white-space:nowrap;width:90px;">${STAGE_LABEL[f.stage]}</td>
+        <td style="padding:4px 0;font-size:12px;color:#475569;white-space:nowrap;width:90px;">${STAGE_LABEL(f.stage)}</td>
         <td style="padding:4px 8px;width:100%;">
           <div style="background:#f1f5f9;border-radius:6px;height:14px;width:100%;overflow:hidden;">
             <div style="background:${color};height:14px;border-radius:6px;width:${Math.max(barPct, f.count > 0 ? 3 : 0)}%;"></div>
@@ -141,7 +134,7 @@ export async function GET(req: NextRequest) {
           <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${l.email}</div>
         </td>
         <td style="padding:10px 8px;text-align:center;">
-          <span style="background:${STAGE_COLOR[l.stage] ?? "#94a3b8"}20;color:${STAGE_COLOR[l.stage] ?? "#94a3b8"};font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">${STAGE_LABEL[l.stage] ?? l.stage}</span>
+          <span style="background:${STAGE_COLOR[l.stage] ?? "#94a3b8"}20;color:${STAGE_COLOR[l.stage] ?? "#94a3b8"};font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">${STAGE_LABEL(l.stage)}</span>
         </td>
         <td style="padding:10px 8px;text-align:right;font-size:13px;font-weight:700;color:#7c3aed;">${l.dealValue ? fmt$(l.dealValue) : "—"}</td>
       </tr>`).join("");

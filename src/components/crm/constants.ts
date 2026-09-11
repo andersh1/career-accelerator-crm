@@ -35,6 +35,69 @@ export const RETIRED_STAGES: Record<string, string> = {
   COMPLETED: "ENROLLED",
 };
 
+/** Every stage the board renders. */
+export const STAGE_KEYS: string[] = STAGES.map(s => s.key);
+
+/**
+ * A retired stage read back as its current equivalent.
+ *
+ * Old rows and anything that still says "contacted" out loud land on a real
+ * column instead of vanishing off the board.
+ */
+export function normalizeStage(key: string | null | undefined): string {
+  const k = (key ?? "").trim().toUpperCase();
+  return RETIRED_STAGES[k] ?? k;
+}
+
+/**
+ * The funnel, for reporting — the stages a prospect passes THROUGH on the way
+ * to enrolling. Waitlist sits before the funnel and the terminal stages after
+ * it, so neither belongs on a conversion chart.
+ *
+ * One list, imported everywhere. The old hardcoded copies drifted: they still
+ * counted CONTACTED, which no longer exists, and skipped Consultation and
+ * Application entirely — so the funnel chart, the home dashboard and the
+ * Monday leadership email each under-reported the middle of the pipeline.
+ */
+export const FUNNEL_STAGES = [
+  "LEAD", "WAITING_TO_MEET", "APPLIED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED",
+] as const;
+
+/** Stages in play right now — someone is actively working these. */
+export const ACTIVE_STAGES = [
+  "LEAD", "WAITING_TO_MEET", "APPLIED", "STRATEGY_CALL", "OFFER_SENT",
+] as const;
+
+/** How close to enrolled a stage is; lower is closer. For "who to call first". */
+export const STAGE_PROXIMITY: Record<string, number> = {
+  OFFER_SENT: 0, STRATEGY_CALL: 1, APPLIED: 2, WAITING_TO_MEET: 3, LEAD: 4, WAITLIST: 5,
+};
+
+/**
+ * Odds a lead at each stage ends up enrolled, for weighted pipeline value.
+ *
+ * Rough and deliberately so — it exists to stop a board full of early leads
+ * reading as a board full of money. Every stage needs an entry: a stage missing
+ * from here contributes nothing, which is how Consultation and Application
+ * silently fell out of the weighted total.
+ */
+export const STAGE_PROBABILITY: Record<string, number> = {
+  WAITLIST: 0.02, LEAD: 0.05, WAITING_TO_MEET: 0.15, APPLIED: 0.30,
+  STRATEGY_CALL: 0.45, OFFER_SENT: 0.65, ENROLLED: 1, GRADUATED: 1,
+  DECLINED: 0, LOST: 0,
+};
+
+/** Board label for a stage key, retired keys included. */
+export const stageLabel = (key: string): string =>
+  STAGES.find(s => s.key === normalizeStage(key))?.label ?? key;
+
+/** The board's dot colour as a hex value, for HTML email where Tailwind cannot reach. */
+export const STAGE_HEX: Record<string, string> = {
+  WAITLIST: "#38bdf8", LEAD: "#94a3b8", WAITING_TO_MEET: "#06b6d4",
+  APPLIED: "#3b82f6", STRATEGY_CALL: "#8b5cf6", OFFER_SENT: "#f59e0b",
+  ENROLLED: "#10b981", GRADUATED: "#a8a29e", DECLINED: "#f97316", LOST: "#ef4444",
+};
+
 /**
  * Why a deal ended.
  *

@@ -9,7 +9,7 @@ import {
   Users, Zap, AlertTriangle, Activity, ChevronRight,
   DollarSign, Loader2, RefreshCw, Target, BookOpen, Sparkles,
 } from "lucide-react";
-import { stageInfo, ACTIVITY_META } from "@/components/crm/constants";
+import { stageInfo, ACTIVITY_META, STAGES, ACTIVE_STAGES } from "@/components/crm/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TaskRecord {
@@ -96,11 +96,16 @@ function dueLabel(dueAt: string | null) {
 const PRIORITY_DOT: Record<string, string> = {
   URGENT: "bg-red-500", HIGH: "bg-amber-400", NORMAL: "bg-blue-400", LOW: "bg-slate-300",
 };
-const STAGE_ORDER = ["LEAD","CONTACTED","STRATEGY_CALL","OFFER_SENT"];
-const STAGE_COLOR: Record<string, string> = {
-  LEAD: "bg-slate-400", CONTACTED: "bg-blue-500",
-  STRATEGY_CALL: "bg-violet-500", OFFER_SENT: "bg-amber-500",
-};
+/**
+ * The snapshot follows the board's own order and colours, so the home page and
+ * the pipeline can never tell two different stories. It used to hold its own
+ * copy, which still counted a stage that no longer exists and left out
+ * Consultation and Application entirely.
+ */
+const STAGE_ORDER: string[] = [...ACTIVE_STAGES];
+const STAGE_COLOR: Record<string, string> = Object.fromEntries(
+  STAGES.map(s => [s.key, s.dot]),
+);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HomePage() {

@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ACTIVE_STAGES } from "@/components/crm/constants";
 
 const STALE_DAYS = 14;
 
@@ -59,7 +60,7 @@ export async function GET() {
     prisma.lead.findMany({
       where: {
         deletedAt: null,
-        stage: { in: ["OFFER_SENT", "STRATEGY_CALL", "CONTACTED"] },
+        stage: { in: [...ACTIVE_STAGES] },
         leadType: { not: "CONTACT" },
         updatedAt: { gte: new Date(now.getTime() - 30 * 86400000) },
       },

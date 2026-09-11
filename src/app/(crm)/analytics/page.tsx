@@ -6,6 +6,7 @@ import {
   DollarSign, Clock, Target, Loader2, RefreshCw, UserCircle2, Mail,
   Globe, ExternalLink, Monitor, Smartphone,
 } from "lucide-react";
+import { STAGES } from "@/components/crm/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,19 +54,11 @@ function MoMBadge({ pct }: { pct: number | null }) {
   );
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  LEAD: "New Lead", CONTACTED: "Contacted", STRATEGY_CALL: "Interviewed",
-  OFFER_SENT: "Offer Sent", ENROLLED: "Enrolled",
-};
-const STAGE_COLORS: Record<string, string> = {
-  LEAD: "bg-slate-400", CONTACTED: "bg-blue-500", STRATEGY_CALL: "bg-violet-500",
-  OFFER_SENT: "bg-amber-500", ENROLLED: "bg-emerald-500",
-};
-const STAGE_LIGHT: Record<string, string> = {
-  LEAD: "bg-slate-100 text-slate-600", CONTACTED: "bg-blue-50 text-blue-700",
-  STRATEGY_CALL: "bg-violet-50 text-violet-700", OFFER_SENT: "bg-amber-50 text-amber-700",
-  ENROLLED: "bg-emerald-50 text-emerald-700",
-};
+// Derived from the board so the funnel chart can never label a stage
+// differently from the pipeline, or come up blank on a stage added later.
+const STAGE_LABELS: Record<string, string> = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+const STAGE_COLORS: Record<string, string> = Object.fromEntries(STAGES.map(s => [s.key, s.dot]));
+const STAGE_LIGHT:  Record<string, string> = Object.fromEntries(STAGES.map(s => [s.key, s.color]));
 
 const SOURCE_LABELS: Record<string, string> = {
   REFERRAL: "Referral", LINKEDIN: "LinkedIn", WEBSITE: "Website",

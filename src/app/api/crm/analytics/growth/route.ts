@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * "Applied" for the purposes of an apply rate: they filled in an application,
+ * or got further. Deliberately starts at Application, not Consultation — a
+ * booked call is interest, not an application.
+ */
+const APPLIED_ONWARDS: string[] = ["APPLIED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED", "GRADUATED"];
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || (session as { user?: { crmRole?: string } }).user?.crmRole !== "ADMIN")
@@ -28,7 +35,7 @@ export async function GET() {
     else if (l.promoCode)        bucket = "PROMO";
 
     sourceBuckets[bucket].leads++;
-    if (["APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "ENROLLED"].includes(l.stage))
+    if (APPLIED_ONWARDS.includes(l.stage))
       sourceBuckets[bucket].applied++;
     if (l.stage === "ENROLLED")
       sourceBuckets[bucket].enrolled++;
@@ -75,7 +82,7 @@ export async function GET() {
     const attended   = e.registrations.filter(r => r.attendedAt).length;
     const applied    = e.registrations.filter(r => {
       const stage = r.leadId ? eventLeadMap.get(r.leadId) : null;
-      return stage && ["APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "ENROLLED"].includes(stage);
+      return !!stage && APPLIED_ONWARDS.includes(stage);
     }).length;
     const enrolled = e.registrations.filter(r => {
       const stage = r.leadId ? eventLeadMap.get(r.leadId) : null;

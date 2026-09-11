@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { FUNNEL_STAGES, STAGE_PROBABILITY } from "@/components/crm/constants";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -97,7 +98,6 @@ export async function GET(req: NextRequest) {
   // ─────────────────────────────────────────────────────────────────────────
   // Funnel
   // ─────────────────────────────────────────────────────────────────────────
-  const FUNNEL_STAGES = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED"];
   const funnel = FUNNEL_STAGES.map(stage => ({
     stage,
     count: leads.filter(l => l.stage === stage).length,
@@ -229,9 +229,7 @@ export async function GET(req: NextRequest) {
   // ─────────────────────────────────────────────────────────────────────────
   // Weighted pipeline (close probability per stage)
   // ─────────────────────────────────────────────────────────────────────────
-  const STAGE_PROB: Record<string, number> = {
-    LEAD: 0.05, CONTACTED: 0.15, STRATEGY_CALL: 0.35, OFFER_SENT: 0.65, ENROLLED: 1, LOST: 0,
-  };
+  const STAGE_PROB = STAGE_PROBABILITY;
   const weightedPipeline = leads
     .filter(l => l.stage !== "LOST")
     .reduce((sum, l) => sum + (l.dealValue ?? 0) * (STAGE_PROB[l.stage] ?? 0.05), 0);

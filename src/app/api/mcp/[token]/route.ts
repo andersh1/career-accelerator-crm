@@ -72,7 +72,7 @@ const TOOLS = [
       type: "object",
       properties: {
         query: { type: "string", description: "Name, email, or company fragment" },
-        stage: { type: "string", description: "Optional stage key, e.g. WAITLIST, CONTACTED, APPLIED, OFFER_SENT" },
+        stage: { type: "string", description: "Optional stage key: WAITLIST, LEAD, WAITING_TO_MEET (Consultation), APPLIED (Application), STRATEGY_CALL (Interview), OFFER_SENT (Offer), ENROLLED, GRADUATED, DECLINED (Denied), LOST" },
       },
     },
   },
@@ -135,7 +135,7 @@ const TOOLS = [
         jobTitle:     { type: "string" },
         academicYear: { type: "string", description: "e.g. Junior, Senior, Recent grad" },
         linkedinUrl:  { type: "string" },
-        stage:        { type: "string", description: "Pipeline stage. Defaults to LEAD. One of: WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED, OFFER_SENT" },
+        stage:        { type: "string", description: "Pipeline stage. Defaults to LEAD. The board reads Waitlist, Lead, Consultation, Application, Interview, Offer — pass WAITLIST, LEAD, WAITING_TO_MEET, APPLIED, STRATEGY_CALL or OFFER_SENT. The terminal stages (Enrolled, Graduated, Denied, Lost) are set by a person, not from a transcript." },
         source:       { type: "string", description: "Where they came from, e.g. Referral, Event, Inbound" },
         leadType:     { type: "string", description: "WHO THIS PERSON IS — get this right or they end up in the wrong list. Use CONTACT for anyone who is NOT a prospective student: referral partners, ecosystem people, university or employer contacts, advisors. CONTACT records live under Partnerships → Contacts and are kept out of the enrolment pipeline. Use APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH for actual prospective students. Defaults to WAITLIST (a prospect), so pass CONTACT explicitly for anyone who is not one." },
         organization: { type: "string", description: "For CONTACT records — the organisation they belong to, by name. Matched case-insensitively against existing organisations; created if it does not exist. 3i, PwC, Wake Forest University." },
@@ -165,7 +165,7 @@ const TOOLS = [
       type: "object",
       properties: {
         leadQuery:    { type: "string", description: "Their name or email" },
-        stage:        { type: "string", description: "WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED or OFFER_SENT" },
+        stage:        { type: "string", description: "WAITLIST, LEAD, WAITING_TO_MEET (Consultation), APPLIED (Application), STRATEGY_CALL (Interview) or OFFER_SENT (Offer). The terminal stages are set by a person." },
         reason:       { type: "string", description: "Why it moved — recorded on the timeline alongside the change" },
         phone:        { type: "string" },
         company:      { type: "string" },
@@ -577,7 +577,7 @@ async function runTool(
 
     const notes = String(input.notes ?? "").trim();
     const stageIn = String(input.stage ?? "").trim().toUpperCase();
-    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","CONTACTED","APPLIED","STRATEGY_CALL","ADMITTED","OFFER_SENT"];
+    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","APPLIED","STRATEGY_CALL","OFFER_SENT"];
     // Deliberately cannot set ENROLLED/COMPLETED/GRADUATED/DECLINED: those carry
     // real consequences elsewhere and are not a transcript's call to make.
     const stage = ALLOWED.includes(stageIn) ? stageIn : "LEAD";
@@ -836,7 +836,7 @@ async function runTool(
 
     // Same whitelist as create_lead: the terminal stages carry consequences
     // elsewhere (enrolment, graduation, loss reporting) and stay human-driven.
-    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","CONTACTED","APPLIED","STRATEGY_CALL","ADMITTED","OFFER_SENT"];
+    const ALLOWED = ["WAITLIST","LEAD","WAITING_TO_MEET","APPLIED","STRATEGY_CALL","OFFER_SENT"];
     const stageIn = String(input.stage ?? "").trim().toUpperCase();
     if (stageIn && !ALLOWED.includes(stageIn)) {
       return JSON.stringify({

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { FUNNEL_STAGES } from "@/components/crm/constants";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -35,7 +36,7 @@ export async function POST(
   });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const STAGES = ["LEAD", "CONTACTED", "STRATEGY_CALL", "OFFER_SENT", "ENROLLED", "LOST"];
+  const STAGES = [...FUNNEL_STAGES, "LOST"];
 
   const prompt = `You are a sales intelligence assistant analyzing a call transcript from a career coaching sales conversation.
 
