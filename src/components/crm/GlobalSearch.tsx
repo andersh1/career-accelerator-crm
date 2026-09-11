@@ -6,7 +6,7 @@ import { stageInfo } from "./constants";
 
 interface SearchLead {
   id: string; firstName: string; lastName: string; email: string;
-  company: string | null; stage: string; score?: number;
+  company: string | null; stage: string; score?: number; leadType?: string | null;
 }
 
 export default function GlobalSearch() {
@@ -43,7 +43,11 @@ export default function GlobalSearch() {
   const search = useCallback(async (q: string) => {
     if (!q.trim()) { setResults([]); setLoading(false); return; }
     setLoading(true);
-    const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q)}&all=true`);
+    // leadType=ALL, because the leads API excludes CONTACT records by default —
+    // correct for the enrolment pipeline, wrong here. Without it, partners and
+    // referral sources were unfindable: they existed, showed on the home page,
+    // and simply never appeared in search.
+    const res  = await fetch(`/api/crm/leads?q=${encodeURIComponent(q)}&all=true&leadType=ALL`);
     const data = await res.json();
     const arr  = Array.isArray(data) ? data : (data.leads ?? []);
     setResults(arr.slice(0, 8));
@@ -120,6 +124,12 @@ export default function GlobalSearch() {
                       <p className="text-xs text-slate-400 truncate">
                         {lead.email}{lead.company ? ` · ${lead.company}` : ""}
                       </p>
+                      {lead.leadType === "CONTACT" && (
+                        <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                              style={{ background: "#ecfeff", color: "#0e7490" }}>
+                          Partner contact
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {lead.score !== undefined && (
