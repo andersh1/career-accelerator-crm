@@ -144,3 +144,23 @@ export function sourceLabel(key: string) {
 export function priorityInfo(key: string) {
   return PRIORITIES.find(p => p.key === key) ?? PRIORITIES[1];
 }
+
+/**
+ * What a partner contact IS to us. Multi-select: one person often holds several
+ * — Dave Garvey offered to speak to students AND is worth a discovery call, and
+ * filing him as only one of those loses the other.
+ *
+ * These are deliberately about the RELATIONSHIP, not the person's job title.
+ * "Wealth manager" belongs in their company field; "Referral partner" is what
+ * they are to us, and it is the thing you want to filter on.
+ */
+export const CONTACT_LABELS = [
+  { key: "HIRING",    label: "Hiring partner",    hint: "Employs our people, or might",              color: "bg-emerald-100 text-emerald-700" },
+  { key: "REFERRAL",  label: "Referral partner",  hint: "Sends us students — wealth managers, admissions consultants", color: "bg-cyan-100 text-cyan-700" },
+  { key: "SPEAKER",   label: "Guest speaker",     hint: "Will talk to a cohort",                     color: "bg-violet-100 text-violet-700" },
+  { key: "DISCOVERY", label: "Discovery call",    hint: "Someone a Fellow should interview",         color: "bg-amber-100 text-amber-700" },
+  { key: "COACH",     label: "Prospective coach", hint: "Could coach for us when we scale past Dan", color: "bg-indigo-100 text-indigo-700" },
+] as const;
+
+export const contactLabel = (key: string) =>
+  CONTACT_LABELS.find(l => l.key === key) ?? { key, label: key, hint: "", color: "bg-slate-100 text-slate-600" };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Loader2, User, Mail, Phone, Building2, Briefcase, Linkedin, UserCircle2 } from "lucide-react";
 import { SOURCES } from "./constants";
+import { CONTACT_LABELS } from "@/components/crm/constants";
 import { useToast } from "@/lib/toast";
 
 interface ContactFormData {
@@ -36,6 +37,8 @@ export default function ContactForm({ onClose, onSaved }: Props) {
   const [form, setForm] = useState<ContactFormData>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  // What they are to us. Multi-select — one person is often more than one thing.
+  const [labels, setLabels] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/crm/users").then(r => r.json()).then((d) => {
@@ -61,7 +64,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           priority: "NORMAL",
           paymentStatus: "UNPAID",
           dealValue: 0,
-          tags: [],
+          tags: labels,
         }),
       });
       const data = await res.json();
@@ -252,6 +255,28 @@ export default function ContactForm({ onClose, onSaved }: Props) {
               style={{ color: "#14211f" }}
             />
           </div>
+          {/* What they are to us */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "#949598" }}>
+              What are they to us? <span className="font-normal normal-case">(pick any that apply)</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {CONTACT_LABELS.map(l => {
+                const on = labels.includes(l.key);
+                return (
+                  <button key={l.key} type="button" title={l.hint}
+                    onClick={() => setLabels(on ? labels.filter(x => x !== l.key) : [...labels, l.key])}
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition"
+                    style={on
+                      ? { background: "#086c64", borderColor: "#086c64", color: "#fff" }
+                      : { background: "#fff", borderColor: "#e4e0d6", color: "#5a6663" }}>
+                    {l.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">

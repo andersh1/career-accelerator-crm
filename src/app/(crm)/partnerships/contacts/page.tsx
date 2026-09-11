@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Loader2, Building2, Mail, Phone, UserRound } from "lucide-react";
 import ContactForm from "@/components/crm/ContactForm";
+import { CONTACT_LABELS, contactLabel } from "@/components/crm/constants";
 
 interface Contact {
   id: string;
@@ -15,6 +16,7 @@ interface Contact {
   jobTitle: string | null;
   source: string | null;
   assignedTo: string | null;
+  tags: string[];
   createdAt: string;
   _count: { activities: number };
 }
@@ -24,6 +26,9 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
+  // Dan: "so I could just search on discovery calls" — filtering by what
+  // someone IS to us is the whole point of labelling them.
+  const [label, setLabel]       = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const load = useCallback(async () => {
@@ -87,6 +92,25 @@ export default function ContactsPage() {
           style={{ color: "#14211f" }}
         />
       </div>
+      {/* Filter by what they are to us */}
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        <button onClick={() => setLabel("")}
+          className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition"
+          style={label === "" ? { background: "#086c64", color: "#fff" } : { background: "#f1efe8", color: "#949598" }}>
+          Everyone
+        </button>
+        {CONTACT_LABELS.map(l => {
+          const n = contacts.filter(c => (c.tags ?? []).includes(l.key)).length;
+          return (
+            <button key={l.key} onClick={() => setLabel(label === l.key ? "" : l.key)} title={l.hint}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition"
+              style={label === l.key ? { background: "#086c64", color: "#fff" } : { background: "#f1efe8", color: "#949598" }}>
+              {l.label} <span className="opacity-60 tabular-nums">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
 
       {/* List */}
       {loading ? (
@@ -114,7 +138,7 @@ export default function ContactsPage() {
         </div>
       ) : (
         <div className="bg-white border border-[#e4e0d6] rounded-3xl overflow-hidden">
-          {contacts.map((c, i) => (
+          {contacts.filter(c => !label || (c.tags ?? []).includes(label)).map((c, i) => (
             <button
               key={c.id}
               onClick={() => router.push(`/leads/${c.id}`)}
@@ -145,6 +169,18 @@ export default function ContactsPage() {
                       </span>
                     )}
                   </p>
+                )}
+                {(c.tags ?? []).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {(c.tags ?? []).map(t => {
+                      const l = contactLabel(t);
+                      return (
+                        <span key={t} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${l.color}`}>
+                          {l.label}
+                        </span>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
