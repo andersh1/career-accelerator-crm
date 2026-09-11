@@ -1,18 +1,39 @@
+/**
+ * The enrolment pipeline, in the order it actually happens.
+ *
+ * Set with Dan on 10 Sept: "lead, consultation, application, interview, offer,
+ * and then enroll or lost." The old list had Interviewed sitting BEFORE Applied,
+ * so someone who had had a consultation but not yet applied had nowhere sensible
+ * to sit — he could not manage his week from the board.
+ *
+ * The keys are deliberately unchanged. They are internal and appear in 54 places
+ * across analytics, three crons, the sequence engine and outbound webhooks;
+ * renaming them buys nothing a user can see and risks a silent miss in something
+ * that runs unattended. The labels are what anyone actually reads.
+ *
+ * Retired here and migrated in the data: CONTACTED (folded into Lead — in the
+ * new flow you are a lead until a consultation is booked), ADMITTED and
+ * COMPLETED (both collapsed into Offer and Enrolled respectively).
+ */
 export const STAGES = [
-  { key: "WAITLIST",      label: "Waitlist",    color: "bg-sky-100 text-sky-700",       dot: "bg-sky-400"     },
-  { key: "LEAD",          label: "Lead",        color: "bg-slate-100 text-slate-700",   dot: "bg-slate-400"   },
-  { key: "WAITING_TO_MEET", label: "Waiting to Meet", color: "bg-cyan-100 text-cyan-700", dot: "bg-cyan-500"  },
-  { key: "CONTACTED",     label: "Contacted",   color: "bg-blue-100 text-blue-700",     dot: "bg-blue-500"    },
-  { key: "APPLIED",       label: "Applied",     color: "bg-sky-100 text-sky-700",       dot: "bg-sky-500"     },
-  { key: "STRATEGY_CALL", label: "Interviewed", color: "bg-violet-100 text-violet-700", dot: "bg-violet-500"  },
-  { key: "ADMITTED",      label: "Admitted",    color: "bg-indigo-100 text-indigo-700", dot: "bg-indigo-500"  },
-  { key: "OFFER_SENT",    label: "Offer Sent",  color: "bg-amber-100 text-amber-700",   dot: "bg-amber-500"   },
-  { key: "COMPLETED",     label: "Enrolled",        color: "bg-teal-100 text-teal-700",     dot: "bg-teal-500"    },
-  { key: "ENROLLED",      label: "Active Student",  color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  { key: "GRADUATED",     label: "Graduated",   color: "bg-stone-100 text-stone-600",   dot: "bg-stone-400"   },
-  { key: "DECLINED",      label: "Denied",      color: "bg-orange-100 text-orange-700", dot: "bg-orange-500"  },
-  { key: "LOST",          label: "Lost",        color: "bg-red-100 text-red-700",       dot: "bg-red-400"     },
+  { key: "WAITLIST",        label: "Waitlist",     color: "bg-sky-100 text-sky-700",         dot: "bg-sky-400"      },
+  { key: "LEAD",            label: "Lead",         color: "bg-slate-100 text-slate-700",     dot: "bg-slate-400"    },
+  { key: "WAITING_TO_MEET", label: "Consultation", color: "bg-cyan-100 text-cyan-700",       dot: "bg-cyan-500"     },
+  { key: "APPLIED",         label: "Application",  color: "bg-blue-100 text-blue-700",       dot: "bg-blue-500"     },
+  { key: "STRATEGY_CALL",   label: "Interview",    color: "bg-violet-100 text-violet-700",   dot: "bg-violet-500"   },
+  { key: "OFFER_SENT",      label: "Offer",        color: "bg-amber-100 text-amber-700",     dot: "bg-amber-500"    },
+  { key: "ENROLLED",        label: "Enrolled",     color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500"  },
+  { key: "GRADUATED",       label: "Graduated",    color: "bg-stone-100 text-stone-600",     dot: "bg-stone-400"    },
+  { key: "DECLINED",        label: "Denied",       color: "bg-orange-100 text-orange-700",   dot: "bg-orange-500"   },
+  { key: "LOST",            label: "Lost",         color: "bg-red-100 text-red-700",         dot: "bg-red-400"      },
 ] as const;
+
+/** Stages that no longer appear on the board but may still exist on old rows. */
+export const RETIRED_STAGES: Record<string, string> = {
+  CONTACTED: "LEAD",
+  ADMITTED:  "OFFER_SENT",
+  COMPLETED: "ENROLLED",
+};
 
 /**
  * Why a deal ended.

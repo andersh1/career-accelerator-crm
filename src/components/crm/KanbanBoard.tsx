@@ -32,7 +32,10 @@ interface Lead {
 
 type StageEntry = typeof STAGES[number];
 
-const DRAGGABLE_STAGES = ["WAITLIST", "LEAD", "WAITING_TO_MEET", "CONTACTED", "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "COMPLETED"];
+// The working part of the pipeline — drag freely here. The terminal states
+// (Enrolled, Graduated, Denied, Lost) are deliberately not draggable: each one
+// fires something elsewhere and should be a deliberate act, not a mis-drop.
+const DRAGGABLE_STAGES = ["WAITLIST", "LEAD", "WAITING_TO_MEET", "APPLIED", "STRATEGY_CALL", "OFFER_SENT"];
 
 export default function KanbanBoard() {
   const { success, error: toastError } = useToast();
