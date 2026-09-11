@@ -137,6 +137,7 @@ const TOOLS = [
         stage:        { type: "string", description: "Pipeline stage. Defaults to LEAD. One of: WAITLIST, LEAD, WAITING_TO_MEET, CONTACTED, APPLIED, STRATEGY_CALL, ADMITTED, OFFER_SENT" },
         source:       { type: "string", description: "Where they came from, e.g. Referral, Event, Inbound" },
         leadType:     { type: "string", description: "WHO THIS PERSON IS — get this right or they end up in the wrong list. Use CONTACT for anyone who is NOT a prospective student: referral partners, ecosystem people, university or employer contacts, advisors. CONTACT records live under Partnerships → Contacts and are kept out of the enrolment pipeline. Use APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH for actual prospective students. Defaults to WAITLIST (a prospect), so pass CONTACT explicitly for anyone who is not one." },
+        organization: { type: "string", description: "For CONTACT records — the organisation they belong to, by name. Matched case-insensitively against existing organisations; created if it does not exist. 3i, PwC, Wake Forest University." },
         labels:       { type: "array", items: { type: "string" }, description: "For CONTACT records — what they are TO US, any that apply: HIRING (employs our people or might), REFERRAL (sends us students — wealth managers, admissions consultants), SPEAKER (will talk to a cohort), DISCOVERY (someone a Fellow should interview), COACH (could coach for us later). One person is often several. This is the relationship, not their job title — a wealth manager who sends us students is REFERRAL." },
         notes:        { type: "string", description: "What was actually said — their goal, situation, timeline, objections. This becomes the first activity on the record." },
       },
@@ -250,6 +251,25 @@ const TOOLS = [
         note:      { type: "string", description: "Progress to append to the description, with today's date." },
       },
       required: ["titleLike"],
+    },
+  },
+  {
+    name: "list_organizations",
+    description: "Partner organisations — universities, employers, RIAs, membership orgs like 3i. Each one holds its contacts, deals and events. Use it before create_lead so a new contact is filed under the right org rather than floating loose.",
+    inputSchema: { type: "object", properties: { query: { type: "string", description: "Optional name fragment" } } },
+  },
+  {
+    name: "create_organization",
+    description: "Add a partner organisation. One row per institution — check list_organizations first, because '3i' and '3i NextGen' as two rows is exactly what this layer exists to prevent. Names match case-insensitively and a duplicate is refused with the existing one's id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name:    { type: "string" },
+        type:    { type: "string", description: "UNIVERSITY, EMPLOYER, RIA, MEMBERSHIP, AGENCY or OTHER" },
+        website: { type: "string" },
+        notes:   { type: "string" },
+      },
+      required: ["name"],
     },
   },
 ];
@@ -607,6 +627,18 @@ async function runTool(
                         .map(x => String(x).toUpperCase())
                         .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH"].includes(x)),
         assignedTo:   admin.id,
+        organizationId: await (async () => {
+          const nm = String(input.organization ?? "").trim();
+          if (!nm) return null;
+          const found = await prisma.organization.findFirst({
+            where: { name: { equals: nm, mode: "insensitive" } }, select: { id: true },
+          });
+          if (found) return found.id;
+          const made = await prisma.organization.create({
+            data: { name: nm, createdBy: admin.email }, select: { id: true },
+          });
+          return made.id;
+        })(),
       },
       select: { id: true },
     });
@@ -648,6 +680,46 @@ async function runTool(
       select: { email: true },
     });
     return u?.email ?? q;
+  }
+
+  if (name === "list_organizations") {
+    const q = String(input.query ?? "").trim();
+    const orgs = await prisma.organization.findMany({
+      where: q ? { name: { contains: q, mode: "insensitive" } } : {},
+      include: { _count: { select: { contacts: true, deals: true, events: true } } },
+      orderBy: { name: "asc" },
+    });
+    return JSON.stringify({
+      count: orgs.length,
+      organizations: orgs.map(o => ({
+        name: o.name, type: o.type,
+        contacts: o._count.contacts, deals: o._count.deals, events: o._count.events,
+      })),
+    });
+  }
+
+  if (name === "create_organization") {
+    const nm = String(input.name ?? "").trim();
+    if (!nm) return JSON.stringify({ error: "An organisation needs a name." });
+    const existing = await prisma.organization.findFirst({
+      where: { name: { equals: nm, mode: "insensitive" } }, select: { id: true, name: true },
+    });
+    if (existing) {
+      return JSON.stringify({ ok: true, created: false, organization: existing.name,
+        message: `"${existing.name}" already exists — nothing created.` });
+    }
+    const TYPES = ["UNIVERSITY","EMPLOYER","RIA","MEMBERSHIP","AGENCY","OTHER"];
+    const t = String(input.type ?? "").trim().toUpperCase();
+    const org = await prisma.organization.create({
+      data: {
+        name: nm, type: TYPES.includes(t) ? t : "OTHER",
+        website: String(input.website ?? "").trim() || null,
+        notes: String(input.notes ?? "").trim() || null,
+        createdBy: admin.email,
+      },
+      select: { id: true, name: true, type: true },
+    });
+    return JSON.stringify({ ok: true, created: true, organization: org });
   }
 
   if (name === "create_issue") {

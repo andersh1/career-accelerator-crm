@@ -160,7 +160,13 @@ model CrmIssue {
 model Deal {
   id           String   @id @default(cuid())
   title        String   // e.g. "Northwestern SPS — Fall 2026"
-  orgName      String   // university / firm name
+  orgName      String   // legacy free-text; Organization is the real link now
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  /// SEATS | EVENT | PARTNERSHIP — an event (a lunch and learn) is a deal too.
+  dealType     String   @default("SEATS")
+  promoCodeId  String?
+  promoCode    PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   status       String   @default("PROSPECTING")
   // PROSPECTING | PROPOSAL_SENT | NEGOTIATING | SIGNED | ACTIVE | CLOSED_WON | CLOSED_LOST
 
@@ -314,6 +320,8 @@ model EmailTemplate {
 
 model Event {
   id                  String              @id @default(dbgenerated("(gen_random_uuid())::text"))
+  organizationId      String?
+  organization        Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   slug                String              @unique
   title               String
   description         String?
@@ -489,6 +497,8 @@ model Lead {
   outcomeEmailSentAt DateTime?         // when we sent the follow-up email
 
   // Link to LMS user when converted to student
+  organizationId String?
+  organization   Organization? @relation("OrgContacts", fields: [organizationId], references: [id], onDelete: SetNull)
   enrolledUserId String? @unique
   enrolledUser   User?   @relation(fields: [enrolledUserId], references: [id])
 
@@ -759,6 +769,9 @@ model Progress {
 
 model PromoCode {
   id          String    @id @default(cuid())
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  deals       Deal[]
   code        String    @unique
   label       String?
   discountPct Int?      // 0–100 percent off; null = tracking-only / access code
@@ -1240,4 +1253,34 @@ model NotionExport {
   updatedAt   DateTime @default(now()) @db.Timestamptz(6)
 
   @@unique([userId, moduleId, worksheetId])
+}
+
+/// A partner organisation — 3i, SCS, PwC, a university.
+///
+/// Added 11 Sept after the call with Dan and David. Before this, a deal carried
+/// the org as a free-text `orgName`, so "3i" and "3i NextGen" were unrelated
+/// strings and there was no way to see everyone at one institution together.
+///
+/// David: "the organization has multiple contact people, and then underneath
+/// that organization, we're working on specific deals with them." A deal can be
+/// seats, or it can simply be an event — a lunch and learn with an RIA is a
+/// deal — and a deal can carry the promo code that represents it.
+///
+/// A one-person RIA will have an Organization and a Lead with the same name.
+/// That is expected: one is a company, the other is a person.
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  /// UNIVERSITY | EMPLOYER | RIA | MEMBERSHIP | AGENCY | OTHER
+  type        String   @default("OTHER")
+  website     String?
+  notes       String?
+  assignedTo  String?
+  createdBy   String?
+  contacts    Lead[]        @relation("OrgContacts")
+  deals       Deal[]
+  events      Event[]
+  promoCodes  PromoCode[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 }

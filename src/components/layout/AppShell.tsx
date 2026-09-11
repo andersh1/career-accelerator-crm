@@ -7,7 +7,7 @@ import {
   Kanban, TrendingUp, Settings, LogOut, Menu, X,
   CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap,
   UserRound, UsersRound, GraduationCap, AlertCircle, BookOpen,
-  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles, ChevronRight, ListChecks,
+  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles, ChevronRight, ListChecks, Building2,
 } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
 import NotificationBell from "@/components/crm/NotificationBell";
@@ -32,6 +32,7 @@ const baseNav = [
   { href: "/issues",            label: "Tasks",        icon: ListChecks,  adminOnly: true  },
   { href: "/team",              label: "Team",         icon: UsersRound,  adminOnly: true  },
   { href: "/automation",        label: "Automation",   icon: Zap,         adminOnly: true  },
+  { href: "/partnerships/organizations", label: "Organizations", icon: Building2, adminOnly: false },
   { href: "/partnerships/deals",    label: "Deals",    icon: Handshake,   adminOnly: false },
   { href: "/partnerships/contacts", label: "Contacts", icon: UserRound,   adminOnly: false },
 ];
@@ -40,7 +41,7 @@ const NAV_SECTIONS = [
   { label: "CRM",          keys: ["/home", "/ask", "/pipeline", "/students", "/cohorts", "/leads", "/tickets"] },
   { label: "Outreach",    keys: ["/tasks", "/sequences", "/blast"] },
   { label: "Growth",      keys: ["/events", "/referrals", "/promo-codes"] },
-  { label: "Partnerships", keys: ["/partnerships/deals", "/partnerships/contacts"] },
+  { label: "Partnerships", keys: ["/partnerships/organizations", "/partnerships/deals", "/partnerships/contacts"] },
   { label: "Admin",       keys: ["/outcomes", "/analytics", "/issues", "/team", "/automation"], adminOnly: true },
 ];
 
