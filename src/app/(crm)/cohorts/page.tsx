@@ -607,6 +607,29 @@ function CohortCard({
     }
   }
 
+  /**
+   * Re-send one module's kick-off to a single Fellow — the recovery path for
+   * when the batch dropped someone (a transient Resend 429). Does not re-mail
+   * the cohort: the endpoint sends only to this address and leaves the batch's
+   * sent-marker untouched.
+   */
+  async function resendPreambleToOne(moduleId: string, moduleNumber: number, email: string, name: string) {
+    if (!email) return;
+    if (!confirm(`Resend the Module ${moduleNumber} kick-off to just ${name} (${email})?\n\nOnly this person gets it — the rest of the cohort is not re-mailed.`)) return;
+    setSendingPreamble(moduleId);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/preamble`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId, resendTo: email }),
+      });
+      const r = await res.json();
+      if (!res.ok || !r.ok) { alert(r.error ?? "Resend failed. Try again in a moment."); return; }
+      alert(`Resent to ${r.name ?? r.resendTo}.`);
+    } finally {
+      setSendingPreamble(null);
+    }
+  }
+
   async function saveRow(moduleId: string) {
     setSavingRow(moduleId);
     try {
@@ -1138,6 +1161,27 @@ function CohortCard({
                                 style={{ borderColor: "#e4e0d6", color: "#086c64" }}>
                                 {sendingPreamble === row.moduleId ? "Sending…" : "Send kick-off now"}
                               </button>
+                            )}
+                            {/* Once the batch has gone out, offer a one-Fellow
+                                resend for anyone the send dropped (a transient
+                                Resend 429). Picks by name; nobody else is mailed. */}
+                            {row.preambleSentAt && enrolled.length > 0 && (
+                              <select
+                                aria-label="Resend this kick-off to one Fellow"
+                                disabled={sendingPreamble === row.moduleId}
+                                value=""
+                                onChange={e => {
+                                  const f = enrolled.find(s => s.email === e.target.value);
+                                  e.currentTarget.value = "";
+                                  if (f) resendPreambleToOne(row.moduleId, row.moduleNumber, f.email, f.name);
+                                }}
+                                className="text-xs font-semibold px-2 py-0.5 rounded-lg border hover:shadow-sm transition disabled:opacity-50 bg-white"
+                                style={{ borderColor: "#e4e0d6", color: "#086c64" }}>
+                                <option value="">{sendingPreamble === row.moduleId ? "Resending…" : "Resend to one…"}</option>
+                                {enrolled.map(s => (
+                                  <option key={s.id} value={s.email}>{s.name}</option>
+                                ))}
+                              </select>
                             )}
                             {row.preworkDue ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
