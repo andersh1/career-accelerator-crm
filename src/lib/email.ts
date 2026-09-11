@@ -118,7 +118,7 @@ function wrap(title: string, body: string) {
 <body style="margin:0;padding:0;background:#f1efe8;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1efe8;padding:40px 20px;">
   <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e4e0d6;box-shadow:0 2px 12px rgba(20,33,31,0.06);">
+    <table width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e4e0d6;box-shadow:0 2px 12px rgba(20,33,31,0.06);">
       <tr><td style="background:linear-gradient(135deg,#086c64,#063f3a);padding:30px 36px;">
         <img src="https://lms.vantagecareer.co/email-logo-white.png" alt="Vantage Career" height="30" style="display:block;height:30px;width:auto;margin-bottom:18px;"/>
         <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.35;">${title}</h1>
