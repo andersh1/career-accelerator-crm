@@ -89,7 +89,7 @@ const sections: Section[] = [
     title: "Pipeline",
     color: "text-indigo-600 bg-indigo-50",
     items: [
-      { title: "Kanban board", desc: "Drag-and-drop leads across stages: Lead → Contacted → Qualified → Proposal → Enrolled (or Lost). Each column shows count and total deal value." },
+      { title: "Kanban board", desc: "Drag a lead card straight into another column: Waitlist → Lead → Consultation → Application → Interview → Offer, or off to Denied or Lost. The column lights up when it will accept the card. Each column shows its count and total deal value. On a phone, use the Move menu on the card instead — dragging needs a mouse." },
       { title: "Stage order", desc: "Stages represent your enrollment funnel. Moving a lead right means progress; moving left means re-engagement." },
       { title: "Source filter", desc: "Use the Source dropdown in the Pipeline toolbar to view only Event leads, Referral leads, LinkedIn leads, etc. — perfect for comparing which channel is moving fastest." },
       { title: "Color-coded source badges", desc: "Each lead card shows a colored badge for its acquisition channel: amber = Event, blue = Referral, indigo = LinkedIn. Spot the source at a glance without opening the lead." },
@@ -274,10 +274,10 @@ const sections: Section[] = [
     title: "Issues",
     color: "text-red-600 bg-red-50",
     items: [
-      { title: "What issues are", desc: "Issues are internal flags or bugs raised by the CRM team — not student support tickets (those are in Support Tickets). Use Issues to track CRM data problems, process gaps, or integration failures.", tip: "Admin only" },
-      { title: "Creating an issue", desc: "Go to Admin → Issues → New Issue. Set a title, priority, and optional assignee. Describe the problem and attach any relevant lead IDs or notes." },
-      { title: "Issue lifecycle", desc: "Issues move from Open → In Progress → Resolved. Resolved issues are hidden from the default view but can be shown by toggling 'Show resolved'." },
-      { title: "Assigning issues", desc: "Assign an issue to any Admin team member. Assigned issues show on the assignee's Home dashboard in the 'Your open issues' card." },
+      { title: "What the task board is", desc: "Everything the team has committed to build or chase, in one place — work that comes out of calls, not student support tickets (those are in Support Tickets). Every card carries a category: LMS Build, CRM Build, Content, Marketing, Sales, Partnerships, Legal & Finance, Student Success or Ops.", tip: "Admin only" },
+      { title: "Adding a task", desc: "Use New Task, or the quick-add box at the bottom of the Backlog column. Set a category, a priority, who owns it and when it is needed by." },
+      { title: "Moving a task", desc: "Drag the card into the next column: Backlog → To Do → In Progress → Done. The column lights up when it will take the card, and the move saves on drop — if the save fails the card goes back where it was. The Move menu on the card does the same thing, and is the way to do it on a phone. Done collapses by default; click the column header to open it." },
+      { title: "Owners and who to tell", desc: "Assign a task to any Admin. Assigned tasks show on that person's Home dashboard. 'Keep informed' records who else is waiting on it — it is a note to yourself about who to tell, not an automatic notification." },
     ],
   },
   {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useBoardDrag } from "@/components/crm/use-board-drag";
 import Link from "next/link";
 import {
   Bug, Zap, Database, Settings2, Sparkles, HelpCircle,
@@ -102,14 +103,18 @@ interface CardProps {
   onEdit:   (issue: CrmIssue) => void;
   onDelete: (id: string) => void;
   onMove:   (id: string, status: string) => void;
+  /** Drag handlers from useBoardDrag — pick the card up and drop it in a column. */
+  drag:     ReturnType<typeof useBoardDrag>["cardProps"];
 }
 
-function IssueCard({ issue, team, onEdit, onDelete, onMove }: CardProps) {
+function IssueCard({ issue, team, onEdit, onDelete, onMove, drag }: CardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const { className: dragClass, ...dragHandlers } = drag(issue.id);
 
   return (
     <div
-      className="rounded-xl border bg-white shadow-sm p-3.5 space-y-2.5 hover:shadow-md transition-shadow"
+      {...dragHandlers}
+      className={`rounded-xl border bg-white shadow-sm p-3.5 space-y-2.5 hover:shadow-md transition-shadow ${dragClass}`}
       style={{ borderColor: "#e4e0d6" }}
     >
       {/* Top row: priority + type */}
@@ -540,15 +545,30 @@ export default function IssuesPage() {
     finally { setSaving(false); }
   }
 
-  async function handleMove(id: string, status: string) {
-    setIssues(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+  const handleMove = useCallback(async (id: string, status: string) => {
+    // Dropping a card back in its own column is not a move.
+    let moved = false;
+    setIssues(prev => prev.map(i => {
+      if (i.id !== id || i.status === status) return i;
+      moved = true;
+      return { ...i, status };
+    }));
+    if (!moved) return;
     try {
-      await fetch(`/api/crm/crm-issues/${id}`, {
+      const res = await fetch(`/api/crm/crm-issues/${id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-    } catch { toastError("Failed to move issue"); load(); }
-  }
+      // A card that looks moved but never saved is worse than one that refuses
+      // to move, so an unhappy response puts the board back where it was.
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      toastError("Couldn't move that task — putting it back");
+      load();
+    }
+  }, [load, toastError]);
+
+  const boardDrag = useBoardDrag(handleMove);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this issue? This cannot be undone.")) return;
@@ -680,8 +700,14 @@ export default function IssuesPage() {
               });
             const isDone = col.key === "DONE";
             const collapsed = isDone && !doneOpen;
+            const over = boardDrag.isDropTarget(col.key);
             return (
-              <div key={col.key}>
+              <div
+                key={col.key}
+                {...boardDrag.columnProps(col.key)}
+                className="rounded-2xl transition-colors"
+                style={over ? { background: col.bg, outline: `2px dashed ${col.color}`, outlineOffset: 2 } : undefined}
+              >
                 {/* Column header */}
                 <div className="flex items-center justify-between mb-3 px-1">
                   <button
@@ -722,6 +748,7 @@ export default function IssuesPage() {
                       onEdit={i => { setEditTarget(i); setShowForm(true); }}
                       onDelete={handleDelete}
                       onMove={handleMove}
+                      drag={boardDrag.cardProps}
                     />
                   ))}
                 </div>

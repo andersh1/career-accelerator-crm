@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, X, Handshake, Building2, Users } from "lucide-react";
 import { useToast } from "@/lib/toast";
+import { useBoardDrag } from "@/components/crm/use-board-drag";
 
 interface Deal {
   id: string;
@@ -122,6 +123,30 @@ export default function DealsPage() {
     }
   }
 
+  // Drag a deal between columns. Optimistic, and it puts the card back if the
+  // save does not take — a deal that looks Signed but is not is a real problem.
+  const moveDeal = useCallback(async (id: string, status: string) => {
+    let moved = false;
+    setDeals(prev => prev.map(d => {
+      if (d.id !== id || d.status === status) return d;
+      moved = true;
+      return { ...d, status };
+    }));
+    if (!moved) return;
+    try {
+      const res = await fetch(`/api/crm/deals/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      toastError("Couldn't move that deal — putting it back");
+      load();
+    }
+  }, [load, toastError]);
+
+  const boardDrag = useBoardDrag(moveDeal);
+
   const byStatus = STATUSES.map(s => ({
     ...s,
     deals: deals.filter(d => d.status === s.key),
@@ -157,7 +182,13 @@ export default function DealsPage() {
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: "60vh" }}>
           {byStatus.map(col => (
-            <div key={col.key} className="flex-shrink-0 w-72">
+            <div
+              key={col.key}
+              {...boardDrag.columnProps(col.key)}
+              className={`flex-shrink-0 w-72 rounded-2xl transition-colors ${
+                boardDrag.isDropTarget(col.key) ? "outline outline-2 outline-dashed outline-[#086c64] outline-offset-2 bg-[#edf5f4]" : ""
+              }`}
+            >
               {/* Column header */}
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
@@ -185,8 +216,11 @@ export default function DealsPage() {
                   return (
                     <button
                       key={deal.id}
+                      {...(() => { const { className: dc, ...h } = boardDrag.cardProps(deal.id); return h; })()}
                       onClick={() => router.push(`/partnerships/deals/${deal.id}`)}
-                      className="w-full text-left bg-white border border-[#e4e0d6] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-[#086c64]/30 transition-all"
+                      className={`w-full text-left bg-white border border-[#e4e0d6] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-[#086c64]/30 transition-all ${
+                        boardDrag.draggingId === deal.id ? "opacity-40" : ""
+                      } cursor-grab active:cursor-grabbing`}
                     >
                       <p className="font-semibold text-sm leading-snug mb-0.5" style={{ color: "#14211f" }}>
                         {deal.title}
