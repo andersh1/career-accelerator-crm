@@ -4,7 +4,18 @@ import { useEffect, useState } from "react";
 import { DollarSign, Plus, Trash2, Loader2, ChevronDown } from "lucide-react";
 
 interface PaymentRecord {
-  id: string; amount: number; note: string | null; paidAt: string; createdBy: string | null;
+  id: string; amount: number; amountCents: number | null;
+  source: string | null; note: string | null; paidAt: string; createdBy: string | null;
+}
+
+/**
+ * Rows synced from Ignition know the cents; rows someone typed only ever had
+ * whole dollars to give. Show each at the precision it actually has.
+ */
+function fmtAmount(r: PaymentRecord) {
+  return r.amountCents !== null && r.amountCents % 100 !== 0
+    ? `$${(r.amountCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+    : `$${r.amount.toLocaleString()}`;
 }
 
 const PAYMENT_STATUSES = [
@@ -204,8 +215,13 @@ export default function PaymentPanel({
             <div key={r.id} className="flex items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-emerald-600">${r.amount.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-emerald-600">{fmtAmount(r)}</span>
                   <span className="text-xs text-slate-400">{fmtDate(r.paidAt)}</span>
+                  {r.source === "IGNITION" && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                      Ignition
+                    </span>
+                  )}
                 </div>
                 {r.note && <p className="text-xs text-slate-500 truncate">{r.note}</p>}
               </div>

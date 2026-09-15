@@ -5,7 +5,7 @@ import {
   Search, Users, Kanban, TrendingUp, Mail, Zap, CheckSquare, LifeBuoy,
   Settings, Download, Upload, Merge, Trash2, Bookmark, Filter, Sparkles,
   ChevronDown, ChevronUp, Keyboard, Globe, Clock, Shield, Tag, Share2, Calendar,
-  Trophy, AlertCircle, Briefcase, Building2, Bot,
+  Trophy, AlertCircle, Briefcase, Building2, Bot, Receipt,
 } from "lucide-react";
 
 interface Section {
@@ -291,6 +291,21 @@ const sections: Section[] = [
       { title: "Rule triggers", desc: "Stage-change rules fire the moment a lead is updated (e.g. 'Move to Enrolled → send welcome email'). Cron rules fire on their daily schedules — see the Automated Jobs section below for exact times." },
       { title: "Outbound webhooks", desc: "The Webhooks section lets you register any HTTPS endpoint to receive a POST payload when CRM events happen — new lead, stage change, enrollment. Use this to connect the CRM to Zapier, Make, or your own backend." },
       { title: "Webhook payload", desc: "Each webhook POST sends { event, timestamp, data } with the full lead or enrollment object in data. Verify the X-CRM-Secret header against your secret to confirm the source." },
+    ],
+  },
+  {
+    id: "ignition",
+    icon: Receipt,
+    title: "Ignition (Agreements & Tuition)",
+    color: "text-emerald-700 bg-emerald-50",
+    items: [
+      { title: "What Ignition handles", desc: "Enrollment agreements and tuition. A Fellow opens one Ignition proposal, reads the scope and terms, signs, and enters a payment method in the same flow. Ignition then raises the invoice, collects instalments from the saved method, and pushes all of it to QuickBooks.", tip: "Admin only" },
+      { title: "What reaches the CRM", desc: "Two facts, and only two: they signed, and they paid. Ignition owns the agreement and the money, QuickBooks owns the books, the CRM owns the pipeline. Nothing else crosses the line — and the CRM never writes to QuickBooks." },
+      { title: "What it changes on a lead", desc: "Proposal sent → stage Offer Sent. Signed → stage Enrolled, deal value set to the accepted total, lead type Student. Marked lost → stage Lost with the reason on the timeline. Invoice paid → a payment row, and payment status recalculated from what has actually been collected." },
+      { title: "Setting up the Zaps", desc: "In Zapier: trigger on an Ignition proposal event, then a Webhooks by Zapier POST to /api/public/ignition-event?key=<INTERNAL_API_SECRET> with JSON fields: event (proposal.sent / proposal.accepted / proposal.lost), email, name, amount, proposal_slug. Zapier exposes proposal triggers only — invoice and payment events arrive once Ignition's own webhook is connected.", tip: "Admin only" },
+      { title: "Unmatched clients", desc: "If someone signs and no CRM lead matches their email, the lead is created rather than dropped, tagged ignition-unmatched, assigned to Dan, and pushed to the notification bell. Check those for duplicates of an existing record." },
+      { title: "Payments can't double-count", desc: "Each payment row is keyed to its Ignition invoice, so the same event delivered twice updates the row instead of collecting the money again. Rows synced from Ignition are marked Ignition in the payment panel and carry exact cents; hand-entered rows stay whole dollars." },
+      { title: "What it deliberately leaves alone", desc: "Lost category stays a human call — the charts count a fixed list, and no Ignition field maps onto it cleanly. Scholarship and Paid Partner are decisions, not sums, so no webhook overwrites them. A Fellow who has already signed is never moved backwards by a late event." },
     ],
   },
   {

@@ -56,7 +56,7 @@ model AttendanceRecord {
 
 model CRMNotification {
   id        String   @id @default(cuid())
-  type      String   // TASK_OVERDUE | LEAD_ENROLLED | NEW_INTAKE | LEAD_COLD | SEQUENCE_SENT
+  type      String   // TASK_OVERDUE | LEAD_ENROLLED | NEW_INTAKE | LEAD_COLD | SEQUENCE_SENT | PAYMENT_RECEIVED
   title     String
   body      String?
   leadId    String?
@@ -535,7 +535,7 @@ model LeadActivity {
   content   String?
   subject   String?   // email subject line
   emailTo   String?   // recipient email address
-  source    String?   // COMPOSER | SEQUENCE | GMAIL_SYNC | TEMPLATE | BLAST | UNSUBSCRIBE
+  source    String?   // COMPOSER | SEQUENCE | GMAIL_SYNC | TEMPLATE | BLAST | UNSUBSCRIBE | IGNITION
   metadata  String?   // JSON — used for stage_change { from, to }
   createdBy String?   // admin user id
   openedAt  DateTime? // set when tracking pixel is loaded (email opens)
@@ -675,7 +675,20 @@ model PaymentRecord {
   id        String   @id @default(cuid())
   leadId    String
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  /// Whole dollars. Every screen already reads this, so it keeps its meaning.
   amount    Int
+  /// The exact figure in cents, as the processor reported it. Rounding each
+  /// instalment of a split tuition to whole dollars loses cents the total can
+  /// never get back, so a synced row carries the true number here and the
+  /// revenue and analytics roll-ups prefer it. Null on a hand-entered row.
+  amountCents Int?
+  /// MANUAL (or null) for a payment someone typed in, IGNITION for one a
+  /// webhook wrote. Worth knowing before anyone edits or deletes a row.
+  source    String?
+  /// The external invoice this row settles — the Ignition invoice slug. Unique,
+  /// because Ignition says outright that deliveries repeat and arrive out of
+  /// order: a second delivery has to update this row, not bank the money twice.
+  externalId String? @unique
   note      String?
   paidAt    DateTime @default(now())
   createdBy String?

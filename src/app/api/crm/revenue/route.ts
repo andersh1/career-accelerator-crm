@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { totalCents } from "@/lib/ignition";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -25,9 +26,14 @@ export async function GET() {
   });
 
   // Total actually collected (payment records)
-  const collected = await prisma.paymentRecord.aggregate({
-    _sum: { amount: true },
+  // Rows synced from Ignition carry the exact cents. Summing the rounded dollar
+  // column instead drifts the total away from what was actually collected — a
+  // dollar per instalment, which is precisely the kind of quietly-wrong number
+  // nobody thinks to question.
+  const paymentRows = await prisma.paymentRecord.findMany({
+    select: { amount: true, amountCents: true },
   });
+  const collectedCents = totalCents(paymentRows);
 
   // By payment status breakdown
   const byStatus = await prisma.lead.groupBy({
@@ -49,7 +55,8 @@ export async function GET() {
     pipelineCount:    pipeline._count.id,
     enrolledValue:    enrolled._sum.dealValue ?? 0,
     enrolledCount:    enrolled._count.id,
-    totalCollected:   collected._sum.amount ?? 0,
+    totalCollected:      Math.round(collectedCents / 100),
+    totalCollectedCents: collectedCents,
     byStatus,
     recentPayments,
   });

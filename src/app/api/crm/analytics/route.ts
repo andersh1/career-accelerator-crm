@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rowCents } from "@/lib/ignition";
 import { FUNNEL_STAGES, STAGE_PROBABILITY } from "@/components/crm/constants";
 
 export async function GET(req: NextRequest) {
@@ -133,13 +134,13 @@ export async function GET(req: NextRequest) {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const paymentRows = await prisma.paymentRecord.findMany({
     where: { paidAt: { gte: sixMonthsAgo } },
-    select: { paidAt: true, amount: true },
+    select: { paidAt: true, amount: true, amountCents: true },
   });
   const revenueByMonth: Record<string, number> = {};
   for (const row of paymentRows) {
     if (!row.paidAt) continue;
     const key = row.paidAt.toISOString().slice(0, 7);
-    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + (row.amount ?? 0);
+    revenueByMonth[key] = (revenueByMonth[key] ?? 0) + rowCents(row) / 100;
   }
 
   const monthly: { month: string; label: string; leads: number; enrolled: number; revenue: number }[] = [];

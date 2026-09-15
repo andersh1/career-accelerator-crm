@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { totalCents } from "@/lib/ignition";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -18,8 +19,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     orderBy: { paidAt: "desc" },
   });
 
-  const total = records.reduce((sum, r) => sum + r.amount, 0);
-  return NextResponse.json({ records, total });
+  const cents = totalCents(records);
+  return NextResponse.json({ records, total: Math.round(cents / 100), totalCents: cents });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
