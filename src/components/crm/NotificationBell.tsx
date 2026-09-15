@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, AlertCircle, UserCheck, Mail, Flame, DollarSign, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, AlertCircle, UserCheck, Mail, Flame, DollarSign, Loader2, CheckCircle2 } from "lucide-react";
 
 interface DropdownPos { top: number; left: number; }
 
@@ -17,6 +17,7 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   LEAD_COLD:     <Flame       size={14} className="text-amber-500 shrink-0" />,
   SEQUENCE_SENT: <Mail        size={14} className="text-violet-500 shrink-0" />,
   PAYMENT_RECEIVED: <DollarSign size={14} className="text-emerald-500 shrink-0" />,
+  TASK_DONE:     <CheckCircle2 size={14} className="text-teal-600 shrink-0" />,
 };
 
 function timeAgo(iso: string) {

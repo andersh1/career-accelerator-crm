@@ -468,7 +468,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             Keep informed when the task closes. */}
         <div className="px-5 pb-5">
           <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>
-            What we did <span className="font-normal text-[10px]">(the solution — emailed to Keep informed when this closes)</span>
+            What we did <span className="font-normal text-[10px]">(the solution — Keep informed gets a CRM notification when this closes)</span>
           </label>
           <textarea value={resolution} onChange={e => setResolution(e.target.value)} rows={4}
             placeholder="What was actually changed, and anything the team should know about it."
@@ -476,7 +476,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             style={{ color: "#14211f", background: "#fff" }} />
           {initial && initial.status !== "DONE" && notify.length > 0 && (
             <p className="text-[11px] mt-1.5" style={{ color: "#949598" }}>
-              Closing this out will email {notify.join(", ")}.
+              Closing this out will notify {notify.join(", ")} in the CRM.
             </p>
           )}
         </div>

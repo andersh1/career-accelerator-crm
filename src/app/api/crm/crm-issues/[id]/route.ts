@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendTaskClosedEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -52,37 +51,40 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const issue = await prisma.crmIssue.update({ where: { id: params.id }, data });
 
   /**
-   * Tell the "Keep informed" list when it closes.
+   * Tell the "Keep informed" list when it closes — in the CRM, not by email.
    *
-   * The list was recorded and never used, so telling people was a manual step —
-   * which is the step that gets skipped. Only on the transition into DONE, so
-   * editing a finished task does not re-send, and only when there is a
-   * resolution to read: "it's done" with no "here's what we did" is a
-   * notification nobody needed.
+   * The list was recorded and never used, so telling people was a manual step,
+   * which is the step that gets skipped. This is a working tool the three of us
+   * are in every day; a notification here is enough, and another automated
+   * email is not.
+   *
+   * Only on the transition into DONE, so editing a finished task does not
+   * re-announce it, and only when there is a resolution to read: "it's done"
+   * with no "here's what we did" is a notification nobody needed.
+   *
+   * The feed is shared across admins, so the notice names who it is for.
    */
   const resolution = (issue.resolution ?? "").trim();
   if (closingNow && resolution) {
-    const audience = [...(issue.notify ?? []), issue.assignee ?? ""]
-      .filter(e => e && e.toLowerCase() !== closer.toLowerCase());
-    if (audience.length) {
-      // Awaited: a fire-and-forget send is dropped when this handler returns.
-      await sendTaskClosedEmail({
-        to: audience,
-        title: issue.title,
-        resolution,
-        closedBy: closerName,
-        taskType: issue.type,
-        source: issue.source,
-      }).catch(err => console.error("[crm-issues] close notice failed:", err));
-    }
+    const audience = Array.from(new Set(
+      [...(issue.notify ?? []), issue.assignee ?? ""]
+        .map(e => e.trim().toLowerCase())
+        .filter(e => e && e !== closer.toLowerCase()),
+    ));
+    const firstNames = audience.map(e => {
+      const local = e.split("@")[0].split(/[._+]/)[0];
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    });
     await prisma.cRMNotification.create({
       data: {
         type:  "TASK_DONE",
-        title: `Done: ${issue.title}`,
-        body:  resolution.length > 140 ? resolution.slice(0, 140) + "…" : resolution,
+        title: firstNames.length
+          ? `For ${firstNames.join(" & ")} — done: ${issue.title}`
+          : `Done: ${issue.title}`,
+        body:  `${closerName}: ${resolution.length > 200 ? resolution.slice(0, 200) + "…" : resolution}`,
         href:  "/issues",
       },
-    }).catch(() => {});
+    }).catch(err => console.error("[crm-issues] close notice failed:", err));
   }
 
   return NextResponse.json(issue);
