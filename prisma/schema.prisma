@@ -865,6 +865,11 @@ model Submission {
   aiReviewedAt    DateTime?
   studentReply    String?
   studentRepliedAt DateTime?
+  /// The content as it stood before the most recent revision, so a coach can
+  /// see what actually changed instead of re-reading the whole thing.
+  previousContent String?
+  revisionCount   Int      @default(0)
+  revisedAt       DateTime?
   submittedAt     DateTime @default(now())
   reviewedAt      DateTime?
 }
