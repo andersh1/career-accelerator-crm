@@ -56,8 +56,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     where: { id: params.id },
     data,
     select: {
-      firstName: true, lastName: true, email: true,
-      stage: true, dealValue: true,
+      firstName: true, lastName: true, email: true, phone: true,
+      stage: true, dealValue: true, assignedTo: true,
       outcomeStatus: true, outcomeEmailSentAt: true,
     },
   });
@@ -79,9 +79,63 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       firstName: lead.firstName,
       lastName:  lead.lastName,
       email:     lead.email,
+      phone:     lead.phone,
+      dealValue: lead.dealValue ?? null,
       fromStage: existing.stage,
       toStage:   newStage,
     }).catch(() => {});
+
+    // ── Admitted: hand off to Ignition ───────────────────────────────────────
+    // Admitting someone is the moment they need an enrollment agreement. The Zap
+    // on this event creates their Ignition client — stamped with this lead id as
+    // the external reference, so every proposal and invoice event Ignition sends
+    // back joins straight onto this record instead of guessing by email.
+    //
+    // It deliberately stops there. Sending a tuition agreement and a request for
+    // payment method is not something a drag on the pipeline board should do by
+    // itself, so the proposal stays a person's decision — the task below is the
+    // reminder, not the send.
+    if (newStage === "ADMITTED") {
+      fireWebhook("lead.admitted", {
+        leadId:    params.id,   // stamp this into Ignition's external reference
+        firstName: lead.firstName,
+        lastName:  lead.lastName,
+        email:     lead.email,
+        phone:     lead.phone,
+        dealValue: lead.dealValue ?? null,
+        owner:     lead.assignedTo,
+      }).catch(() => {});
+
+      const TASK_TITLE = "Send the Ignition proposal";
+      // Someone dragged back and forth should not collect duplicate tasks.
+      const openTask = await prisma.task.findFirst({
+        where: { leadId: params.id, title: TASK_TITLE, completedAt: null },
+        select: { id: true },
+      });
+      if (!openTask) {
+        const due = new Date();
+        due.setDate(due.getDate() + 2);
+        await prisma.task.create({
+          data: {
+            leadId:     params.id,
+            title:      TASK_TITLE,
+            notes:      "Their Ignition client is created. Build the proposal from the tuition template and send it — that is the enrollment agreement, the tuition terms and the payment method in one document. Everything after they sign flows back here on its own.",
+            dueAt:      due,
+            assignedTo: lead.assignedTo,
+            createdBy:  (session as { user: { id: string } }).user.id,
+          },
+        }).catch(() => {});
+        await prisma.cRMNotification.create({
+          data: {
+            type:   "NEW_INTAKE",
+            title:  `Admitted: ${lead.firstName} ${lead.lastName}`.trim(),
+            body:   "Ready for an Ignition proposal — the enrollment agreement and tuition terms.",
+            leadId: params.id,
+            href:   `/leads/${params.id}`,
+          },
+        }).catch(() => {});
+      }
+    }
 
     // Slack + CRM notification on enrollment
     if (newStage === "ENROLLED") {

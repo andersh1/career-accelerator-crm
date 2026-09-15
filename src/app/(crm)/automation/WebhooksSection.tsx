@@ -30,10 +30,30 @@ const WEBHOOK_EVENTS = [
     "firstName": "Jane",
     "lastName": "Smith",
     "email": "jane@example.com",
+    "phone": "+1 555 123 4567",
+    "dealValue": 6000,
     "fromStage": "LEAD",
     "toStage": "STRATEGY_CALL"
   },
   "timestamp": "2026-06-16T13:00:00.000Z"
+}`,
+  },
+  {
+    event: "lead.admitted",
+    description:
+      "Fires when a lead moves to ADMITTED — the moment they need an enrollment agreement. Point a Zap at this to create their Ignition client, mapping leadId into the client's external reference so everything Ignition sends back joins onto this record. It stops there on purpose: the proposal itself stays a person's decision, and a task is raised here to prompt it.",
+    examplePayload: `{
+  "event": "lead.admitted",
+  "data": {
+    "leadId": "clxyz123",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+1 555 123 4567",
+    "dealValue": 6000,
+    "owner": "dan@vantagecareer.co"
+  },
+  "timestamp": "2026-06-16T13:30:00.000Z"
 }`,
   },
   {
