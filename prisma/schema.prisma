@@ -149,6 +149,11 @@ model CrmIssue {
   /// Set when it moves to DONE. createdAt is when it landed, dueAt is when it
   /// was wanted, closedAt is when it actually finished — the three you need to
   /// see whether things are getting done or just getting added.
+  /// What we actually did, written when it closes. The board answers "is it
+  /// done"; this answers "what changed", which is the thing you need weeks
+  /// later when the same question comes back.
+  resolution  String?
+  resolvedBy  String?
   closedAt    DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt

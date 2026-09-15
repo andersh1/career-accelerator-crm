@@ -27,6 +27,8 @@ interface CrmIssue {
   closedAt:     string | null;
   notify:       string[];
   source:       string | null;
+  resolution:   string | null;
+  resolvedBy:   string | null;
   createdAt:    string;
   updatedAt:    string;
 }
@@ -172,6 +174,17 @@ function IssueCard({ issue, team, onEdit, onDelete, onMove, drag }: CardProps) {
         </div>
       )}
 
+      {/* On a closed card the answer is the useful part — "what did we do about
+          this?" is the question you come back with, not "was it done". */}
+      {issue.status === "DONE" && issue.resolution && (
+        <div className="rounded-lg px-2.5 py-2" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+          <p className="text-[9px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#059669" }}>What we did</p>
+          <p className="text-[11px] leading-relaxed whitespace-pre-wrap" style={{ color: "#14211f" }}>
+            {issue.resolution}
+          </p>
+        </div>
+      )}
+
       {issue.source && (
         <p className="text-[10px] truncate mb-1.5" style={{ color: "#c9c4b8" }} title={issue.source}>
           from {issue.source}
@@ -269,6 +282,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
   const [dueAt,       setDueAt]       = useState(initial?.dueAt ? initial.dueAt.slice(0, 10) : "");
   const [notify,      setNotify]      = useState<string[]>(initial?.notify ?? []);
   const [source,      setSource]      = useState(initial?.source ?? "");
+  const [resolution,  setResolution]  = useState(initial?.resolution ?? "");
 
   function addTag(e: React.KeyboardEvent) {
     if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
@@ -278,6 +292,13 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
       setTagInput("");
     }
   }
+
+  const fields = () => ({
+    title, description: description || null, type, priority,
+    assignee: assignee || null, tags, linkedLeadId: linkedLeadId || null,
+    dueAt: dueAt || null, notify, source: source || null,
+    resolution: resolution || null,
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -441,6 +462,25 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
           </div>
         </div>
 
+        {/* What we did. The board answers "is it done"; this answers "what
+            changed", which is the thing you want weeks later when the same
+            question comes back. It is also what gets emailed to the people on
+            Keep informed when the task closes. */}
+        <div className="px-5 pb-5">
+          <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>
+            What we did <span className="font-normal text-[10px]">(the solution — emailed to Keep informed when this closes)</span>
+          </label>
+          <textarea value={resolution} onChange={e => setResolution(e.target.value)} rows={4}
+            placeholder="What was actually changed, and anything the team should know about it."
+            className="w-full px-3 py-2 rounded-xl border border-[#e4e0d6] text-sm focus:outline-none focus:border-[#086c64] resize-none leading-relaxed"
+            style={{ color: "#14211f", background: "#fff" }} />
+          {initial && initial.status !== "DONE" && notify.length > 0 && (
+            <p className="text-[11px] mt-1.5" style={{ color: "#949598" }}>
+              Closing this out will email {notify.join(", ")}.
+            </p>
+          )}
+        </div>
+
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#e4e0d6]"
           style={{ background: "#f8f6f1" }}>
@@ -450,13 +490,26 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
             Cancel
           </button>
           <button
-            onClick={() => onSave({ title, description: description || null, type, priority, assignee: assignee || null, tags, linkedLeadId: linkedLeadId || null, dueAt: dueAt || null, notify, source: source || null })}
+            onClick={() => onSave(fields())}
             disabled={!title.trim() || saving}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 flex items-center gap-2"
-            style={{ background: "#086c64" }}>
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 flex items-center gap-2 border border-[#e4e0d6]"
+            style={{ color: "#086c64", background: "#fff" }}>
             {saving && <Loader2 size={13} className="animate-spin" />}
             {initial ? "Save changes" : "Create task"}
           </button>
+          {/* One button for the whole close-out: write what you did, mark it
+              done, and the people waiting on it hear about it. */}
+          {initial && initial.status !== "DONE" && (
+            <button
+              onClick={() => onSave({ ...fields(), status: "DONE" })}
+              disabled={!title.trim() || !resolution.trim() || saving}
+              title={resolution.trim() ? "" : "Add what we did first"}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50 flex items-center gap-2"
+              style={{ background: "#086c64" }}>
+              {saving && <Loader2 size={13} className="animate-spin" />}
+              Save &amp; close out
+            </button>
+          )}
         </div>
       </div>
     </div>

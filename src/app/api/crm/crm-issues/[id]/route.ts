@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendTaskClosedEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -11,7 +12,14 @@ async function requireAdmin() {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!await requireAdmin()) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const before = await prisma.crmIssue.findUnique({
+    where: { id: params.id },
+    select: { status: true, resolution: true, notify: true, assignee: true, title: true, type: true, source: true },
+  });
+  if (!before) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
   const data: Record<string, unknown> = {};
@@ -33,11 +41,49 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
                                                  ? new Date(`${body.dueAt}T17:00:00-04:00`) : null;
   if (body.notify !== undefined) data.notify = Array.isArray(body.notify) ? body.notify : [];
   if (body.source !== undefined) data.source = body.source?.trim() || null;
+  if (body.resolution !== undefined) data.resolution = body.resolution?.trim() || null;
 
-  const issue = await prisma.crmIssue.update({
-    where: { id: params.id },
-    data,
-  });
+  const closer = (session.user as { email?: string; name?: string }).email ?? "someone";
+  const closerName = (session.user as { name?: string }).name ?? closer;
+
+  const closingNow = body.status === "DONE" && before.status !== "DONE";
+  if (closingNow) data.resolvedBy = closer;
+
+  const issue = await prisma.crmIssue.update({ where: { id: params.id }, data });
+
+  /**
+   * Tell the "Keep informed" list when it closes.
+   *
+   * The list was recorded and never used, so telling people was a manual step —
+   * which is the step that gets skipped. Only on the transition into DONE, so
+   * editing a finished task does not re-send, and only when there is a
+   * resolution to read: "it's done" with no "here's what we did" is a
+   * notification nobody needed.
+   */
+  const resolution = (issue.resolution ?? "").trim();
+  if (closingNow && resolution) {
+    const audience = [...(issue.notify ?? []), issue.assignee ?? ""]
+      .filter(e => e && e.toLowerCase() !== closer.toLowerCase());
+    if (audience.length) {
+      // Awaited: a fire-and-forget send is dropped when this handler returns.
+      await sendTaskClosedEmail({
+        to: audience,
+        title: issue.title,
+        resolution,
+        closedBy: closerName,
+        taskType: issue.type,
+        source: issue.source,
+      }).catch(err => console.error("[crm-issues] close notice failed:", err));
+    }
+    await prisma.cRMNotification.create({
+      data: {
+        type:  "TASK_DONE",
+        title: `Done: ${issue.title}`,
+        body:  resolution.length > 140 ? resolution.slice(0, 140) + "…" : resolution,
+        href:  "/issues",
+      },
+    }).catch(() => {});
+  }
 
   return NextResponse.json(issue);
 }

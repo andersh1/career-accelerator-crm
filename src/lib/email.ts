@@ -806,3 +806,44 @@ export async function sendConsultationBookedAlert({
     html: wrap("Consultation booked", body),
   });
 }
+
+/**
+ * Tell the people on a task's "Keep informed" list that it is done, and what
+ * was actually done about it.
+ *
+ * The notify list was recorded and never used — you had to remember to go and
+ * tell people yourself, which is exactly the step that gets skipped. Closing a
+ * task is the moment they want to hear, and the resolution is the part worth
+ * reading, so it leads.
+ */
+export async function sendTaskClosedEmail({
+  to, title, resolution, closedBy, taskType, source,
+}: {
+  to: string[];
+  title: string;
+  resolution: string;
+  closedBy: string;
+  taskType?: string | null;
+  source?: string | null;
+}) {
+  const recipients = Array.from(new Set(to.map(e => e.trim().toLowerCase()).filter(Boolean)));
+  if (!recipients.length || !resend) return;
+
+  const subject = `Done: ${title}`;
+  const body = `
+    <p style="margin:0 0 6px;color:#949598;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Closed by ${esc(closedBy)}</p>
+    <h2 style="margin:0 0 18px;color:#14211f;font-size:17px;font-weight:700;line-height:1.35;">${esc(title)}</h2>
+    <div style="background:#f8f6f1;border:1px solid #e4e0d6;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+      <p style="margin:0 0 6px;color:#086c64;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">What we did</p>
+      <p style="margin:0;color:#14211f;font-size:14px;line-height:1.6;white-space:pre-wrap;">${esc(resolution)}</p>
+    </div>
+    ${source ? `<p style="margin:0 0 4px;color:#949598;font-size:12px;">Came from: ${esc(source)}</p>` : ""}
+    ${taskType ? `<p style="margin:0 0 20px;color:#949598;font-size:12px;">Category: ${esc(taskType)}</p>` : ""}
+    <a href="${CRM_URL}/issues" style="display:inline-block;background:#086c64;color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border-radius:12px;text-decoration:none;">Open the task board &rarr;</a>
+  `;
+  try {
+    await sendChecked({ from: FROM, to: recipients, subject, html: wrap(subject, body) });
+  } catch (e) {
+    console.error("[email] task-closed notice failed:", e);
+  }
+}
