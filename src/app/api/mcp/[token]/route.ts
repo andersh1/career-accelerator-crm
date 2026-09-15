@@ -109,6 +109,23 @@ const TOOLS = [
     },
   },
   {
+    name: "send_assignment_feedback",
+    description: "Send your feedback on a Fellow's assignment. This REACHES THE FELLOW: it emails them, notifies them in the LMS, and lands on their CRM record — so send it when the words are final, not as a draft. Feedback is kept as numbered rounds, so sending again after they revise adds round 2 rather than overwriting round 1. Use `get_student` first if you want to read what you said last time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        studentQuery: { type: "string", description: "Fellow's name or email" },
+        moduleNumber: { type: "number", description: "Which module's assignment (1-8)" },
+        feedback:     { type: "string", description: "The feedback, in your voice, exactly as the Fellow should read it" },
+        status: {
+          type: "string",
+          description: "NEEDS_REVISION (they go again — this reopens the assignment so they can resubmit), APPROVED (done), or REVIEWED (read, nothing required). Defaults to NEEDS_REVISION.",
+        },
+      },
+      required: ["studentQuery", "moduleNumber", "feedback"],
+    },
+  },
+  {
     name: "create_task",
     description: "Create a follow-up task on a lead/student's CRM record, assigned to you. dueDate optional (YYYY-MM-DD).",
     inputSchema: {
@@ -372,7 +389,14 @@ async function runTool(
       }),
       prisma.submission.findMany({
         where: { userId: u.id },
-        select: { title: true, content: true, status: true, feedback: true, submittedAt: true, module: { select: { number: true } } },
+        select: {
+          title: true, content: true, status: true, feedback: true, submittedAt: true,
+          // What changed in a revision, and every round already sent — so the
+          // next round builds on the last instead of repeating it.
+          previousContent: true, revisionCount: true, revisedAt: true,
+          feedbackHistory: { orderBy: { round: "asc" }, select: { round: true, content: true, status: true, sentAt: true } },
+          module: { select: { number: true } },
+        },
         orderBy: { submittedAt: "desc" },
       }),
       prisma.progress.count({ where: { userId: u.id } }),
@@ -960,6 +984,35 @@ async function runTool(
       data: { leadId: lead.id, type: "NOTE", content: note, createdBy: admin.id, source: "mcp" },
     });
     return JSON.stringify({ ok: true, savedTo: `CRM timeline note on ${u.name}` });
+  }
+
+  if (name === "send_assignment_feedback") {
+    const secret = process.env.INTERNAL_API_SECRET;
+    const lms = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
+    if (!secret) {
+      return JSON.stringify({ error: "INTERNAL_API_SECRET is not configured, so feedback cannot be sent from here." });
+    }
+    const feedback = String(input.feedback ?? "").trim();
+    const studentQuery = String(input.studentQuery ?? "").trim();
+    const moduleNumber = Number(input.moduleNumber);
+    if (!feedback || !studentQuery || !Number.isFinite(moduleNumber)) {
+      return JSON.stringify({ error: "studentQuery, moduleNumber and feedback are all required" });
+    }
+
+    // The LMS owns what happens when a Fellow is told something — the email,
+    // the notification, the ledger. Call it rather than half-reimplementing it.
+    const res = await fetch(`${lms}/api/internal/submission-feedback?key=${encodeURIComponent(secret)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentQuery, moduleNumber, feedback,
+        status: String(input.status ?? "NEEDS_REVISION").toUpperCase(),
+        authorEmail: admin.email,
+      }),
+    });
+    const out = await res.json().catch(() => ({ error: "The LMS did not return a readable response." }));
+    if (!res.ok) return JSON.stringify({ error: out.error ?? `LMS returned ${res.status}` });
+    return JSON.stringify(out);
   }
 
   if (name === "push_call_writeup") {

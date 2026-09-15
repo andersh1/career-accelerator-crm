@@ -883,8 +883,28 @@ model Submission {
   previousContent String?
   revisionCount   Int      @default(0)
   revisedAt       DateTime?
+  feedbackHistory SubmissionFeedback[]
   submittedAt     DateTime @default(now())
   reviewedAt      DateTime?
+}
+
+/// One round of coach feedback on a submission.
+///
+/// `Submission.feedback` holds only the latest round, so writing round two
+/// erased round one — the request the Fellow was actually answering. Each send
+/// is appended here instead, and the whole conversation stays readable.
+model SubmissionFeedback {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  round        Int
+  content      String
+  status       String
+  authorId     String?
+  sentAt       DateTime   @default(now())
+
+  @@unique([submissionId, round])
+  @@index([submissionId])
 }
 
 model SupportTicket {
