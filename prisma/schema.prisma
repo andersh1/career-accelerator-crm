@@ -104,6 +104,10 @@ model CohortSchedule {
   module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   startDate       DateTime?
   preworkDue      DateTime?
+  /// When the module's assignment is due — the Friday after the session. The
+  /// programme ran for two weeks with this deadline living only in Slack, so
+  /// nothing could count who had missed it.
+  assignmentDue   DateTime?
   sessionDate     DateTime?
   sessionLocation String?
   sessionZoomLink String?
@@ -809,6 +813,17 @@ model ReminderLog {
   sentAt    DateTime @default(now())
 
   @@unique([userId, moduleId, type])
+}
+
+model ConsultationReminder {
+  id               String   @id @default(cuid())
+  calendlyEventUri String
+  email            String
+  kind             String   // DAY_BEFORE | HOUR_BEFORE
+  startTime        DateTime
+  sentAt           DateTime @default(now())
+
+  @@unique([calendlyEventUri, kind])
 }
 
 model Resource {

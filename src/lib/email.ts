@@ -806,3 +806,58 @@ export async function sendConsultationBookedAlert({
     html: wrap("Consultation booked", body),
   });
 }
+
+/**
+ * Reminder to a prospect before their consultation.
+ *
+ * Nothing reached a consultation booker between booking and the call, and on
+ * 2026-09-16 one of them no-showed. Two sends: the day before, and about an
+ * hour out. Both carry reschedule and cancel links, because the useful outcome
+ * of a reminder to someone who can no longer make it is a new time, not a
+ * silent no-show.
+ */
+export async function sendConsultationReminder({
+  to, firstName, startTime, joinUrl, rescheduleUrl, cancelUrl, kind,
+}: {
+  to: string; firstName: string; startTime: Date;
+  joinUrl?: string | null; rescheduleUrl?: string | null; cancelUrl?: string | null;
+  kind: "DAY_BEFORE" | "HOUR_BEFORE";
+}) {
+  const when = startTime.toLocaleString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short", timeZone: "America/New_York",
+  });
+  const time = startTime.toLocaleString("en-US", {
+    hour: "numeric", minute: "2-digit", timeZoneName: "short", timeZone: "America/New_York",
+  });
+
+  const lead = kind === "DAY_BEFORE"
+    ? `Your call with Dan is tomorrow — <strong>${when}</strong>.`
+    : `Your call with Dan is coming up at <strong>${time}</strong>, about an hour from now.`;
+
+  const body = `
+    <p style="margin:0 0 16px;font-size:16px;color:#1f2a28;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;font-size:16px;color:#1f2a28;">${lead}</p>
+    <p style="margin:0 0 16px;font-size:16px;color:#1f2a28;">
+      It's a straight conversation about where you're trying to land and whether we're the right fit
+      to help you get there. Come with a question you actually want answered.
+    </p>
+    ${joinUrl ? ctaButton(joinUrl, "Join the call →") : ""}
+    ${(rescheduleUrl || cancelUrl) ? `
+      <p style="margin:26px 0 0;font-size:14px;color:#5a6663;">
+        Can't make it?
+        ${rescheduleUrl ? ` <a href="${rescheduleUrl}" style="color:#086c64;font-weight:600;">Pick a new time</a>` : ""}
+        ${(rescheduleUrl && cancelUrl) ? " · " : ""}
+        ${cancelUrl ? `<a href="${cancelUrl}" style="color:#086c64;font-weight:600;">Cancel</a>` : ""}
+        — rescheduling is always better than a no-show, and it takes ten seconds.
+      </p>` : ""}`;
+
+  await sendChecked({
+    from: FROM,
+    to,
+    subject: kind === "DAY_BEFORE"
+      ? `Tomorrow: your Vantage consultation`
+      : `Starting soon: your Vantage consultation`,
+    html: wrap("Your consultation", body),
+  });
+}
