@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
     || body.name?.trim().split(/\s+/)[0]
     || "there";
 
+  let sent = false;
   try {
-    await sendConsultationReminder({
+    sent = await sendConsultationReminder({
       to: email,
       firstName,
       startTime: new Date(body.startTime),
@@ -55,6 +56,12 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[consultation-reminder] send failed:", err);
     return NextResponse.json({ error: "Email failed" }, { status: 502 });
+  }
+
+  // Switched off in the Email Playbook. Not an error — say so plainly, and
+  // don't write a "reminder sent" line for an email nobody received.
+  if (!sent) {
+    return NextResponse.json({ ok: true, sent: false, reason: "template disabled", kind });
   }
 
   if (lead) {
@@ -69,5 +76,5 @@ export async function POST(req: NextRequest) {
     }).catch(() => {});
   }
 
-  return NextResponse.json({ ok: true, sentTo: email, kind, leadLogged: !!lead });
+  return NextResponse.json({ ok: true, sent: true, sentTo: email, kind, leadLogged: !!lead });
 }
