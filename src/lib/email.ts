@@ -889,7 +889,7 @@ Your call with Dan is tomorrow — **{{when}}**.
 
 It's a straight conversation about where you're trying to land and whether Vantage is the right way to get there. Come with a question you actually want answered.
 
-[[Join the call]]({{joinUrl}})
+Nothing to do now — the [Zoom link]({{joinUrl}}) is in your calendar invite, and we'll send it again about an hour before.
 
 Can't make it? [Pick a new time]({{rescheduleUrl}}) or [cancel]({{cancelUrl}}). Rescheduling takes ten seconds and is always better than a no-show.`;
 
