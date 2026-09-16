@@ -61,6 +61,40 @@ const CTA_BY_KEY: Record<string, string> = {
 
 const EMAILS: PlaybookEmail[] = [
   {
+    id: "consult-reminder-day", name: "Consultation Reminder — Day Before",
+    subject: "Tomorrow: your call with Dan",
+    audience: "Consultation booker", when: "~24h before the call",
+    trigger: "Calendly consultation starting in 20–28 hours",
+    source: "LMS", guard: "Polls Calendly every 15 min; one send per booking",
+    templateKey: "consultation-reminder-day-before",
+    sampleVars: {
+      firstName: "Jordan",
+      when: "Monday, September 21 at 11:00 AM EDT",
+      time: "11:00 AM EDT",
+      day: "Monday, September 21",
+      joinUrl: "https://us02web.zoom.us/j/example",
+      rescheduleUrl: "https://calendly.com/reschedulings/example",
+      cancelUrl: "https://calendly.com/cancellations/example",
+    },
+  },
+  {
+    id: "consult-reminder-hour", name: "Consultation Reminder — 1 Hour Before",
+    subject: "Starting soon: your call with Dan",
+    audience: "Consultation booker", when: "~1h before the call",
+    trigger: "Calendly consultation starting in 35–95 minutes",
+    source: "LMS", guard: "Polls Calendly every 15 min; one send per booking",
+    templateKey: "consultation-reminder-hour-before",
+    sampleVars: {
+      firstName: "Jordan",
+      when: "Monday, September 21 at 11:00 AM EDT",
+      time: "11:00 AM EDT",
+      day: "Monday, September 21",
+      joinUrl: "https://us02web.zoom.us/j/example",
+      rescheduleUrl: "https://calendly.com/reschedulings/example",
+      cancelUrl: "https://calendly.com/cancellations/example",
+    },
+  },
+  {
     id: "intake", name: "Application / Waitlist Confirmation",
     subject: "We got your application ✓",
     audience: "Applicant", when: "Instantly", trigger: "Application or waitlist form submitted",
