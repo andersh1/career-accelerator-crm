@@ -36,7 +36,30 @@ function textToHtml(t: string) {
 
   const isBullet = (line: string) => /^\s*[•\-*]\s+/.test(line);
 
+  /**
+   * A line that is nothing but [[Label]](url) becomes a CTA button.
+   *
+   * Every template could already make a text link; the one thing none of them
+   * could express was the primary action, so a "Join the call" sat in the same
+   * weight as a footer link. Double brackets keep it opt-in: single-bracket
+   * links are untouched, and a template that never uses the syntax renders
+   * exactly as before.
+   */
+  const BUTTON = /^\s*\[\[([^\]]+)\]\]\((https?:\/\/[^\s)]+)\)\s*$/;
+
   return t.trim().split(/\n\n+/).map(block => {
+    const btn = block.trim().match(BUTTON);
+    if (btn) {
+      const label = btn[1].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      // Centred, generous tap target — this is read on a phone more often than
+      // not, and an hour-before reminder exists to be tapped.
+      return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;">` +
+        `<tr><td style="border-radius:999px;background:#086c64;">` +
+        `<a href="${btn[2]}" style="display:inline-block;padding:14px 32px;color:#ffffff;` +
+        `font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;` +
+        `font-weight:700;text-decoration:none;border-radius:999px;">${label}</a>` +
+        `</td></tr></table>`;
+    }
     // Split each block into runs of consecutive bullet vs. plain lines, so a
     // lead line ("A few quick things:") can sit directly above its bullets.
     const segments: { bullets: boolean; lines: string[] }[] = [];
@@ -866,7 +889,7 @@ Your call with Dan is tomorrow — **{{when}}**.
 
 It's a straight conversation about where you're trying to land and whether Vantage is the right way to get there. Come with a question you actually want answered.
 
-[Join the call]({{joinUrl}})
+[[Join the call]]({{joinUrl}})
 
 Can't make it? [Pick a new time]({{rescheduleUrl}}) or [cancel]({{cancelUrl}}). Rescheduling takes ten seconds and is always better than a no-show.`;
 
@@ -874,6 +897,6 @@ const DEFAULT_REMINDER_HOUR = `Hi {{firstName}},
 
 Your call with Dan starts at **{{time}}**, about an hour from now.
 
-[Join the call]({{joinUrl}})
+[[Join the call]]({{joinUrl}})
 
 If something came up, [grab another time]({{rescheduleUrl}}) or [cancel]({{cancelUrl}}) — either is better than leaving him on the call alone.`;
