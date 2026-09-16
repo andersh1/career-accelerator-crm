@@ -267,6 +267,7 @@ const TOOLS = [
         dueAt:     { type: "string", description: "YYYY-MM-DD" },
         priority:  { type: "string", description: "LOW, NORMAL, HIGH, URGENT" },
         note:      { type: "string", description: "Progress to append to the description, with today's date." },
+        resolution: { type: "string", description: "What was actually done. Required to close a task: moving one to DONE without it is refused, because 'it's done' with no account of what changed is what the field exists to prevent." },
       },
       required: ["titleLike"],
     },
@@ -835,10 +836,58 @@ async function runTool(
       const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
       data.description = `${m.description ? m.description + "\n\n" : ""}[${stamp}] ${note}`;
     }
+    const resolution = String(input.resolution ?? "").trim();
+    if (resolution) data.resolution = resolution;
+
+    /**
+     * Closing from here goes through the same consequences as closing in the
+     * CRM: the resolution is stored and the "keep informed" list is told.
+     * Without this the connector could mark work done while leaving the field
+     * that says WHAT was done empty, and nobody would hear about it — the task
+     * board would look tidy and tell you nothing.
+     */
+    const full = await prisma.crmIssue.findUnique({
+      where: { id: m.id },
+      select: { resolution: true, notify: true, assignee: true, title: true },
+    });
+    const closingNow = data.status === "DONE" && m.status !== "DONE";
+    const finalResolution = resolution || (full?.resolution ?? "").trim();
+    if (closingNow && !finalResolution) {
+      return JSON.stringify({
+        error: "Say what was done before closing it — pass resolution. A task closed with an empty resolution tells the next person nothing.",
+      });
+    }
+    if (closingNow) data.resolvedBy = admin.email;
+
     if (Object.keys(data).length === 0) return JSON.stringify({ error: "Nothing to change." });
 
     await prisma.crmIssue.update({ where: { id: m.id }, data });
-    return JSON.stringify({ ok: true, task: m.title, was: m.status, changed: Object.keys(data) });
+
+    let notified: string[] = [];
+    if (closingNow) {
+      const audience = Array.from(new Set(
+        [...(full?.notify ?? []), full?.assignee ?? ""]
+          .map(e => e.trim().toLowerCase())
+          .filter(e => e && e !== admin.email.toLowerCase()),
+      ));
+      const firstNames = audience.map(e => {
+        const local = e.split("@")[0].split(/[._+]/)[0];
+        return local.charAt(0).toUpperCase() + local.slice(1);
+      });
+      await prisma.cRMNotification.create({
+        data: {
+          type:  "TASK_DONE",
+          title: firstNames.length
+            ? `For ${firstNames.join(" & ")} — done: ${m.title}`
+            : `Done: ${m.title}`,
+          body:  `${admin.name ?? admin.email}: ${finalResolution.length > 200 ? finalResolution.slice(0, 200) + "…" : finalResolution}`,
+          href:  "/issues",
+        },
+      }).catch(err => console.error("[mcp] close notice failed:", err));
+      notified = firstNames;
+    }
+
+    return JSON.stringify({ ok: true, task: m.title, was: m.status, changed: Object.keys(data), notified });
   }
 
   if (name === "log_activity") {
