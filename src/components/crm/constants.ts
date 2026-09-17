@@ -24,6 +24,7 @@ export const STAGES = [
   { key: "OFFER_SENT",      label: "Offer",        color: "bg-amber-100 text-amber-700",     dot: "bg-amber-500"    },
   { key: "ENROLLED",        label: "Enrolled",     color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500"  },
   { key: "GRADUATED",       label: "Graduated",    color: "bg-stone-100 text-stone-600",     dot: "bg-stone-400"    },
+  { key: "WITHDRAWN",       label: "Withdrawn",    color: "bg-amber-100 text-amber-800",     dot: "bg-amber-600"    },
   { key: "DECLINED",        label: "Denied",       color: "bg-orange-100 text-orange-700",   dot: "bg-orange-500"   },
   { key: "LOST",            label: "Lost",         color: "bg-red-100 text-red-700",         dot: "bg-red-400"      },
 ] as const;
@@ -84,7 +85,9 @@ export const STAGE_PROXIMITY: Record<string, number> = {
 export const STAGE_PROBABILITY: Record<string, number> = {
   WAITLIST: 0.02, LEAD: 0.05, WAITING_TO_MEET: 0.15, APPLIED: 0.30,
   STRATEGY_CALL: 0.45, OFFER_SENT: 0.65, ENROLLED: 1, GRADUATED: 1,
-  DECLINED: 0, LOST: 0,
+  // Withdrawn revenue was real and may be partly refundable, so it is not a
+  // zero like a lead that never closed — but it is not forecastable either.
+  WITHDRAWN: 0, DECLINED: 0, LOST: 0,
 };
 
 /** Board label for a stage key, retired keys included. */
@@ -95,7 +98,8 @@ export const stageLabel = (key: string): string =>
 export const STAGE_HEX: Record<string, string> = {
   WAITLIST: "#38bdf8", LEAD: "#94a3b8", WAITING_TO_MEET: "#06b6d4",
   APPLIED: "#3b82f6", STRATEGY_CALL: "#8b5cf6", OFFER_SENT: "#f59e0b",
-  ENROLLED: "#10b981", GRADUATED: "#a8a29e", DECLINED: "#f97316", LOST: "#ef4444",
+  ENROLLED: "#10b981", GRADUATED: "#a8a29e", WITHDRAWN: "#d97706",
+  DECLINED: "#f97316", LOST: "#ef4444",
 };
 
 /**

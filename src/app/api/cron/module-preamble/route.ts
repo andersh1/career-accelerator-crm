@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
   for (const row of due) {
     const fellows = await prisma.user.findMany({
-      where: { cohortId: row.cohort.id, role: "STUDENT" },
+      where: { cohortId: row.cohort.id, role: "STUDENT", withdrawnAt: null },
       select: { name: true, email: true },
     });
     if (fellows.length === 0) {

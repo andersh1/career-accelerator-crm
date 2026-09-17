@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: `module-preamble-${row.module.number} still has placeholder copy` }, { status: 400 });
     }
     const one = await prisma.user.findFirst({
-      where: { cohortId: params.id, role: "STUDENT", email: { equals: resendTo, mode: "insensitive" } },
+      where: { cohortId: params.id, role: "STUDENT", withdrawnAt: null, email: { equals: resendTo, mode: "insensitive" } },
       select: { name: true, email: true },
     });
     if (!one) return NextResponse.json({ error: `${resendTo} is not a Fellow in this cohort` }, { status: 404 });
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const fellows = await prisma.user.findMany({
-    where: { cohortId: params.id, role: "STUDENT" },
+    where: { cohortId: params.id, role: "STUDENT", withdrawnAt: null },
     select: { name: true, email: true },
     orderBy: { name: "asc" },
   });

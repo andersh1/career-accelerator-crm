@@ -1091,6 +1091,12 @@ model User {
   threeSixtyToken      String?   @unique // public 360-ask link token
   calendarToken        String?   @unique // self-authenticating calendar subscription feed
   invitedAt            DateTime? @db.Timestamptz(6) // invite email sent; distinct from onboardedAt
+  /// Set when a Fellow leaves the program. Never delete the account: the
+  /// submissions, worksheets, attendance and coach notes are the record of
+  /// what they completed, and a refund conversation needs them. This flag
+  /// blocks login and drops them from every cron, count and report instead.
+  withdrawnAt          DateTime?
+  withdrawnReason      String?
   /// Per-person UI preferences that should follow the account, not the browser.
   uiPrefs              Json?
   threeSixtyResponses  ThreeSixtyResponse[]
