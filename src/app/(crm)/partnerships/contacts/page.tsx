@@ -32,7 +32,10 @@ export default function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
 
   const load = useCallback(async () => {
-    const qs = new URLSearchParams({ leadType: "CONTACT", all: "true" });
+    // Partners belong here alongside contacts — they are relationships, not
+    // candidates. Before this they appeared in neither place: excluded from
+    // Partnerships by this filter, and sitting in the candidate pipeline.
+    const qs = new URLSearchParams({ leadType: "CONTACT,PARTNER", all: "true" });
     if (search.trim()) qs.set("q", search.trim());
     const res = await fetch(`/api/crm/leads?${qs}`);
     if (res.ok) {

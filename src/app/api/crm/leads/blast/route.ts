@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { NON_PARTICIPANT_TYPES } from "@/components/crm/constants";
 import { sendSequenceEmail } from "@/lib/email";
 
 function requireCrmAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     deletedAt:    null,
     unsubscribed: false,
     stage:    { notIn: ["ENROLLED", "LOST", "UNSUBSCRIBED"] },
-    leadType: { notIn: ["CONTACT", "PARTNER"] },
+    leadType: { notIn: Array.from(NON_PARTICIPANT_TYPES) },
   };
   if (body.stage) {
     if (["ENROLLED", "LOST", "UNSUBSCRIBED"].includes(body.stage)) {

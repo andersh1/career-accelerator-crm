@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeScore } from "@/lib/scoring";
 import { fireWebhook } from "@/lib/webhooks";
+import { NON_PARTICIPANT_TYPES } from "@/components/crm/constants";
 import { routeLead } from "@/lib/lead-routing";
 
 function requireAdmin(session: Awaited<ReturnType<typeof getServerSession>>) {
@@ -42,9 +43,26 @@ export async function GET(req: NextRequest) {
     ...(subSource  ? { subSource }  : {}),
     ...(priority   ? { priority }   : {}),
     ...(assignedTo ? { assignedTo } : {}),
-    // When no leadType filter is set, exclude CONTACT — they live in Partnerships → Contacts
-    // "ALL" is a special sentinel meaning no filter (used by deal participant search)
-    ...(leadType === "ALL" ? {} : leadType ? { leadType } : { leadType: { not: "CONTACT" } }),
+    /**
+     * The candidate pipeline holds people who might enrol. Everyone else is a
+     * relationship and lives in Partnerships.
+     *
+     * This excluded only CONTACT, so a lead labelled Partner stayed on the
+     * board — Peter Friedman sat in Dan's Consultation column as though he
+     * were a candidate, which is what made the funnel read longer than it is.
+     * NON_PARTICIPANT_TYPES already named both and was used nowhere.
+     *
+     * "ALL" is a sentinel meaning no filter (deal participant search), and a
+     * comma-separated list lets Partnerships ask for CONTACT and PARTNER
+     * together.
+     */
+    ...(leadType === "ALL"
+      ? {}
+      : leadType
+        ? (leadType.includes(",")
+            ? { leadType: { in: leadType.split(",").map(t => t.trim()).filter(Boolean) } }
+            : { leadType })
+        : { leadType: { notIn: Array.from(NON_PARTICIPANT_TYPES) } }),
     ...(q ? {
       OR: [
         { firstName: { contains: q, mode: "insensitive" as const } },
