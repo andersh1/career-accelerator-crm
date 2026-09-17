@@ -255,7 +255,7 @@ const EMAILS: PlaybookEmail[] = [
 ];
 
 const PHASES: { label: string; ids: string[] }[] = [
-  { label: "Before enrollment", ids: ["intake", "app-alert"] },
+  { label: "Before enrollment", ids: ["intake", "app-alert", "consult-reminder-day", "consult-reminder-hour"] },
   { label: "Enrollment (nothing sends until you choose)", ids: ["invite"] },
   { label: "Weekly rhythm during the program", ids: ["prework-reminder", "session-tomorrow", "session-day", "assignment-reminder", "booking", "weekly-digest", "nudge", "coach-digest"] },
   { label: "Module kick-offs (one per module, date set per cohort)", ids: ["module-preamble-1", "module-preamble-2", "module-preamble-3", "module-preamble-4", "module-preamble-5", "module-preamble-6", "module-preamble-7", "module-preamble-8"] },
