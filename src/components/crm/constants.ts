@@ -26,6 +26,9 @@ export const STAGES = [
   { key: "GRADUATED",       label: "Graduated",    color: "bg-stone-100 text-stone-600",     dot: "bg-stone-400"    },
   { key: "WITHDRAWN",       label: "Withdrawn",    color: "bg-amber-100 text-amber-800",     dot: "bg-amber-600"    },
   { key: "DECLINED",        label: "Denied",       color: "bg-orange-100 text-orange-700",   dot: "bg-orange-500"   },
+  { key: "KEEP_IN_TOUCH",   label: "Keep in touch",color: "bg-indigo-100 text-indigo-700",   dot: "bg-indigo-400"   },
+  { key: "COLD",            label: "Cold",         color: "bg-slate-200 text-slate-600",     dot: "bg-slate-500"    },
+  { key: "UNSUBSCRIBED",    label: "Unsubscribed", color: "bg-gray-200 text-gray-700",       dot: "bg-gray-500"     },
   { key: "LOST",            label: "Lost",         color: "bg-red-100 text-red-700",         dot: "bg-red-400"      },
 ] as const;
 
@@ -88,6 +91,9 @@ export const STAGE_PROBABILITY: Record<string, number> = {
   // Withdrawn revenue was real and may be partly refundable, so it is not a
   // zero like a lead that never closed — but it is not forecastable either.
   WITHDRAWN: 0, DECLINED: 0, LOST: 0,
+  // Not forecastable, but not dead either — Keep in touch and Cold are
+  // relationships we expect to revisit.
+  KEEP_IN_TOUCH: 0, COLD: 0, UNSUBSCRIBED: 0,
 };
 
 /** Board label for a stage key, retired keys included. */
@@ -100,6 +106,7 @@ export const STAGE_HEX: Record<string, string> = {
   APPLIED: "#3b82f6", STRATEGY_CALL: "#8b5cf6", OFFER_SENT: "#f59e0b",
   ENROLLED: "#10b981", GRADUATED: "#a8a29e", WITHDRAWN: "#d97706",
   DECLINED: "#f97316", LOST: "#ef4444",
+  KEEP_IN_TOUCH: "#818cf8", COLD: "#64748b", UNSUBSCRIBED: "#6b7280",
 };
 
 /**

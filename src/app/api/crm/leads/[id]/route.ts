@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const { stage: newStage, notesAppend, ...rest } = body;
 
-  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true } });
+  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true, unsubscribed: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Whitelist patchable fields to prevent mass-assignment
@@ -45,6 +45,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     Object.entries(rest).filter(([k]) => ALLOWED.has(k))
   );
   if (newStage) data.stage = newStage;
+  /**
+   * Unsubscribed is a stage AND a flag, and the flag is what every send path
+   * already checks. Keep them in step: moving someone to Unsubscribed has to
+   * actually stop mail reaching them, not just relabel their card. Moving them
+   * back off it clears the flag, so a mistake is undoable.
+   */
+  if (newStage === "UNSUBSCRIBED") data.unsubscribed = true;
+  else if (newStage && existing.stage === "UNSUBSCRIBED") data.unsubscribed = false;
   // Append to notes rather than overwrite
   if (notesAppend) {
     data.notes = existing.notes

@@ -887,7 +887,7 @@ const DEFAULT_REMINDER_DAY = `Hi {{firstName}},
 
 Your call with Dan is tomorrow — **{{when}}**.
 
-It's a straight conversation about where you're trying to land and whether Vantage is the right way to get there. Come with a question you actually want answered.
+It's a straight conversation about where you're trying to land and whether Vantage is the right way to get there. Come with the questions you want answered.
 
 Nothing to do now — the [Zoom link]({{joinUrl}}) is in your calendar invite, and we'll send it again about an hour before.
 
