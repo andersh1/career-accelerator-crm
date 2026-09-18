@@ -38,12 +38,15 @@ export async function POST(req: NextRequest) {
   const where: Record<string, unknown> = {
     deletedAt:    null,
     unsubscribed: false,
-    stage:    { notIn: ["ENROLLED", "LOST", "UNSUBSCRIBED"] },
+    // WITHDRAWN too: someone who left the program last week should not
+    // receive marketing asking them to join it. Graduated alumni are
+    // deliberately still reachable.
+    stage:    { notIn: ["ENROLLED", "LOST", "UNSUBSCRIBED", "WITHDRAWN"] },
     leadType: { notIn: Array.from(NON_PARTICIPANT_TYPES) },
   };
   if (body.stage) {
-    if (["ENROLLED", "LOST", "UNSUBSCRIBED"].includes(body.stage)) {
-      return NextResponse.json({ error: "Cannot blast ENROLLED, LOST or UNSUBSCRIBED leads" }, { status: 400 });
+    if (["ENROLLED", "LOST", "UNSUBSCRIBED", "WITHDRAWN"].includes(body.stage)) {
+      return NextResponse.json({ error: "Cannot blast ENROLLED, LOST, UNSUBSCRIBED or WITHDRAWN leads" }, { status: 400 });
     }
     where.stage = body.stage;
   }
