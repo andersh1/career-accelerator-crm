@@ -177,8 +177,11 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     throw e;
   }
 
-  // Upsert CRM lead (fire-and-forget)
-  (async () => {
+  // Upsert the CRM lead. AWAITED — this was fire-and-forget, and the lambda
+  // freezes the moment the response is sent, so a registrant could get
+  // "you're registered" and never land in the CRM. Its own try/catch keeps
+  // it non-fatal.
+  await (async () => {
     try {
       const existing = await prisma.lead.findFirst({ where: { email: normalizedEmail }, select: { id: true } });
       let leadId: string;
@@ -249,7 +252,9 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       confirmationMessage: event.confirmationMessage,
     });
 
-    resend.emails.send({
+    // AWAITED for the same reason: the confirmation and its calendar invite
+    // were being sent after the response, where they could be frozen.
+    await resend.emails.send({
       from: FROM,
       to:   normalizedEmail,
       subject: `You're registered: ${event.title}`,

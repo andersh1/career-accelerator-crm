@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     // Webhook: stage changed (fire-and-forget)
-    fireWebhook("lead.stage_changed", {
+    await fireWebhook("lead.stage_changed", {
       leadId:    params.id,
       firstName: lead.firstName,
       lastName:  lead.lastName,
@@ -104,7 +104,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // itself, so the proposal stays a person's decision — the task below is the
     // reminder, not the send.
     if (newStage === "ADMITTED") {
-      fireWebhook("lead.admitted", {
+      await fireWebhook("lead.admitted", {
         leadId:    params.id,   // stamp this into Ignition's external reference
         firstName: lead.firstName,
         lastName:  lead.lastName,
@@ -165,7 +165,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           },
         });
         // Webhook: lead enrolled (fire-and-forget)
-        fireWebhook("lead.enrolled", {
+        await fireWebhook("lead.enrolled", {
           leadId:    params.id,
           firstName: fullLead.firstName,
           lastName:  fullLead.lastName,
@@ -177,7 +177,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // ── Outcomes follow-up: send email when graduated (stage → COMPLETED) ──
     if (newStage === "COMPLETED" && !lead.outcomeEmailSentAt) {
-      (async () => {
+      await (async () => {
         try {
           const token = crypto.randomUUID();
           await prisma.lead.update({
@@ -233,7 +233,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         });
       }
     };
-    stageTriggers().catch(() => {});
+    // Awaited: stage-change automations were running after the response and
+    // could be frozen mid-way. .catch keeps them from failing the update.
+    await stageTriggers().catch(() => {});
   }
 
   return NextResponse.json(lead);
