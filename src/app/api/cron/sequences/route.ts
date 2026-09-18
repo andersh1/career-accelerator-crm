@@ -139,6 +139,9 @@ export async function GET(req: NextRequest) {
       body:       step.body + `\n\n---\n[Unsubscribe from these emails](${unsubUrl})`,
       leadName:   fullName,
       activityId: activity.id,
+      // Sequence mail is bulk too — it needs the native Gmail/Outlook
+      // unsubscribe control, not just a footer link someone has to hunt for.
+      unsubUrl,
     });
 
     if (result.ok) {
