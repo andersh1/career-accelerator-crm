@@ -53,8 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Fire Slack + webhook
     const name = `${lead.firstName} ${lead.lastName}`;
     const { text, blocks } = enrolledBlocks(name, params.id, lead.dealValue ?? null);
-    sendSlack(text, blocks).catch(() => {});
-    fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
+    await sendSlack(text, blocks).catch(() => {});
+    await fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
     return NextResponse.json({ user: existing, alreadyExisted: true });
   }
 
@@ -119,8 +119,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // Fire Slack + webhook for new user enrollment
   const name = `${lead.firstName} ${lead.lastName}`;
   const { text, blocks } = enrolledBlocks(name, params.id, lead.dealValue ?? null);
-  sendSlack(text, blocks).catch(() => {});
-  fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
+  await sendSlack(text, blocks).catch(() => {});
+  await fireWebhook("lead.enrolled", { leadId: params.id, firstName: lead.firstName, lastName: lead.lastName, email: lead.email, dealValue: lead.dealValue ?? null }).catch(() => {});
 
   const { password: _pw, ...safeUser } = user as typeof user & { password?: string };
   return NextResponse.json({ user: safeUser, alreadyExisted: false });

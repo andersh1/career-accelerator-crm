@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
   // Increment promo code usage count (best-effort — never blocks the intake)
   if (promoCode?.trim()) {
     const normalized = promoCode.trim().toUpperCase();
-    prisma.promoCode.updateMany({
+    await prisma.promoCode.updateMany({
       where: { code: normalized, active: true },
       data:  { usedCount: { increment: 1 } },
     }).catch(() => {});

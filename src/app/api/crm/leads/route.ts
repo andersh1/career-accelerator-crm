@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Webhook: new lead created (fire-and-forget)
-  fireWebhook("lead.created", {
+  await fireWebhook("lead.created", {
     leadId:    lead.id,
     firstName: lead.firstName,
     lastName:  lead.lastName,
