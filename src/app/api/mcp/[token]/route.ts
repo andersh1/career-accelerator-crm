@@ -299,7 +299,7 @@ async function findStudent(query: string) {
   const q = query.trim();
   return prisma.user.findFirst({
     where: {
-      role: "STUDENT",
+      role: "STUDENT", withdrawnAt: null,
       OR: [
         { email: { equals: q, mode: "insensitive" } },
         { name: { contains: q, mode: "insensitive" } },
@@ -333,7 +333,7 @@ async function runTool(
   if (name === "list_students") {
     const cohort = typeof input.cohort === "string" ? input.cohort : undefined;
     const students = await prisma.user.findMany({
-      where: { role: "STUDENT", ...(cohort ? { cohort: { contains: cohort, mode: "insensitive" } } : {}) },
+      where: { role: "STUDENT", withdrawnAt: null, ...(cohort ? { cohort: { contains: cohort, mode: "insensitive" } } : {}) },
       select: {
         name: true, email: true, cohort: true, onboardedAt: true,
         _count: { select: { progress: true, submissions: true, preworkSubmissions: true } },
@@ -519,7 +519,7 @@ async function runTool(
     const mod = await prisma.module.findUnique({ where: { number: modNum }, select: { id: true, title: true } });
     if (!mod) return JSON.stringify({ error: "Module not found" });
     const students = await prisma.user.findMany({
-      where: { role: "STUDENT", onboardedAt: { not: null } },
+      where: { role: "STUDENT", withdrawnAt: null, onboardedAt: { not: null } },
       select: { id: true, name: true },
     });
     const ids = students.map(s => s.id);

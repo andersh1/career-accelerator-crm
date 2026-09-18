@@ -112,7 +112,7 @@ export async function GET() {
       where: { isActive: true },
       select: {
         id: true, name: true, capacity: true,
-        _count: { select: { users: true } },
+        _count: { select: { users: { where: { withdrawnAt: null } } } },
       },
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -142,7 +142,7 @@ export async function GET() {
     // All enrolled students for at-risk check
     prisma.user.findMany({
       // Only onboarded students can be "at risk" — pre-launch cohorts stay quiet.
-      where: { role: "STUDENT", cohortId: { not: null }, onboardedAt: { not: null } },
+      where: { role: "STUDENT", withdrawnAt: null, cohortId: { not: null }, onboardedAt: { not: null } },
       select: {
         id: true, name: true, email: true, cohort: true, onboardedAt: true,
         progress: { orderBy: { completedAt: "desc" }, take: 1, select: { completedAt: true } },

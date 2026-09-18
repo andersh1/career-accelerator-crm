@@ -13,7 +13,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true, name: true, isActive: true, capacity: true,
-      _count: { select: { users: true } },
+      _count: { select: { users: { where: { withdrawnAt: null } } } },
     },
   });
 

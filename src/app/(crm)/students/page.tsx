@@ -299,6 +299,9 @@ export default function StudentsPage() {
                       {daysSince(s.lastActiveAt) === 0 ? "Active today" : `${daysSince(s.lastActiveAt)}d ago`}
                     </span>
                   )}
+                  {s.stage === "WITHDRAWN" && (
+                    <span className="font-semibold px-1.5 py-0.5 rounded" style={{ background: "#fef3c7", color: "#92400e" }}>👋 Withdrawn</span>
+                  )}
                   {s.stage === "GRADUATED" && (
                     <span className="font-semibold px-1.5 py-0.5 rounded" style={{ background: "#f1efe8", color: "#5a6663" }}>🎓 Graduated</span>
                   )}

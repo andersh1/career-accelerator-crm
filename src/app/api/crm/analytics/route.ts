@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const cohorts = await prisma.cohort.findMany({
     select: {
       id: true, name: true, isActive: true, capacity: true,
-      _count: { select: { users: true } },
+      _count: { select: { users: { where: { withdrawnAt: null } } } },
     },
     orderBy: { createdAt: "desc" },
   });
