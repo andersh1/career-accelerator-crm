@@ -141,16 +141,29 @@ export async function POST(req: NextRequest) {
     };
     const upgradeType = (INTENT[incomingType] ?? 0) > (INTENT[existing.leadType ?? ""] ?? 0);
 
-    // Stages a person can be moved OUT of by a form. Anything past application,
-    // or anything decided (enrolled, withdrawn, denied, unsubscribed), stays put.
-    const EARLY = ["WAITLIST", "LEAD", "WAITING_TO_MEET", "KEEP_IN_TOUCH", "COLD"];
+    /**
+     * Stages a form may move someone between, ranked. A form only ever moves a
+     * lead FORWARD: the first version of this let a keep-in-touch submission
+     * drag a Consultation back to Lead, which is the same class of silent
+     * damage this branch exists to stop. Anything decided (enrolled, withdrawn,
+     * denied, unsubscribed) or past application is absent, so it never moves.
+     */
+    const STAGE_RANK: Record<string, number> = {
+      WAITLIST: 0, COLD: 0, LEAD: 1, KEEP_IN_TOUCH: 1, WAITING_TO_MEET: 2, APPLIED: 3,
+    };
     const incomingStage = stage?.trim();
-    const moveStage = !!incomingStage && EARLY.includes(existing.stage) && incomingStage !== existing.stage;
+    const moveStage = !!incomingStage
+      && existing.stage in STAGE_RANK
+      && incomingStage in STAGE_RANK
+      && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage];
 
     const fill = (cur: string | null, next: string | undefined) =>
       cur ? undefined : (next?.trim() || undefined);
 
-    const owner = existing.assignedTo ?? routeLead(incomingType);
+    // Owner follows what the lead IS after this submission, not what the latest
+    // form said — a Consultation that also ticks keep-in-touch is still Dan's.
+    const resultingType = upgradeType ? incomingType : (existing.leadType ?? incomingType);
+    const owner = existing.assignedTo ?? routeLead(resultingType);
 
     await prisma.lead.update({
       where: { id: existing.id },
