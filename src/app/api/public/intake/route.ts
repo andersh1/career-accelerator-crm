@@ -89,10 +89,15 @@ export async function POST(req: NextRequest) {
 
   // Rate limiting: reject if same email submitted in the last 24 hours
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // A repeat of the SAME kind of submission is throttled. A different kind is
+  // an upgrade, not a duplicate: someone who books a consultation and applies
+  // the same day was getting "already submitted recently" on their application,
+  // because the booking had created the lead that morning.
   const recentSubmission = await prisma.lead.findFirst({
     where: {
       email:     normalizedEmail,
       createdAt: { gte: twentyFourHoursAgo },
+      leadType:  leadType?.trim() ?? "WAITLIST",
     },
     select: { id: true },
   });
@@ -103,21 +108,102 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Check if a lead already exists (outside 24h window) — still accept, just don't duplicate
   const existing = await prisma.lead.findFirst({
     where: { email: normalizedEmail },
-    select: { id: true },
+    select: { id: true, stage: true, leadType: true, assignedTo: true,
+              phone: true, school: true, academicYear: true, jobTitle: true, zip: true, priority: true },
   });
 
+  /**
+   * Someone already in the CRM submitting again.
+   *
+   * This used to log "Re-submitted via public intake form" and return success —
+   * then discard everything that was sent. Nick Goldstein booked a consultation
+   * on Sept 9 (which created his lead), had the call, then submitted a full
+   * application on Sept 16. He was told it went through. His lead stayed a
+   * Consultation, his answers were never stored, and nobody was alerted. Dan
+   * found out because Nick told him.
+   *
+   * The dedupe was right that it should not create a second lead. It was wrong
+   * that a second submission carries nothing. Consultation → application is the
+   * most valuable path in the funnel and it was the one this broke.
+   *
+   * Now: never discard what was sent; move the lead FORWARD if this submission
+   * shows more intent (never backwards, never out of a decided stage); fill only
+   * fields that are empty; and alert exactly as a new application would.
+   */
   if (existing) {
-    // Log re-engagement but don't create a duplicate lead
+    const incomingType = leadType?.trim() ?? "WAITLIST";
+    const isApp = incomingType === "APPLICATION";
+
+    const INTENT: Record<string, number> = {
+      WAITLIST: 1, CONTACT: 1, KEEP_IN_TOUCH: 2, PARENT: 2, CONSULTATION: 3, APPLICATION: 4,
+    };
+    const upgradeType = (INTENT[incomingType] ?? 0) > (INTENT[existing.leadType ?? ""] ?? 0);
+
+    // Stages a person can be moved OUT of by a form. Anything past application,
+    // or anything decided (enrolled, withdrawn, denied, unsubscribed), stays put.
+    const EARLY = ["WAITLIST", "LEAD", "WAITING_TO_MEET", "KEEP_IN_TOUCH", "COLD"];
+    const incomingStage = stage?.trim();
+    const moveStage = !!incomingStage && EARLY.includes(existing.stage) && incomingStage !== existing.stage;
+
+    const fill = (cur: string | null, next: string | undefined) =>
+      cur ? undefined : (next?.trim() || undefined);
+
+    const owner = existing.assignedTo ?? routeLead(incomingType);
+
+    await prisma.lead.update({
+      where: { id: existing.id },
+      data: {
+        ...(upgradeType ? { leadType: incomingType } : {}),
+        ...(moveStage ? { stage: incomingStage } : {}),
+        ...(isApp ? { priority: "HIGH" } : {}),
+        ...(owner && !existing.assignedTo ? { assignedTo: owner } : {}),
+        phone:        fill(existing.phone, phone),
+        school:       fill(existing.school, school),
+        academicYear: fill(existing.academicYear, academicYear),
+        jobTitle:     fill(existing.jobTitle, jobTitle),
+        zip:          fill(existing.zip, zip),
+      },
+    });
+
+    // The submission itself, in full. Nothing a person typed is discarded.
     await prisma.leadActivity.create({
       data: {
         leadId:  existing.id,
         type:    "NOTE",
-        content: `Re-submitted via public intake form (source: ${source ?? "WEBSITE"})`,
+        content: [
+          isApp ? "📝 Submitted an application via the web form" : `Re-submitted via web form (${incomingType.toLowerCase()})`,
+          upgradeType ? `Lead type ${existing.leadType} → ${incomingType}` : null,
+          moveStage ? `Stage ${existing.stage} → ${incomingStage}` : null,
+          notes?.trim() ? `\n${notes.trim()}` : null,
+        ].filter(Boolean).join("\n"),
       },
     });
+
+    if (isApp) {
+      try {
+        await sendAdminApplicationAlert({
+          firstName: firstName.trim(), lastName: lastName.trim(), email: normalizedEmail,
+          phone: phone?.trim() || existing.phone || null, leadId: existing.id,
+          notes: notes?.trim() || null,
+        });
+      } catch (err) {
+        console.error("[intake] application alert failed for existing lead:", err);
+      }
+      await prisma.cRMNotification.create({
+        data: {
+          // Same type and title shape as a brand-new application, so it lands
+          // in the same place in the feed rather than looking like a lesser event.
+          type:   "NEW_INTAKE",
+          title:  `New application: ${firstName.trim()} ${lastName.trim()}`,
+          body:   `Already in the CRM as ${(existing.leadType ?? "a lead").toLowerCase().replace(/_/g, " ")} — moved to Application.`,
+          leadId: existing.id,
+          href:   `/leads/${existing.id}`,
+        },
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ success: true, leadId: existing.id }, { status: 200, headers: CORS_HEADERS });
   }
 
