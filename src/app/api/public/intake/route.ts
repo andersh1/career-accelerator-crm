@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mergeIntoExistingLead } from "@/lib/intake-merge";
 import { rateLimit } from "@/lib/rate-limit";
 import { routeLead, ownerName } from "@/lib/lead-routing";
 import {
@@ -157,41 +158,32 @@ export async function POST(req: NextRequest) {
       && incomingStage in STAGE_RANK
       && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage];
 
-    const fill = (cur: string | null, next: string | undefined) =>
-      cur ? undefined : (next?.trim() || undefined);
-
     // Owner follows what the lead IS after this submission, not what the latest
     // form said — a Consultation that also ticks keep-in-touch is still Dan's.
     const resultingType = upgradeType ? incomingType : (existing.leadType ?? incomingType);
     const owner = existing.assignedTo ?? routeLead(resultingType);
 
-    await prisma.lead.update({
-      where: { id: existing.id },
-      data: {
+    await mergeIntoExistingLead({
+      leadId: existing.id,
+      current: {
+        phone: existing.phone, school: existing.school, academicYear: existing.academicYear,
+        jobTitle: existing.jobTitle, zip: existing.zip,
+      },
+      submitted: { phone, school, academicYear, jobTitle, zip },
+      changes: {
         ...(upgradeType ? { leadType: incomingType } : {}),
         ...(moveStage ? { stage: incomingStage } : {}),
         ...(isApp ? { priority: "HIGH" } : {}),
         ...(owner && !existing.assignedTo ? { assignedTo: owner } : {}),
-        phone:        fill(existing.phone, phone),
-        school:       fill(existing.school, school),
-        academicYear: fill(existing.academicYear, academicYear),
-        jobTitle:     fill(existing.jobTitle, jobTitle),
-        zip:          fill(existing.zip, zip),
       },
-    });
-
-    // The submission itself, in full. Nothing a person typed is discarded.
-    await prisma.leadActivity.create({
-      data: {
-        leadId:  existing.id,
-        type:    "NOTE",
-        content: [
-          isApp ? "📝 Submitted an application via the web form" : `Re-submitted via web form (${incomingType.toLowerCase()})`,
-          upgradeType ? `Lead type ${existing.leadType} → ${incomingType}` : null,
-          moveStage ? `Stage ${existing.stage} → ${incomingStage}` : null,
-          notes?.trim() ? `\n${notes.trim()}` : null,
-        ].filter(Boolean).join("\n"),
-      },
+      headline: isApp
+        ? "📝 Submitted an application via the web form"
+        : `Re-submitted via web form (${incomingType.toLowerCase()})`,
+      details: [
+        upgradeType ? `Lead type ${existing.leadType} → ${incomingType}` : null,
+        moveStage ? `Stage ${existing.stage} → ${incomingStage}` : null,
+      ],
+      body: notes,
     });
 
     if (isApp) {

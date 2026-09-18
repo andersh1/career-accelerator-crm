@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mergeIntoExistingLead } from "@/lib/intake-merge";
 import { enrichFromEmail } from "@/lib/enrichment";
 import { sendIntakeConfirmationEmail } from "@/lib/email";
 import { sendSlack, newIntakeBlocks } from "@/lib/slack";
@@ -79,13 +80,23 @@ export async function POST(req: NextRequest) {
       });
       return cors({ id: existing.id, created: true }, 201);
     }
-    // Active lead re-submitted — just log an activity
-    await prisma.leadActivity.create({
-      data: {
-        leadId:  existing.id,
-        type:    "NOTE",
-        content: `Re-submitted interest form (source: ${source})`,
+    // Active lead re-submitted. This used to log "Re-submitted interest form"
+    // and discard what they typed — the same fault that swallowed Nick
+    // Goldstein's application through the other intake route. Shared handling
+    // now, so the two routes cannot drift apart again.
+    //
+    // An interest form never signals more intent than whatever brought them in,
+    // so nothing about their type, stage or owner changes: only empty fields
+    // are filled and the submission is kept in full.
+    await mergeIntoExistingLead({
+      leadId: existing.id,
+      current: {
+        phone: existing.phone, company: existing.company,
+        jobTitle: existing.jobTitle, linkedinUrl: existing.linkedinUrl,
       },
+      submitted: { phone, company, jobTitle, linkedinUrl },
+      headline: `Re-submitted interest form (source: ${source})`,
+      body: notes,
     });
     return cors({ id: existing.id, created: false }, 200);
   }
