@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { unsubscribeUrl } from "@/lib/unsubscribe-token";
 import { sendSequenceEmail } from "@/lib/email";
 
 function authOk(req: NextRequest) {
@@ -116,7 +117,9 @@ export async function GET(req: NextRequest) {
     }
     // ────────────────────────────────────────────────────────────────────────
 
-    const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://lms.vantagecareer.co"}/api/crm/unsubscribe?email=${encodeURIComponent(enrollment.lead.email)}`;
+    // Was defaulting to lms.vantagecareer.co, where this endpoint does not
+    // exist — every unsubscribe link in a sequence email 404'd.
+    const unsubUrl = unsubscribeUrl(enrollment.lead.id);
 
     // Create the activity record FIRST so we have its ID for the tracking pixel
     const activity = await prisma.leadActivity.create({

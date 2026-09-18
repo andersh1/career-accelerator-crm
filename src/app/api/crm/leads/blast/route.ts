@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { unsubscribeUrl } from "@/lib/unsubscribe-token";
 import { NON_PARTICIPANT_TYPES } from "@/components/crm/constants";
 import { sendSequenceEmail } from "@/lib/email";
 
@@ -70,7 +71,9 @@ export async function POST(req: NextRequest) {
   for (const lead of leads) {
     try {
       // Personalize: replace {{firstName}} etc.
-      const unsubUrl = `${process.env.NEXTAUTH_URL ?? "https://crm.vantagecareer.co"}/api/crm/unsubscribe?email=${encodeURIComponent(lead.email)}`;
+      // Signed and opaque: one recipient's link cannot be edited into another's,
+      // and no email address travels in a URL.
+      const unsubUrl = unsubscribeUrl(lead.id);
       const personalizedBody = body.body
         .replace(/\{\{firstName\}\}/gi,       lead.firstName)
         .replace(/\{\{lastName\}\}/gi,        lead.lastName)
@@ -98,6 +101,7 @@ export async function POST(req: NextRequest) {
         leadName:   `${lead.firstName} ${lead.lastName}`,
         activityId: activity.id,
         unsubHtml,
+        unsubUrl,
       });
 
       if (!result.ok) throw new Error(result.error ?? "Send failed");

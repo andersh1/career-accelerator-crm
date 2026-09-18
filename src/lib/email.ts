@@ -252,9 +252,12 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: { to: strin
 export { CRM_URL };
 
 export async function sendSequenceEmail({
-  to, subject, body, leadName, activityId, unsubHtml,
+  to, subject, body, leadName, activityId, unsubHtml, unsubUrl,
 }: {
-  to: string; subject: string; body: string; leadName: string; activityId?: string; unsubHtml?: string;
+  to: string; subject: string; body: string; leadName: string;
+  activityId?: string; unsubHtml?: string;
+  /** Drives the List-Unsubscribe headers as well as the footer link. */
+  unsubUrl?: string;
 }) {
   if (!resend) return { ok: false, error: "No API key" };
   const firstName = leadName.split(" ")[0] || leadName;
@@ -271,7 +274,25 @@ export async function sendSequenceEmail({
     ? `<img src="${CRM_URL}/api/crm/email-open?aid=${activityId}" width="1" height="1" style="display:none" alt="" />`
     : "";
   try {
-    await sendChecked({ from: FROM, to, subject, html: wrap(subject, htmlBody) + pixel + (unsubHtml ?? "") });
+    /**
+     * Gmail and Outlook expect bulk mail to carry these, and show a native
+     * "Unsubscribe" control next to the sender when it does. A one-click
+     * header opt-out is treated far more kindly than a spam report, which is
+     * what people press when they cannot find the link — and spam reports are
+     * the fastest way to wreck a sending domain's reputation.
+     */
+    const headers = unsubUrl
+      ? {
+          "List-Unsubscribe": `<${unsubUrl}>`,
+          // RFC 8058: tells the mail client the URL accepts a one-click POST.
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        }
+      : undefined;
+    await sendChecked({
+      from: FROM, to, subject,
+      html: wrap(subject, htmlBody) + pixel + (unsubHtml ?? ""),
+      ...(headers ? { headers } : {}),
+    });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
