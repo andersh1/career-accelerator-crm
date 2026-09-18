@@ -59,6 +59,9 @@ export async function GET() {
     onboardedAt: s.onboardedAt,
     invitedAt: s.invitedAt,
     certificateIssuedAt: s.certificateIssuedAt,
+    // Selected above but never returned, so the roster kept showing withdrawn
+    // Fellows as Active — the query was right and the payload dropped it.
+    withdrawnAt: s.withdrawnAt,
     sectionsCompleted: s._count.progress,
     lastActiveAt: s.progress[0]?.completedAt ?? null,
     openFlags: (flagsByUser.get(s.id) ?? []).map(f => ({
