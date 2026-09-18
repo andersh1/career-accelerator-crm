@@ -14,7 +14,10 @@ export async function GET() {
   const cohorts = await prisma.cohort.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      _count: { select: { users: true } },
+      // Withdrawn Fellows are not enrolled. Counting them overstates the
+      // roster and quietly corrupts fill % and spots-left, which is what
+      // capacity decisions are made from.
+      _count: { select: { users: { where: { withdrawnAt: null } } } },
     },
   });
 

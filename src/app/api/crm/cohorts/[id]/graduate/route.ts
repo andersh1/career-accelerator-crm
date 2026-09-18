@@ -18,7 +18,7 @@ export async function POST(
     where: { id: params.id },
     include: {
       users: {
-        where: { role: "STUDENT" },
+        where: { role: "STUDENT", withdrawnAt: null },
         select: { id: true, name: true, email: true, certificateIssuedAt: true },
       },
     },

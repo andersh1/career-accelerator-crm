@@ -11,7 +11,7 @@ import {
 
 // ─── LMS status helpers ───────────────────────────────────────────────────────
 
-type LmsStatus = "pending" | "invited" | "active" | "graduated";
+type LmsStatus = "pending" | "invited" | "active" | "graduated" | "withdrawn";
 
 /**
  * "Invited" means we sent them a set-up link — it used to key off onboardedAt,
@@ -20,6 +20,10 @@ type LmsStatus = "pending" | "invited" | "active" | "graduated";
  * this reads what actually happened rather than a side effect.
  */
 function lmsStatus(s: Student): LmsStatus {
+  // Outranks everything. Someone who left still has sections completed and a
+  // last-active date, and "Active" is the wrong word for them — it was showing
+  // Ethan and Noa as Active two days after their access was revoked.
+  if (s.withdrawnAt) return "withdrawn";
   if (s.certificateIssuedAt) return "graduated";
   if (s.onboardedAt && (s.sectionsCompleted > 0 || s.lastActiveAt)) return "active";
   if (s.onboardedAt) return "active";      // finished onboarding, not yet worked
@@ -32,6 +36,7 @@ const STATUS_LABEL: Record<LmsStatus, string> = {
   invited:   "Invited",
   active:    "Active",
   graduated: "Graduated",
+  withdrawn: "Withdrawn",
 };
 
 const STATUS_COLOR: Record<LmsStatus, { bg: string; text: string; dot: string }> = {
@@ -39,6 +44,7 @@ const STATUS_COLOR: Record<LmsStatus, { bg: string; text: string; dot: string }>
   invited:   { bg: "#fef3c7", text: "#92400e",  dot: "#f59e0b" },
   active:    { bg: "#edf5f4", text: "#086c64",  dot: "#086c64" },
   graduated: { bg: "#f0fdf4", text: "#166534",  dot: "#22c55e" },
+  withdrawn: { bg: "#fef3c7", text: "#92400e",  dot: "#d97706" },
 };
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -48,6 +54,7 @@ interface Student {
   onboardedAt: string | null;
   invitedAt: string | null;
   certificateIssuedAt: string | null;
+  withdrawnAt: string | null;
   sectionsCompleted: number;
   lastActiveAt: string | null;
 }
@@ -547,7 +554,15 @@ function CohortCard({
   onToggleActive, onToggleFounder, onGraduate, onPublish,
   onAssignStudent, reassigning,
 }: CohortCardProps) {
-  const enrolled  = students.filter(s => s.cohortId === cohort.id);
+  /**
+   * Withdrawn Fellows stay on the roster — the record of who was in the cohort
+   * matters — but they are not counted as enrolled, and they sort to the
+   * bottom so the list reads as the people actually in the program.
+   */
+  const roster = students.filter(s => s.cohortId === cohort.id);
+  const enrolled = roster.filter(s => !s.withdrawnAt);
+  const withdrawn = roster.filter(s => s.withdrawnAt);
+  const rosterSorted = [...enrolled, ...withdrawn];
   const unenrolled = students.filter(s => !s.cohortId || s.cohortId !== cohort.id);
 
   // Schedule tab state
@@ -905,6 +920,11 @@ function CohortCard({
             <div className="flex items-center justify-between mb-3">
               <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                 Enrolled · {enrolled.length}
+                {withdrawn.length > 0 && (
+                  <span style={{ color: "#b45309", marginLeft: 6 }}>
+                    · {withdrawn.length} withdrawn
+                  </span>
+                )}
               </p>
               {enrolled.length > 0 && (
                 <div className="flex items-center gap-3 text-[10px]" style={{ color: "#949598" }}>
@@ -920,11 +940,11 @@ function CohortCard({
                 </div>
               )}
             </div>
-            {enrolled.length === 0 ? (
+            {rosterSorted.length === 0 ? (
               <p className="text-sm py-2" style={{ color: "#949598" }}>No students enrolled yet.</p>
             ) : (
               <div className="space-y-1">
-                {enrolled.map(s => {
+                {rosterSorted.map(s => {
                   const st = lmsStatus(s);
                   const col = STATUS_COLOR[st];
                   return (

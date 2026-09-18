@@ -20,6 +20,7 @@ export async function GET() {
       onboardedAt: true,
       invitedAt: true,
       certificateIssuedAt: true,
+      withdrawnAt: true,
       _count: { select: { progress: true } },
       progress: {
         select: { completedAt: true },
