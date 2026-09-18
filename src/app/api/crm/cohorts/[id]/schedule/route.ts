@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { defaultPreambleDate } from "@/lib/preamble-date";
 import { fromEasternNaive } from "@/lib/timezone";
 
 async function requireAdmin() {
@@ -66,6 +67,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Rescheduling a preamble that already went out should not re-send it, so
     // preambleSentAt is only cleared when explicitly asked for.
     if (body.resendPreamble === true) patch.preambleSentAt = null;
+  }
+
+  /**
+   * Setting a pre-work deadline implies when the kick-off goes out, so fill it
+   * in rather than leaving another date to remember per module per cohort.
+   *
+   * Only ever fills a BLANK one. An explicit date, or one already sent, is
+   * never overwritten — a schedule tweak in week six must not silently move a
+   * kick-off someone deliberately placed.
+   */
+  if (has("preworkDue") && !has("preambleDate")) {
+    const existing = await prisma.cohortSchedule.findUnique({
+      where: { cohortId_moduleId: { cohortId: params.id, moduleId } },
+      select: { preambleDate: true, preambleSentAt: true },
+    });
+    if (!existing?.preambleDate && !existing?.preambleSentAt) {
+      const suggested = defaultPreambleDate(patch.preworkDue as Date | null);
+      // Never schedule one into the past: the cron would fire it on its next
+      // run, mailing the cohort about a module whose deadline has gone.
+      if (suggested && suggested.getTime() > Date.now()) patch.preambleDate = suggested;
+    }
   }
 
   const schedule = await prisma.cohortSchedule.upsert({
