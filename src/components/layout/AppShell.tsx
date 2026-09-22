@@ -209,6 +209,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <ExternalLink size={15} className="flex-shrink-0" style={{ opacity: 0.7 }} />
           Open Networking CRM
         </a>
+        <a
+          href="https://grader.vantagecareer.co"
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => setOpen(false)}
+          className="sidebar-link inactive w-full text-left"
+        >
+          <ExternalLink size={15} className="flex-shrink-0" style={{ opacity: 0.7 }} />
+          Open Readiness Grader
+        </a>
         <Link
           href="/help"
           onClick={() => setOpen(false)}
