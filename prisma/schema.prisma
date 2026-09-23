@@ -92,8 +92,57 @@ model Cohort {
   users     User[]
   schedules CohortSchedule[]
   hotSeatSessions HotSeatSession[]
+  liveSessions    LiveSession[]
   publishedAt          DateTime? @db.Timestamptz(6) // when the cohort was published to the LMS
   invitesSent          Int       @default(0) // invite emails sent by that publish
+}
+
+/// A live group session that is NOT one of the eight modules — the Claude build
+/// sessions, the Thursday drop-ins, the Module 7 finish clinic.
+///
+/// Deliberately its own model rather than a ninth Module: modules are gated by
+/// start date and the previous survey, counted in "Week N of 8" and the progress
+/// ring, and Cohort Pulse picks "the module still owed work" from them. A session
+/// added to that list would quietly wrong-foot all four.
+///
+/// cohortId null means every cohort sees it, so a standing series doesn't have to
+/// be re-created per cohort.
+model LiveSession {
+  id           String    @id @default(cuid())
+  cohortId     String?
+  cohort       Cohort?   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  title        String
+  /// BUILD | OFFICE_HOURS | CLINIC — drives the badge and nothing else.
+  kind         String    @default("BUILD")
+  /// One line on the index page.
+  summary      String?
+  /// Markdown body: what it's for, what to bring, what you leave with.
+  description  String?
+  startsAt     DateTime? @db.Timestamptz(6)
+  durationMins Int?
+  zoomLink     String?
+  /// Fellows only see published sessions; drafts stay admin-side.
+  published    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  resources    LiveSessionResource[]
+
+  @@index([cohortId])
+  @@index([startsAt])
+}
+
+model LiveSessionResource {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// VIDEO | LINK | PPTX | FILE — VIDEO is what the player renders.
+  type      String      @default("LINK")
+  title     String
+  url       String
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
 }
 
 model CohortSchedule {
