@@ -19,7 +19,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fromEasternNaive } from "@/lib/timezone";
 import {
-  planSchedule, validatePlan, DEFAULT_OFFSETS,
+  planSchedule, validatePlan, DEFAULT_OFFSETS, assignmentOffsetForFriday,
   type ScheduleOffsets, type PlannedModule,
 } from "@/lib/schedule-plan";
 
@@ -55,11 +55,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     select: { id: true, number: true, title: true },
   });
 
+  /**
+   * "Due Friday" is the rule everyone states, but how many days that is depends
+   * on the session's weekday — 3 from a Tuesday, 4 from a Monday. The default
+   * is therefore derived from the first session rather than fixed, or a Monday
+   * cohort silently gets Thursday deadlines.
+   */
+  const fridayOffset = assignmentOffsetForFriday(body.firstSession);
   const offsets: ScheduleOffsets = {
-    unlock:     { ...DEFAULT_OFFSETS.unlock,     ...(body.offsets?.unlock     ?? {}) },
-    prework:    { ...DEFAULT_OFFSETS.prework,    ...(body.offsets?.prework    ?? {}) },
-    preamble:   { ...DEFAULT_OFFSETS.preamble,   ...(body.offsets?.preamble   ?? {}) },
-    assignment: { ...DEFAULT_OFFSETS.assignment, ...(body.offsets?.assignment ?? {}) },
+    unlock:     { ...DEFAULT_OFFSETS.unlock,   ...(body.offsets?.unlock   ?? {}) },
+    prework:    { ...DEFAULT_OFFSETS.prework,  ...(body.offsets?.prework  ?? {}) },
+    preamble:   { ...DEFAULT_OFFSETS.preamble, ...(body.offsets?.preamble ?? {}) },
+    assignment: { days: fridayOffset, time: DEFAULT_OFFSETS.assignment.time,
+                  ...(body.offsets?.assignment ?? {}) },
   };
 
   let plan: PlannedModule[];
