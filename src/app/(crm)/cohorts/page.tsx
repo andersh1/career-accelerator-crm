@@ -633,6 +633,33 @@ function CohortCard({
   const [oriZoom, setOriZoom] = useState("");
   const [oriDeck, setOriDeck] = useState("");
   const [oriSaving, setOriSaving] = useState(false);
+  const [oriSaved,  setOriSaved]  = useState(false);
+
+  // One Zoom link across every module, without touching any date.
+  const [bulkZoom,   setBulkZoom]   = useState("");
+  const [bulkBusy,   setBulkBusy]   = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
+
+  async function applyZoomToAll(overwrite: boolean) {
+    setBulkBusy(true); setBulkResult(null);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/schedule/zoom`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zoomLink: bulkZoom, overwrite }),
+      });
+      const r = await res.json();
+      if (!res.ok) { setBulkResult(r.error ?? "Could not apply the link."); return; }
+      setBulkResult(
+        `Added to ${r.updated} module${r.updated !== 1 ? "s" : ""}` +
+        (r.skipped ? `. Left M${r.skippedModules.join(", M")} alone, they already had one.` : ".")
+      );
+      setSchedule(null);          // refetch so the rows show it
+      setBulkZoom("");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   const loadReadiness = useCallback(async () => {
     setReadyLoading(true);
@@ -665,7 +692,13 @@ function CohortCard({
           orientationDeckUrl: oriDeck || null,
         }),
       });
-      if (res.ok) await loadReadiness();
+      if (res.ok) {
+        await loadReadiness();
+        // The checklist above updates, but quietly. Without a word here it
+        // reads as if the button did nothing.
+        setOriSaved(true);
+        setTimeout(() => setOriSaved(false), 4000);
+      }
     } finally {
       setOriSaving(false);
     }
@@ -1149,6 +1182,11 @@ function CohortCard({
                       style={{ background: "#086c64" }}>
                       {oriSaving ? "Saving…" : "Save orientation"}
                     </button>
+                    {oriSaved && (
+                      <span className="text-xs font-semibold ml-2" style={{ color: "#086c64" }}>
+                        Saved. The checklist above has been re-checked.
+                      </span>
+                    )}
                   </div>
                 </>
               ) : (
@@ -1288,6 +1326,47 @@ function CohortCard({
                 <p className="text-sm py-4" style={{ color: "#949598" }}>No modules found. Add modules in the LMS first.</p>
               ) : (
                 <div className="space-y-2">
+                  {/* One link on every module. Separate from the generator on
+                      purpose: adding Zoom links is the routine job, rewriting
+                      the whole schedule is not, and doing it through the
+                      generator would move dates to change one field. */}
+                  <div className="rounded-xl border p-3 mb-2" style={{ borderColor: "#e4e0d6", background: "white" }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: "#14211f" }}>Zoom link for every module</p>
+                    <p className="text-[10px] mb-2" style={{ color: "#949598" }}>
+                      For a cohort that meets on one recurring link. Fills in the modules that have none and leaves
+                      any module you have given its own. No dates are changed.
+                    </p>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <input
+                        value={bulkZoom}
+                        onChange={e => setBulkZoom(e.target.value)}
+                        placeholder="https://zoom.us/j/…"
+                        className="flex-1 min-w-[220px] px-2.5 py-2 text-xs rounded-lg"
+                        style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                      />
+                      <button
+                        onClick={() => applyZoomToAll(false)}
+                        disabled={!bulkZoom.trim() || bulkBusy}
+                        className="px-3 py-2 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                        style={{ background: "#086c64" }}
+                      >
+                        {bulkBusy ? "Applying…" : "Add to all modules"}
+                      </button>
+                      <button
+                        onClick={() => applyZoomToAll(true)}
+                        disabled={!bulkZoom.trim() || bulkBusy}
+                        className="px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-40"
+                        style={{ border: "1px solid #e4e0d6", color: "#5a6663" }}
+                        title="Replace the link on every module, including ones that already have one"
+                      >
+                        Replace all
+                      </button>
+                    </div>
+                    {bulkResult && (
+                      <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{bulkResult}</p>
+                    )}
+                  </div>
+
                   {/* Generator — lays out all eight modules from the first session.
                       Doing this by hand is forty dates typed one at a time. */}
                   <div className="rounded-xl border p-3 mb-3" style={{ borderColor: "#d0e8e6", background: "#f4faf9" }}>
@@ -1359,6 +1438,11 @@ function CohortCard({
                           Content opens 6 days before each session, pre-work is due 2 nights before, the kick-off email
                           goes 4 days before, and the assignment is due the Friday after. Nothing is saved until you
                           press Apply.
+                        </p>
+                        <p className="text-[10px]" style={{ color: "#c0622f" }}>
+                          This rewrites every date. If you only need Zoom links, use the box above instead. On a cohort
+                          with a break week, regenerating can also move a module&rsquo;s opening date, so check the
+                          preview against what is already there.
                         </p>
 
                         {genErrors.length > 0 && (
