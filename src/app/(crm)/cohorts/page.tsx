@@ -71,12 +71,24 @@ interface Cohort {
   id: string; name: string; isActive: boolean; founderMode: boolean; capacity: number | null;
   /** COHORT | PRIVATE — a private cohort is one paying 1:1 client. */
   track: string;
+  orientationDate: string | null;
+  orientationZoomLink: string | null;
+  orientationDeckUrl: string | null;
   startDate: string | null; createdAt: string;
   publishedAt: string | null; invitesSent: number;
   enrolled: number; fillPct: number | null; spotsLeft: number | null;
 }
 
 /** A row of the generated plan, as naive ET strings, before anything is saved. */
+interface ReadinessStep {
+  key: string;
+  title: string;
+  status: "done" | "todo" | "warn" | "optional";
+  detail: string;
+  where: string;
+  href?: string;
+}
+
 interface GenRow {
   moduleNumber:   number;
   moduleTitle:    string;
@@ -608,7 +620,55 @@ function CohortCard({
   const unenrolled = students.filter(s => !s.cohortId || s.cohortId !== cohort.id);
 
   // Schedule tab state
-  const [activeTab,    setActiveTab]    = useState<"roster" | "schedule">("roster");
+  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule">("setup");
+
+  // Readiness — read from the database every time the tab opens, so it cannot
+  // drift from what is actually configured.
+  const [readiness,    setReadiness]    = useState<{ steps: ReadinessStep[]; ready: boolean; outstanding: number } | null>(null);
+  const [readyLoading, setReadyLoading] = useState(false);
+
+  // Orientation, edited here rather than in the LMS.
+  const [oriDate, setOriDate] = useState("");
+  const [oriZoom, setOriZoom] = useState("");
+  const [oriDeck, setOriDeck] = useState("");
+  const [oriSaving, setOriSaving] = useState(false);
+
+  const loadReadiness = useCallback(async () => {
+    setReadyLoading(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/readiness`);
+      if (res.ok) setReadiness(await res.json());
+    } finally {
+      setReadyLoading(false);
+    }
+  }, [cohort.id]);
+
+  useEffect(() => {
+    if (expanded && activeTab === "setup") {
+      loadReadiness();
+      setOriDate(toEasternInput(cohort.orientationDate));
+      setOriZoom(cohort.orientationZoomLink ?? "");
+      setOriDeck(cohort.orientationDeckUrl ?? "");
+    }
+  }, [expanded, activeTab, loadReadiness, cohort.orientationDate, cohort.orientationZoomLink, cohort.orientationDeckUrl]);
+
+  async function saveOrientation() {
+    setOriSaving(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orientationDate: oriDate || null,
+          orientationZoomLink: oriZoom || null,
+          orientationDeckUrl: oriDeck || null,
+        }),
+      });
+      if (res.ok) await loadReadiness();
+    } finally {
+      setOriSaving(false);
+    }
+  }
   const [schedule,     setSchedule]     = useState<ScheduleEntry[] | null>(null);
   const [schedLoading, setSchedLoading] = useState(false);
   const [editingRow,   setEditingRow]   = useState<string | null>(null);
@@ -989,7 +1049,7 @@ function CohortCard({
         <div className="border-t" style={{ borderColor: "#e4e0d6" }}>
           {/* Tab bar */}
           <div className="flex border-b px-5" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-            {(["roster", "schedule"] as const).map(tab => (
+            {(["setup", "roster", "schedule"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -999,10 +1059,102 @@ function CohortCard({
                   color:        activeTab === tab ? "#086c64"  : "#949598",
                 }}
               >
-                {tab === "roster" ? `Roster (${enrolled.length})` : "Schedule"}
+                {tab === "setup"
+                  ? (readiness && readiness.outstanding > 0 ? `Setup (${readiness.outstanding})` : "Setup")
+                  : tab === "roster" ? `Roster (${enrolled.length})` : "Schedule"}
               </button>
             ))}
           </div>
+
+          {/* Setup tab — the ordered walkthrough, read from the database so it
+              cannot disagree with what is actually configured. */}
+          {activeTab === "setup" && (
+            <div className="px-5 py-4 space-y-4">
+              {readyLoading && !readiness ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 size={14} className="animate-spin" style={{ color: "#949598" }} />
+                  <span className="text-sm" style={{ color: "#949598" }}>Checking…</span>
+                </div>
+              ) : readiness ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#949598", letterSpacing: "0.14em" }}>
+                      Before this cohort can run
+                    </p>
+                    <button onClick={loadReadiness} className="text-[10px] font-semibold" style={{ color: "#086c64" }}>
+                      {readyLoading ? "Checking…" : "Re-check"}
+                    </button>
+                  </div>
+
+                  {readiness.ready && (
+                    <div className="rounded-xl px-4 py-3" style={{ background: "#edf5f4", border: "1px solid #d0e8e6" }}>
+                      <p className="text-xs font-semibold" style={{ color: "#086c64" }}>
+                        Everything is set. This cohort is ready to run.
+                      </p>
+                    </div>
+                  )}
+
+                  <ol className="space-y-2">
+                    {readiness.steps.map((step, i) => {
+                      const tone =
+                        step.status === "done"     ? { dot: "#0A7A70", bg: "white",   text: "#5a6663" } :
+                        step.status === "warn"     ? { dot: "#c0622f", bg: "#fdf6f2", text: "#8a4520" } :
+                        step.status === "optional" ? { dot: "#c9c4b8", bg: "white",   text: "#949598" } :
+                                                     { dot: "#b91c1c", bg: "#fef7f7", text: "#8a2020" };
+                      return (
+                        <li key={step.key} className="rounded-xl border p-3 flex gap-3"
+                            style={{ borderColor: "#e4e0d6", background: tone.bg }}>
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white mt-0.5"
+                                style={{ background: tone.dot }}>
+                            {step.status === "done" ? "✓" : i + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold" style={{ color: "#14211f" }}>{step.title}</p>
+                            <p className="text-[11px] mt-0.5" style={{ color: tone.text }}>{step.detail}</p>
+                            <p className="text-[10px] mt-1" style={{ color: "#949598" }}>
+                              {step.href
+                                ? <a href={step.href} target="_blank" rel="noopener noreferrer"
+                                     className="underline" style={{ color: "#086c64" }}>{step.where} ↗</a>
+                                : step.where}
+                            </p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {/* Orientation, inline — it used to live only in the LMS. */}
+                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#e4e0d6" }}>
+                    <p className="text-xs font-semibold" style={{ color: "#14211f" }}>Orientation</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Date and time (ET)</span>
+                        <input type="datetime-local" value={oriDate} onChange={e => setOriDate(e.target.value)}
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Zoom link</span>
+                        <input value={oriZoom} onChange={e => setOriZoom(e.target.value)} placeholder="https://zoom.us/j/…"
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
+                        <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                    </div>
+                    <button onClick={saveOrientation} disabled={oriSaving}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-40"
+                      style={{ background: "#086c64" }}>
+                      {oriSaving ? "Saving…" : "Save orientation"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm py-4" style={{ color: "#949598" }}>Could not load the checklist.</p>
+              )}
+            </div>
+          )}
 
           {/* Roster tab */}
           {activeTab === "roster" && (
