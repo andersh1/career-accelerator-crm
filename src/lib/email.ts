@@ -6,6 +6,7 @@ const LMS_URL = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
 
 // ── DB-backed templates (editable in Automation → Email Playbook) ────────────
 import { prisma } from "@/lib/prisma";
+import { showsCohortLabel } from "@/lib/track";
 import { publicCohortLabel } from "@/lib/cohort-label";
 import { mailFrom, mailReplyTo } from "@/lib/mail-from";
 function subVars(s: string, vars: Record<string, string>) {
@@ -713,9 +714,11 @@ export async function renderModulePreamblePreview(
 }
 
 export async function sendStudentInviteEmail({
-  to, studentName, resetUrl, cohort,
+  to, studentName, resetUrl, cohort, track,
 }: {
   to: string; studentName: string; resetUrl: string; cohort?: string;
+  /** The cohort's track — see src/lib/track.ts. Absent means a normal cohort. */
+  track?: string | null;
 }) {
   if (!resend) return;
   const t = await renderTemplate("student-invite", {
@@ -725,7 +728,9 @@ export async function sendStudentInviteEmail({
     // The template greets with {{firstName}}. Passing the whole name rendered
     // "Matthew Schreiber — welcome." instead of "Matthew — welcome."
     firstName: (studentName || "there").trim().split(/\s+/)[0],
-    cohortLine: cohort ? `You've been enrolled in the **${publicCohortLabel(cohort)}**.` : "",
+    cohortLine: (cohort && showsCohortLabel(track))
+      ? `You've been enrolled in the **${publicCohortLabel(cohort)}**.`
+      : "",
   });
   if (!t) return; // switched off in the Email Playbook
   const body = `${t.bodyHtml}

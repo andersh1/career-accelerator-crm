@@ -60,6 +60,7 @@ export async function POST(
           studentName: student.name,
           resetUrl,
           cohort: cohort.name,
+          track: cohort.track,
         });
         // Record that we invited them. Distinct from onboardedAt, which only
         // gets set once the student has actually been through the welcome flow.

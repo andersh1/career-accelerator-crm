@@ -81,6 +81,12 @@ model Cohort {
   id        String           @id @default(cuid())
   name      String
   isActive  Boolean          @default(true)
+  /// COHORT | PRIVATE — mirrored from the LMS schema, which owns this field.
+  /// PRIVATE is a single paying 1:1 client running the modules on their own
+  /// schedule. In the CRM it matters mainly for reporting: a one-person cohort
+  /// makes completion rates and health scores meaningless, so private cohorts
+  /// should be excluded from cohort averages rather than folded into them.
+  track     String           @default("COHORT")
   founderMode Boolean        @default(false)
   orientationDate         DateTime? @db.Timestamptz(6)
   orientationZoomLink     String?
@@ -164,6 +170,13 @@ model CohortSchedule {
   preambleDate    DateTime? @db.Timestamptz(6)
   /// Stamped once sent, so a re-run cannot mail the cohort twice.
   preambleSentAt  DateTime? @db.Timestamptz(6)
+
+  /// When this cohort calls a module something else. Module titles are global
+  /// — Module.number is unique and Section has no cohort — so this is the one
+  /// per-cohort override. A private client has no Demo Day, so Module 8 is
+  /// "Accelerator Recap and Where We Go From Here" for them and "Personal
+  /// Board" for everyone else. Null means use Module.title.
+  titleOverride   String?
 
   @@unique([cohortId, moduleId])
 }
