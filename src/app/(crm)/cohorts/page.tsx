@@ -3,11 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
-import {
-  Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket,
-  ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen,
-  Calendar, Link2, MapPin, Save,
-} from "lucide-react";
+import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays } from "lucide-react";
 
 // ─── LMS status helpers ───────────────────────────────────────────────────────
 
@@ -59,17 +55,48 @@ interface Student {
   lastActiveAt: string | null;
 }
 
+
+/** "2026-10-12T11:00" → "Mon 12 Oct, 11:00". The generator returns naive
+ *  Eastern strings, so this formats the characters rather than constructing a
+ *  Date, which would re-interpret them in the browser's own timezone. */
+function fmtNaive(naive: string): string {
+  const [d, t] = naive.split("T");
+  const [y, mo, day] = d.split("-").map(Number);
+  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(Date.UTC(y, mo - 1, day)).getUTCDay()];
+  const mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mo - 1];
+  return `${dow} ${day} ${mon}, ${t}`;
+}
+
 interface Cohort {
   id: string; name: string; isActive: boolean; founderMode: boolean; capacity: number | null;
+  /** COHORT | PRIVATE — a private cohort is one paying 1:1 client. */
+  track: string;
   startDate: string | null; createdAt: string;
   publishedAt: string | null; invitesSent: number;
   enrolled: number; fillPct: number | null; spotsLeft: number | null;
+}
+
+/** A row of the generated plan, as naive ET strings, before anything is saved. */
+interface GenRow {
+  moduleNumber:   number;
+  moduleTitle:    string;
+  startDate:      string;
+  preworkDue:     string;
+  preambleDate:   string;
+  sessionDate:    string;
+  assignmentDue:  string;
+  preambleLocked: boolean;
 }
 
 interface ScheduleEntry {
   moduleId:        string;
   moduleNumber:    number;
   moduleTitle:     string;
+  /** The module unlock gate. Blank means it falls back to the global module
+   *  date, which is the previous cohort's calendar. */
+  startDate:       string | null;
+  assignmentDue:   string | null;
+  titleOverride:   string | null;
   preworkDue:      string | null;
   sessionDate:     string | null;
   sessionLocation: string | null;
@@ -91,6 +118,7 @@ export default function CohortsPage() {
   const [newName,       setNewName]       = useState("");
   const [newCap,        setNewCap]        = useState("");
   const [newStartDate,  setNewStartDate]  = useState("");
+  const [newTrack,      setNewTrack]      = useState<"COHORT" | "PRIVATE">("COHORT");
   const [savingNew,     setSavingNew]     = useState(false);
 
   // Edit
@@ -131,11 +159,11 @@ export default function CohortsPage() {
     const res = await fetch("/api/crm/cohorts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim(), capacity: newCap || null, startDate: newStartDate || null }),
+      body: JSON.stringify({ name: newName.trim(), capacity: newCap || null, startDate: newStartDate || null, track: newTrack }),
     });
     const cohort = await res.json();
     setCohorts(prev => [cohort, ...prev]);
-    setNewName(""); setNewCap(""); setNewStartDate(""); setCreating(false); setSavingNew(false);
+    setNewName(""); setNewCap(""); setNewStartDate(""); setNewTrack("COHORT"); setCreating(false); setSavingNew(false);
   }
 
   async function saveCohort(id: string) {
@@ -292,7 +320,11 @@ export default function CohortsPage() {
       {/* New cohort form */}
       {creating && (
         <div className="card p-5">
-          <p className="text-sm font-semibold mb-4" style={{ color: "#14211f" }}>New Cohort</p>
+          <p className="text-sm font-semibold mb-1" style={{ color: "#14211f" }}>New Cohort</p>
+          <p className="text-xs mb-4" style={{ color: "#949598" }}>
+            A <strong>private</strong> cohort is one paying 1:1 client. They run the same modules on their own
+            schedule, with the hot seat, the peer roster and the cohort name switched off — nobody to compare with.
+          </p>
           <div className="flex gap-3 flex-wrap">
             <input
               autoFocus
@@ -320,6 +352,16 @@ export default function CohortsPage() {
               className="w-40 px-3 py-2.5 text-sm rounded-xl focus:outline-none"
               style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
             />
+            <select
+              value={newTrack}
+              onChange={e => setNewTrack(e.target.value as "COHORT" | "PRIVATE")}
+              className="w-48 px-3 py-2.5 text-sm rounded-xl focus:outline-none"
+              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+              title="A private cohort is one paying 1:1 client"
+            >
+              <option value="COHORT">Group cohort</option>
+              <option value="PRIVATE">Private — 1:1 client</option>
+            </select>
             <div className="flex gap-2">
               <button
                 onClick={createCohort}
@@ -572,6 +614,44 @@ function CohortCard({
   const [editingRow,   setEditingRow]   = useState<string | null>(null);
   const [rowDraft,     setRowDraft]     = useState<Partial<ScheduleEntry>>({});
   const [savingRow,    setSavingRow]    = useState<string | null>(null);
+
+  // Schedule generator — three inputs instead of forty dates.
+  const [genOpen,     setGenOpen]     = useState(false);
+  const [genFirst,    setGenFirst]    = useState("");
+  const [genCadence,  setGenCadence]  = useState(1);
+  const [genBreaks,   setGenBreaks]   = useState("");
+  const [genZoom,     setGenZoom]     = useState("");
+  const [genPreview,  setGenPreview]  = useState<GenRow[] | null>(null);
+  const [genErrors,   setGenErrors]   = useState<string[]>([]);
+  const [genBusy,     setGenBusy]     = useState(false);
+
+  async function runGenerate(apply: boolean) {
+    setGenBusy(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/schedule/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstSession: genFirst,
+          cadenceWeeks: genCadence,
+          breakAfter: genBreaks.split(",").map(x => parseInt(x.trim())).filter(n => !isNaN(n)),
+          sessionZoomLink: genZoom || null,
+          apply,
+        }),
+      });
+      const r = await res.json();
+      if (!res.ok) { setGenErrors(r.errors ?? [r.error ?? "Could not build that schedule."]); setGenPreview(null); return; }
+      if (apply) {
+        setGenOpen(false); setGenPreview(null); setGenErrors([]);
+        setSchedule(null);           // force a refetch so the table shows what was written
+        setActiveTab("roster"); setActiveTab("schedule");
+      } else {
+        setGenPreview(r.rows); setGenErrors(r.errors ?? []);
+      }
+    } finally {
+      setGenBusy(false);
+    }
+  }
   const [sendingPreamble, setSendingPreamble] = useState<string | null>(null);
 
   useEffect(() => {
@@ -657,7 +737,7 @@ function CohortCard({
         const updated = await res.json();
         setSchedule(prev => prev?.map(r =>
           r.moduleId === moduleId
-            ? { ...r, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt }
+            ? { ...r, startDate: updated.startDate, assignmentDue: updated.assignmentDue, titleOverride: updated.titleOverride, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt }
             : r
         ) ?? null);
         setEditingRow(null);
@@ -731,7 +811,18 @@ function CohortCard({
           ) : (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{cohort.name}</p>
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: "#14211f" }}>{cohort.name}</p>
+                  {cohort.track === "PRIVATE" && (
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{ background: "#efe7f7", color: "#6d28d9", letterSpacing: "0.1em" }}
+                      title="One paying 1:1 client. Hot seat, peer roster and the cohort name are switched off for them."
+                    >
+                      Private
+                    </span>
+                  )}
+                </div>
                 <span
                   className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0"
                   style={cohort.isActive
@@ -1044,6 +1135,136 @@ function CohortCard({
                 <p className="text-sm py-4" style={{ color: "#949598" }}>No modules found. Add modules in the LMS first.</p>
               ) : (
                 <div className="space-y-2">
+                  {/* Generator — lays out all eight modules from the first session.
+                      Doing this by hand is forty dates typed one at a time. */}
+                  <div className="rounded-xl border p-3 mb-3" style={{ borderColor: "#d0e8e6", background: "#f4faf9" }}>
+                    <button
+                      onClick={() => setGenOpen(o => !o)}
+                      className="flex items-center gap-2 text-xs font-semibold"
+                      style={{ color: "#086c64" }}
+                    >
+                      <CalendarDays size={13} />
+                      {genOpen ? "Hide" : "Build the whole schedule from the first session"}
+                    </button>
+
+                    {genOpen && (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex gap-2 flex-wrap items-end">
+                          <label className="flex flex-col gap-1">
+                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>First session (ET)</span>
+                            <input
+                              type="datetime-local"
+                              value={genFirst}
+                              onChange={e => setGenFirst(e.target.value)}
+                              className="px-2.5 py-2 text-xs rounded-lg"
+                              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>Every</span>
+                            <select
+                              value={genCadence}
+                              onChange={e => setGenCadence(parseInt(e.target.value))}
+                              className="px-2.5 py-2 text-xs rounded-lg"
+                              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                            >
+                              <option value={1}>1 week</option>
+                              <option value={2}>2 weeks</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>Break week after module</span>
+                            <input
+                              value={genBreaks}
+                              onChange={e => setGenBreaks(e.target.value)}
+                              placeholder="e.g. 5"
+                              className="w-28 px-2.5 py-2 text-xs rounded-lg"
+                              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>Zoom link for every session (optional)</span>
+                            <input
+                              value={genZoom}
+                              onChange={e => setGenZoom(e.target.value)}
+                              placeholder="https://zoom.us/j/…"
+                              className="px-2.5 py-2 text-xs rounded-lg"
+                              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => runGenerate(false)}
+                            disabled={!genFirst || genBusy}
+                            className="px-3 py-2 text-xs font-semibold rounded-lg disabled:opacity-40"
+                            style={{ border: "1px solid #086c64", color: "#086c64" }}
+                          >
+                            {genBusy ? "…" : "Preview"}
+                          </button>
+                        </div>
+
+                        <p className="text-[10px]" style={{ color: "#949598" }}>
+                          Content opens 6 days before each session, pre-work is due 2 nights before, the kick-off email
+                          goes 4 days before, and the assignment is due the Friday after. Nothing is saved until you
+                          press Apply.
+                        </p>
+
+                        {genErrors.length > 0 && (
+                          <div className="rounded-lg p-2.5" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
+                            {genErrors.map((e, i) => (
+                              <p key={i} className="text-[11px]" style={{ color: "#b91c1c" }}>{e}</p>
+                            ))}
+                          </div>
+                        )}
+
+                        {genPreview && (
+                          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #e4e0d6" }}>
+                            <table className="w-full text-[10px]">
+                              <thead>
+                                <tr style={{ background: "#f8f6f1", color: "#5a6663" }}>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Module</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Opens</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Pre-work due</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Kick-off email</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Session</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Assignment due</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {genPreview.map(r => (
+                                  <tr key={r.moduleNumber} style={{ borderTop: "1px solid #e4e0d6", color: "#14211f" }}>
+                                    <td className="px-2 py-1.5 font-semibold">M{r.moduleNumber}</td>
+                                    <td className="px-2 py-1.5">{fmtNaive(r.startDate)}</td>
+                                    <td className="px-2 py-1.5">{fmtNaive(r.preworkDue)}</td>
+                                    <td className="px-2 py-1.5">
+                                      {r.preambleLocked
+                                        ? <span style={{ color: "#949598" }}>already sent — unchanged</span>
+                                        : fmtNaive(r.preambleDate)}
+                                    </td>
+                                    <td className="px-2 py-1.5 font-semibold">{fmtNaive(r.sessionDate)}</td>
+                                    <td className="px-2 py-1.5">{fmtNaive(r.assignmentDue)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <div className="flex items-center justify-between px-2 py-2" style={{ background: "#f8f6f1" }}>
+                              <span className="text-[10px]" style={{ color: "#949598" }}>
+                                This replaces the dates on all {genPreview.length} modules for this cohort.
+                              </span>
+                              <button
+                                onClick={() => runGenerate(true)}
+                                disabled={genBusy || genErrors.length > 0}
+                                className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                                style={{ background: "#086c64" }}
+                              >
+                                {genBusy ? "Saving…" : "Apply to this cohort"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                     Per-Module Session Dates — overrides LMS global dates for this cohort
                   </p>
@@ -1077,6 +1298,9 @@ function CohortCard({
                               onClick={() => {
                                 setEditingRow(row.moduleId);
                                 setRowDraft({
+                                  startDate:       toEasternInput(row.startDate),
+                                  assignmentDue:   toEasternInput(row.assignmentDue),
+                                  titleOverride:   row.titleOverride ?? "",
                                   preworkDue:      toEasternInput(row.preworkDue),
                                   sessionDate:     toEasternInput(row.sessionDate),
                                   sessionLocation: row.sessionLocation ?? "",
@@ -1105,6 +1329,48 @@ function CohortCard({
                                 style={{ borderColor: "#e4e0d6", color: "#14211f" }}
                               />
                             </div>
+                            <div>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                <Calendar size={10} /> Module opens
+                              </label>
+                              <input type="datetime-local"
+                                value={(rowDraft.startDate as string) ?? ""}
+                                onChange={e => setRowDraft(d => ({ ...d, startDate: e.target.value }))}
+                                className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                                style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                              />
+                              <p className="text-[9px] mt-0.5" style={{ color: "#c0622f" }}>
+                                {row.startDate ? "" : "Blank — this module will use the LMS global date, which is the previous cohort's."}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                <Calendar size={10} /> Assignment due
+                              </label>
+                              <input type="datetime-local"
+                                value={(rowDraft.assignmentDue as string) ?? ""}
+                                onChange={e => setRowDraft(d => ({ ...d, assignmentDue: e.target.value }))}
+                                className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                                style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                              />
+                            </div>
+                            {cohort.track === "PRIVATE" && (
+                              <div>
+                                <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                  Module title for this client
+                                </label>
+                                <input
+                                  value={(rowDraft.titleOverride as string) ?? ""}
+                                  onChange={e => setRowDraft(d => ({ ...d, titleOverride: e.target.value }))}
+                                  placeholder={row.moduleTitle}
+                                  className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                                  style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                                />
+                                <p className="text-[9px] mt-0.5" style={{ color: "#949598" }}>
+                                  Leave blank to use &ldquo;{row.moduleTitle}&rdquo;.
+                                </p>
+                              </div>
+                            )}
                             <div>
                               <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <Calendar size={10} /> Session date

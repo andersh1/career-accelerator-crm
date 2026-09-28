@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// PATCH /api/crm/cohorts/[id]  { name?, isActive?, capacity? }
+// PATCH /api/crm/cohorts/[id]  { name?, isActive?, capacity?, startDate?, track? }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { crmRole?: string } | undefined)?.crmRole;
@@ -17,6 +17,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: {
       ...(body.name      !== undefined && { name:      body.name.trim() }),
       ...(body.isActive  !== undefined && { isActive:  body.isActive }),
+      // Only the two known tracks; anything else is ignored rather than stored.
+      ...(body.track     !== undefined && (body.track === "PRIVATE" || body.track === "COHORT")
+          && { track: body.track }),
       ...(body.founderMode !== undefined && { founderMode: !!body.founderMode }),
       ...(body.capacity  !== undefined && { capacity:  body.capacity ? parseInt(body.capacity) : null }),
       ...(body.startDate !== undefined && { startDate: body.startDate ? new Date(body.startDate + "T12:00:00.000Z") : null }),

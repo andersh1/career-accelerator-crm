@@ -25,6 +25,7 @@ export async function GET() {
     id:        c.id,
     name:      c.name,
     isActive:  c.isActive,
+    track:     c.track,
     founderMode: c.founderMode,
     capacity:  c.capacity,
     startDate: c.startDate,
@@ -37,7 +38,7 @@ export async function GET() {
   })));
 }
 
-// POST /api/crm/cohorts  { name, capacity? }
+// POST /api/crm/cohorts  { name, capacity?, startDate?, track? }
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { crmRole?: string } | undefined)?.crmRole;
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, capacity, startDate } = await req.json();
+  const { name, capacity, startDate, track } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
   const cohort = await prisma.cohort.create({
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
       name:      name.trim(),
       capacity:  capacity ? parseInt(capacity) : null,
       startDate: startDate ? new Date(startDate + "T12:00:00.000Z") : null,
+      // COHORT unless explicitly told otherwise — see the LMS src/lib/track.ts.
+      // A bad value would silently switch off the hot seat and peer roster for
+      // a real group, so only the two known strings are accepted.
+      track:     track === "PRIVATE" ? "PRIVATE" : "COHORT",
       isActive:  true,
     },
   });

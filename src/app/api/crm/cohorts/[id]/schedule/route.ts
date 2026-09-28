@@ -30,6 +30,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       moduleId:        m.id,
       moduleNumber:    m.number,
       moduleTitle:     m.title,
+      // The module unlock gate (src/lib/module-access.ts in the LMS). It used
+      // to be settable only in the LMS, so a cohort built here inherited the
+      // previous cohort's global Module.startDate without anything saying so.
+      startDate:       override?.startDate       ?? null,
+      assignmentDue:   override?.assignmentDue   ?? null,
+      titleOverride:   override?.titleOverride   ?? null,
       preworkDue:      override?.preworkDue      ?? null,
       sessionDate:     override?.sessionDate     ?? null,
       sessionLocation: override?.sessionLocation ?? null,
@@ -43,7 +49,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 // PATCH /api/crm/cohorts/[id]/schedule
-// Body: { moduleId, preworkDue?, sessionDate?, sessionLocation?, sessionZoomLink? }
+// Body: { moduleId, startDate?, preworkDue?, sessionDate?, assignmentDue?,
+//          sessionLocation?, sessionZoomLink?, preambleDate?, titleOverride? }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   if (!await requireAdmin()) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -58,6 +65,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const has = (k: string) => Object.prototype.hasOwnProperty.call(body, k);
   const dateOrNull = (v: unknown) => (v ? fromEasternNaive(v as string) : null);
   const patch: Record<string, unknown> = {};
+  if (has("startDate"))       patch.startDate       = dateOrNull(body.startDate);
+  if (has("assignmentDue"))   patch.assignmentDue   = dateOrNull(body.assignmentDue);
+  if (has("titleOverride"))   patch.titleOverride   = (body.titleOverride as string)?.trim() || null;
   if (has("preworkDue"))      patch.preworkDue      = dateOrNull(body.preworkDue);
   if (has("sessionDate"))     patch.sessionDate     = dateOrNull(body.sessionDate);
   if (has("sessionLocation")) patch.sessionLocation = body.sessionLocation || null;
