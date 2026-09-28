@@ -42,6 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       sessionZoomLink: override?.sessionZoomLink ?? null,
       preambleDate:    override?.preambleDate    ?? null,
       preambleSentAt:  override?.preambleSentAt  ?? null,
+      preambleSkipped: override?.preambleSkipped ?? false,
     };
   });
 
@@ -68,6 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (has("startDate"))       patch.startDate       = dateOrNull(body.startDate);
   if (has("assignmentDue"))   patch.assignmentDue   = dateOrNull(body.assignmentDue);
   if (has("titleOverride"))   patch.titleOverride   = (body.titleOverride as string)?.trim() || null;
+  if (has("preambleSkipped")) patch.preambleSkipped = !!body.preambleSkipped;
   if (has("preworkDue"))      patch.preworkDue      = dateOrNull(body.preworkDue);
   if (has("sessionDate"))     patch.sessionDate     = dateOrNull(body.sessionDate);
   if (has("sessionLocation")) patch.sessionLocation = body.sessionLocation || null;

@@ -10,6 +10,8 @@
  *    the failure that matters here.
  *  - A template that is switched off sends nothing and is NOT marked sent, so a
  *    module whose copy is not written yet simply waits.
+ *  - A cohort can be excluded from one module's kick-off without switching the
+ *    template off for everybody, via preambleSkipped on its schedule row.
  *  - Nothing is inferred from module start dates. The date is set per cohort in
  *    the Cohorts → Schedule tab, because a kick-off does not always land on the
  *    day a module opens.
@@ -38,6 +40,9 @@ export async function GET(req: Request) {
     where: {
       preambleDate: { not: null, lte: now },
       preambleSentAt: null,
+      // Deliberately excluded for this cohort. Distinct from a blank date,
+      // which usually means nobody set one.
+      preambleSkipped: false,
       cohort: { isActive: true },
     },
     include: {

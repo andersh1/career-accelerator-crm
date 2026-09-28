@@ -115,6 +115,7 @@ interface ScheduleEntry {
   sessionZoomLink: string | null;
   preambleDate:    string | null;
   preambleSentAt:  string | null;
+  preambleSkipped: boolean;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -797,7 +798,7 @@ function CohortCard({
         const updated = await res.json();
         setSchedule(prev => prev?.map(r =>
           r.moduleId === moduleId
-            ? { ...r, startDate: updated.startDate, assignmentDue: updated.assignmentDue, titleOverride: updated.titleOverride, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt }
+            ? { ...r, startDate: updated.startDate, assignmentDue: updated.assignmentDue, titleOverride: updated.titleOverride, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt, preambleSkipped: updated.preambleSkipped }
             : r
         ) ?? null);
         setEditingRow(null);
@@ -1458,6 +1459,7 @@ function CohortCard({
                                   sessionLocation: row.sessionLocation ?? "",
                                   sessionZoomLink: row.sessionZoomLink ?? "",
                                   preambleDate:    toEasternInput(row.preambleDate),
+                                  preambleSkipped: row.preambleSkipped,
                                 });
                               }}
                               className="text-xs font-semibold px-2.5 py-1 rounded-lg transition"
@@ -1568,6 +1570,19 @@ function CohortCard({
                                 className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
                                 style={{ borderColor: "#e4e0d6", color: "#14211f" }}
                               />
+                              <label className="flex items-start gap-2 mt-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!rowDraft.preambleSkipped}
+                                  onChange={e => setRowDraft(d => ({ ...d, preambleSkipped: e.target.checked }))}
+                                  className="mt-0.5"
+                                />
+                                <span className="text-[10px]" style={{ color: "#5a6663" }}>
+                                  <strong>Skip this kick-off for this cohort.</strong> Only this cohort. The template
+                                  stays on for everyone else, and the date above is kept so you can turn it back on
+                                  without retyping it.
+                                </span>
+                              </label>
                               <p className="text-[10px] mt-1" style={{ color: "#949598" }}>
                                 Copy lives in Automation → Email Playbook as <span className="font-mono">module-preamble-{row.moduleNumber}</span>.
                                 Nothing sends while that template is switched off.
@@ -1580,6 +1595,10 @@ function CohortCard({
                               <span className="text-xs flex items-center gap-1" style={{ color: "#086c64" }}>
                                 <Send size={10} />
                                 Kick-off sent {new Date(row.preambleSentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            ) : row.preambleSkipped ? (
+                              <span className="text-xs flex items-center gap-1" style={{ color: "#949598" }}>
+                                <Send size={10} /> Kick-off skipped for this cohort
                               </span>
                             ) : row.preambleDate ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#b45309" }}>

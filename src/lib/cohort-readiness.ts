@@ -35,6 +35,7 @@ export interface ReadinessInput {
   schedules: {
     startDate: Date | null; sessionDate: Date | null; assignmentDue: Date | null;
     preworkDue: Date | null; preambleDate: Date | null; sessionZoomLink: string | null;
+    preambleSkipped: boolean;
     module: { number: number };
   }[];
   students: { onboardedAt: Date | null; invitedAt: Date | null }[];
@@ -120,7 +121,13 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
   });
 
   // 5 ── Kick-off emails. Dated here, written and switched on globally.
-  const noPreamble = missing(s => s.preambleDate);
+  // A row deliberately skipped is not missing anything, so it must not be
+  // warned about — otherwise a real gap hides among the intentional ones,
+  // which is the whole reason the flag exists.
+  const skipped = schedules.filter(s => s.preambleSkipped).map(s => s.module.number).sort((a, b) => a - b);
+  const noPreamble = schedules
+    .filter(s => !s.preambleSkipped && !s.preambleDate)
+    .map(s => s.module.number).sort((a, b) => a - b);
   // Sorted by module number, not by however the rows came back — "M5, M6, M1"
   // reads like a bug in the checklist rather than a fact about the cohort.
   const disabled = templates
@@ -138,6 +145,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
       status: noPreamble.length ? "warn" : (disabled.length ? "warn" : "done"),
       detail: [
         noPreamble.length ? `No send date on M${noPreamble.join(", M")} — those kick-offs will never go out.` : "All modules have a send date.",
+        skipped.length ? `Deliberately skipped for this cohort: M${skipped.join(", M")}.` : null,
         disabled.length ? `Switched off globally: ${disabled.join(", ")}.` : null,
       ].filter(Boolean).join(" "),
       where: disabled.length ? "Automation → Email Playbook" : "Schedule tab",

@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     prisma.cohortSchedule.findMany({
       where: { cohortId: params.id },
       select: { startDate: true, sessionDate: true, assignmentDue: true, preworkDue: true,
-                preambleDate: true, sessionZoomLink: true, module: { select: { number: true } } },
+                preambleDate: true, preambleSkipped: true, sessionZoomLink: true, module: { select: { number: true } } },
     }),
     prisma.user.findMany({
       where: { cohortId: params.id, role: "STUDENT", withdrawnAt: null },

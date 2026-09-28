@@ -171,6 +171,18 @@ model CohortSchedule {
   /// Stamped once sent, so a re-run cannot mail the cohort twice.
   preambleSentAt  DateTime? @db.Timestamptz(6)
 
+  /// Deliberately not sending this cohort this module's kick-off.
+  ///
+  /// Clearing preambleDate has the same effect on the cron, but a blank date
+  /// cannot tell "we chose to skip this" apart from "nobody set it yet" — so
+  /// the readiness check has to warn about both, and a real missed kick-off
+  /// hides among the intentional ones. This records the intent, and keeps the
+  /// date so un-skipping does not mean retyping it.
+  ///
+  /// Only affects the automated cron. The manual "send kick-off now" button is
+  /// an explicit human act and still sends.
+  preambleSkipped Boolean @default(false)
+
   /// When this cohort calls a module something else. Module titles are global
   /// — Module.number is unique and Section has no cohort — so this is the one
   /// per-cohort override. A private client has no Demo Day, so Module 8 is
