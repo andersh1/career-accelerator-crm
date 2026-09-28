@@ -51,7 +51,16 @@ export async function GET(req: Request) {
 
   for (const row of due) {
     const fellows = await prisma.user.findMany({
-      where: { cohortId: row.cohort.id, role: "STUDENT", withdrawnAt: null },
+      where: {
+        cohortId: row.cohort.id, role: "STUDENT", withdrawnAt: null,
+        // Somebody we have never invited has no account to act on, so a module
+        // kick-off would be the first they hear of us. The LMS reminder crons
+        // already require onboardedAt; this is the same rule, one step earlier,
+        // so a Fellow set up in advance of an invite is not mailed until we
+        // actually invite them. Every current student is invited or onboarded,
+        // so this changes nothing for an existing cohort.
+        OR: [{ onboardedAt: { not: null } }, { invitedAt: { not: null } }],
+      },
       select: { name: true, email: true },
     });
     if (fellows.length === 0) {
