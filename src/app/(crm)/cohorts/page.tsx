@@ -641,6 +641,39 @@ function CohortCard({
   const [bulkBusy,   setBulkBusy]   = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
 
+  // Per-module links, for a cohort where every session is its own Zoom meeting
+  // (which is the case whenever the recordings need to carry their own topic).
+  const [perModuleOpen, setPerModuleOpen] = useState(false);
+  const [perModule,     setPerModule]     = useState<Record<string, string>>({});
+  const [perModuleBusy, setPerModuleBusy] = useState(false);
+
+  function openPerModule() {
+    setPerModule(Object.fromEntries((schedule ?? []).map(r => [r.moduleId, r.sessionZoomLink ?? ""])));
+    setPerModuleOpen(true);
+  }
+
+  async function savePerModule() {
+    setPerModuleBusy(true); setBulkResult(null);
+    try {
+      const changed = (schedule ?? []).filter(r => (perModule[r.moduleId] ?? "") !== (r.sessionZoomLink ?? ""));
+      for (const r of changed) {
+        await fetch(`/api/crm/cohorts/${cohort.id}/schedule`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ moduleId: r.moduleId, sessionZoomLink: perModule[r.moduleId] || null }),
+        });
+      }
+      setBulkResult(changed.length
+        ? `Saved ${changed.length} link${changed.length !== 1 ? "s" : ""}.`
+        : "Nothing changed.");
+      setPerModuleOpen(false);
+      setSchedule(null);
+      await loadReadiness();
+    } finally {
+      setPerModuleBusy(false);
+    }
+  }
+
   async function applyZoomToAll(overwrite: boolean) {
     setBulkBusy(true); setBulkResult(null);
     try {
@@ -1378,6 +1411,48 @@ function CohortCard({
                     </div>
                     {bulkResult && (
                       <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{bulkResult}</p>
+                    )}
+
+                    {/* A separate Zoom meeting per session is the right call when
+                        the recordings have to carry their own topic, which means
+                        eight different links. Eight edit-and-save cycles for that
+                        is the friction this avoids. */}
+                    {!perModuleOpen ? (
+                      <button onClick={openPerModule} className="text-[11px] font-semibold mt-2 underline" style={{ color: "#086c64" }}>
+                        Each module has its own Zoom meeting? Paste all eight here →
+                      </button>
+                    ) : (
+                      <div className="mt-3 space-y-1.5">
+                        <p className="text-[10px]" style={{ color: "#949598" }}>
+                          One link per module. Leave a row blank to clear it. Saved together when you press Save.
+                        </p>
+                        {(schedule ?? []).map(r => (
+                          <div key={r.moduleId} className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold w-8 flex-shrink-0" style={{ color: "#5a6663" }}>
+                              M{r.moduleNumber}
+                            </span>
+                            <input
+                              value={perModule[r.moduleId] ?? ""}
+                              onChange={e => setPerModule(m => ({ ...m, [r.moduleId]: e.target.value }))}
+                              placeholder="https://zoom.us/j/…"
+                              className="flex-1 px-2 py-1.5 text-[11px] rounded-lg"
+                              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                            />
+                          </div>
+                        ))}
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={savePerModule} disabled={perModuleBusy}
+                            className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                            style={{ background: "#086c64" }}>
+                            {perModuleBusy ? "Saving…" : "Save all links"}
+                          </button>
+                          <button onClick={() => setPerModuleOpen(false)}
+                            className="px-3 py-1.5 text-xs rounded-lg"
+                            style={{ background: "#f1efe8", color: "#5a6663" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
 
