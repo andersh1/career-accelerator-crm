@@ -87,6 +87,7 @@ interface ReadinessStep {
   detail: string;
   where: string;
   href?: string;
+  tab?: "setup" | "roster" | "schedule";
 }
 
 interface GenRow {
@@ -1145,11 +1146,24 @@ function CohortCard({
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold" style={{ color: "#14211f" }}>{step.title}</p>
                             <p className="text-[11px] mt-0.5" style={{ color: tone.text }}>{step.detail}</p>
-                            <p className="text-[10px] mt-1" style={{ color: "#949598" }}>
-                              {step.href
-                                ? <a href={step.href} target="_blank" rel="noopener noreferrer"
-                                     className="underline" style={{ color: "#086c64" }}>{step.where} ↗</a>
-                                : step.where}
+                            <p className="text-[10px] mt-1">
+                              {step.href ? (
+                                <a href={step.href} target={step.href.startsWith("http") ? "_blank" : undefined}
+                                   rel="noopener noreferrer"
+                                   className="font-semibold underline" style={{ color: "#086c64" }}>
+                                  {step.where} {step.href.startsWith("http") ? "↗" : "→"}
+                                </a>
+                              ) : step.tab ? (
+                                <button
+                                  onClick={() => setActiveTab(step.tab!)}
+                                  className="font-semibold underline"
+                                  style={{ color: "#086c64" }}
+                                >
+                                  {step.where} →
+                                </button>
+                              ) : (
+                                <span style={{ color: "#949598" }}>{step.where}</span>
+                              )}
                             </p>
                           </div>
                         </li>

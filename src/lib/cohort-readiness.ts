@@ -24,6 +24,8 @@ export interface ReadinessStep {
   /** Where to do it: a tab on the cohort card, or a link out to the LMS. */
   where: string;
   href?: string;
+  /** A tab on this card the UI can switch to, so the step is one click. */
+  tab?: "setup" | "roster" | "schedule";
 }
 
 export interface ReadinessInput {
@@ -59,6 +61,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     status: "done",
     detail: `${cohort.track === "PRIVATE" ? "Private 1:1 client" : "Group cohort"}${cohort.capacity ? ` · capacity ${cohort.capacity}` : ""}`,
     where: "Edit on this card",
+    tab: "setup",
   });
 
   // 2 ── Schedule. The unlock date is called out on its own because its failure
@@ -70,7 +73,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     steps.push({
       key: "schedule", title: "Module schedule", status: "todo",
       detail: `Nothing set. All ${modules} modules would use the LMS global dates, which belong to the previous cohort.`,
-      where: "Schedule tab → build the whole schedule",
+      where: "Go to the Schedule tab", tab: "schedule",
     });
   } else if (noUnlock.length || noSession.length || noDue.length) {
     const bits: string[] = [];
@@ -80,7 +83,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     steps.push({
       key: "schedule", title: "Module schedule", status: "warn",
       detail: `${schedules.length} of ${modules} modules set, but ${bits.join("; ")}.`,
-      where: "Schedule tab",
+      where: "Go to the Schedule tab", tab: "schedule",
     });
   } else {
     const noZoom = missing(s => s.sessionZoomLink);
@@ -89,7 +92,8 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
       detail: noZoom.length
         ? `All ${modules} modules dated. No Zoom link on M${noZoom.join(", M")}.`
         : `All ${modules} modules dated, with Zoom links.`,
-      where: "Schedule tab",
+      where: noZoom.length ? "Schedule tab → Zoom link for every module" : "Go to the Schedule tab",
+      tab: "schedule",
     });
   }
 
@@ -101,7 +105,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     detail: cohort.orientationDate
       ? (cohort.orientationZoomLink ? "Date and Zoom link set." : "Date set, but no Zoom link — nobody can join.")
       : "No orientation date yet.",
-    where: "Setup tab",
+    where: "Orientation box below", tab: "setup",
   });
 
   // 4 ── Working sessions. Optional: plenty of cohorts run without extras.
@@ -138,7 +142,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     .map(n => `M${n}`);
   if (schedules.length === 0) {
     steps.push({ key: "preamble", title: "Kick-off emails", status: "todo",
-      detail: "Set the schedule first — kick-off dates come from it.", where: "Schedule tab" });
+      detail: "Set the schedule first. Kick-off dates come from it.", where: "Go to the Schedule tab", tab: "schedule" });
   } else {
     steps.push({
       key: "preamble", title: "Kick-off emails",
@@ -148,7 +152,8 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
         skipped.length ? `Deliberately skipped for this cohort: M${skipped.join(", M")}.` : null,
         disabled.length ? `Switched off globally: ${disabled.join(", ")}.` : null,
       ].filter(Boolean).join(" "),
-      where: disabled.length ? "Automation → Email Playbook" : "Schedule tab",
+      where: disabled.length ? "Automation → Email Playbook" : "Go to the Schedule tab",
+      ...(disabled.length ? { href: "/automation" } : { tab: "schedule" as const }),
     });
   }
 
@@ -162,7 +167,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     detail: students.length === 0
       ? "Nobody added yet."
       : `${students.length} added · ${invited} invited · ${onboarded} have set up their account.`,
-    where: "Roster tab, or convert a lead",
+    where: "Go to the Roster tab", tab: "roster",
   });
 
   // 7 ── Launch
