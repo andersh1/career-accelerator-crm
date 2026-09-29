@@ -25,7 +25,7 @@ export interface ReadinessStep {
   where: string;
   href?: string;
   /** A tab on this card the UI can switch to, so the step is one click. */
-  tab?: "setup" | "roster" | "schedule";
+  tab?: "setup" | "roster" | "schedule" | "sessions";
 }
 
 export interface ReadinessInput {
@@ -120,8 +120,11 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
       : `${liveSessions.length} session${liveSessions.length !== 1 ? "s" : ""}` +
         (unpublished ? ` · ${unpublished} still hidden from Fellows` : "") +
         (noSessionZoom ? ` · ${noSessionZoom} with no Zoom link` : ""),
-    where: "LMS → Working Sessions",
-    href: `${lms}/admin/sessions`,
+    // Links and publishing are here now; only creating a session and writing
+    // its description still needs the LMS.
+    ...(liveSessions.length === 0
+      ? { where: "Create them in the LMS", href: `${lms}/admin/sessions` }
+      : { where: "Go to the Sessions tab", tab: "sessions" as const }),
   });
 
   // 5 ── Kick-off emails. Dated here, written and switched on globally.

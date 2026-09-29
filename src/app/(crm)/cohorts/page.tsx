@@ -80,6 +80,18 @@ interface Cohort {
 }
 
 /** A row of the generated plan, as naive ET strings, before anything is saved. */
+const LMS_BASE = "https://lms.vantagecareer.co";
+
+interface WorkingSession {
+  id: string;
+  title: string;
+  kind: string;
+  startsAt: string;
+  durationMins: number | null;
+  zoomLink: string | null;
+  published: boolean;
+}
+
 interface ReadinessStep {
   key: string;
   title: string;
@@ -622,7 +634,57 @@ function CohortCard({
   const unenrolled = students.filter(s => !s.cohortId || s.cohortId !== cohort.id);
 
   // Schedule tab state
-  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule">("setup");
+  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule" | "sessions">("setup");
+
+  // Working sessions: links and publishing, where the rest of the cohort is set
+  // up. Creating them and writing descriptions stays in the LMS.
+  const [sessions,     setSessions]     = useState<WorkingSession[] | null>(null);
+  const [sessLoading,  setSessLoading]  = useState(false);
+  const [sessDraft,    setSessDraft]    = useState<Record<string, { zoomLink: string; published: boolean }>>({});
+  const [sessBusy,     setSessBusy]     = useState(false);
+  const [sessResult,   setSessResult]   = useState<string | null>(null);
+
+  const loadSessions = useCallback(async () => {
+    setSessLoading(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/sessions`);
+      if (res.ok) {
+        const rows: WorkingSession[] = await res.json();
+        setSessions(rows);
+        setSessDraft(Object.fromEntries(rows.map(r => [r.id, { zoomLink: r.zoomLink ?? "", published: r.published }])));
+      }
+    } finally {
+      setSessLoading(false);
+    }
+  }, [cohort.id]);
+
+  useEffect(() => {
+    if (expanded && activeTab === "sessions" && sessions === null) loadSessions();
+  }, [expanded, activeTab, sessions, loadSessions]);
+
+  async function saveSessions() {
+    if (!sessions) return;
+    setSessBusy(true); setSessResult(null);
+    try {
+      const updates = sessions
+        .filter(r => (sessDraft[r.id]?.zoomLink ?? "") !== (r.zoomLink ?? "")
+                  || (sessDraft[r.id]?.published ?? r.published) !== r.published)
+        .map(r => ({ id: r.id, zoomLink: sessDraft[r.id].zoomLink, published: sessDraft[r.id].published }));
+      if (updates.length === 0) { setSessResult("Nothing changed."); return; }
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/sessions`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates }),
+      });
+      const r = await res.json();
+      if (!res.ok) { setSessResult(r.error ?? "Could not save."); return; }
+      setSessResult(`Saved ${r.saved} session${r.saved !== 1 ? "s" : ""}.`);
+      await loadSessions();
+      await loadReadiness();
+    } finally {
+      setSessBusy(false);
+    }
+  }
 
   // Readiness — read from the database every time the tab opens, so it cannot
   // drift from what is actually configured.
@@ -1117,7 +1179,7 @@ function CohortCard({
         <div className="border-t" style={{ borderColor: "#e4e0d6" }}>
           {/* Tab bar */}
           <div className="flex border-b px-5" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-            {(["setup", "roster", "schedule"] as const).map(tab => (
+            {(["setup", "roster", "schedule", "sessions"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1129,7 +1191,8 @@ function CohortCard({
               >
                 {tab === "setup"
                   ? (readiness && readiness.outstanding > 0 ? `Setup (${readiness.outstanding})` : "Setup")
-                  : tab === "roster" ? `Roster (${enrolled.length})` : "Schedule"}
+                  : tab === "roster" ? `Roster (${enrolled.length})`
+                  : tab === "schedule" ? "Schedule" : "Sessions"}
               </button>
             ))}
           </div>
@@ -1238,6 +1301,87 @@ function CohortCard({
                 </>
               ) : (
                 <p className="text-sm py-4" style={{ color: "#949598" }}>Could not load the checklist.</p>
+              )}
+            </div>
+          )}
+
+          {/* Working sessions: the two fields touched every week. Creating a
+              session and writing its description stays in the LMS. */}
+          {activeTab === "sessions" && (
+            <div className="px-5 py-4">
+              {sessLoading && !sessions ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 size={14} className="animate-spin" style={{ color: "#949598" }} />
+                  <span className="text-sm" style={{ color: "#949598" }}>Loading…</span>
+                </div>
+              ) : !sessions || sessions.length === 0 ? (
+                <div className="py-4">
+                  <p className="text-sm" style={{ color: "#949598" }}>
+                    No working sessions for this cohort yet.
+                  </p>
+                  <a href={`${LMS_BASE}/admin/sessions`} target="_blank" rel="noopener noreferrer"
+                     className="text-xs font-semibold underline" style={{ color: "#086c64" }}>
+                    Create them in the LMS ↗
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598", letterSpacing: "0.14em" }}>
+                    Zoom links and publishing
+                  </p>
+                  <p className="text-[10px] mb-3" style={{ color: "#949598" }}>
+                    Paste the links, tick the ones Fellows should see, save once. Titles, dates and descriptions are
+                    edited in the LMS.
+                  </p>
+
+                  {sessions.map(r => (
+                    <div key={r.id} className="rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "white" }}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate" style={{ color: "#14211f" }}>{r.title}</p>
+                          <p className="text-[10px]" style={{ color: "#949598" }}>
+                            {new Date(r.startsAt).toLocaleString("en-US", {
+                              timeZone: "America/New_York", weekday: "short", month: "short",
+                              day: "numeric", hour: "numeric", minute: "2-digit",
+                            })} ET{r.durationMins ? ` · ${r.durationMins} min` : ""}
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={sessDraft[r.id]?.published ?? r.published}
+                            onChange={e => setSessDraft(d => ({ ...d, [r.id]: { ...d[r.id], published: e.target.checked } }))}
+                          />
+                          <span className="text-[10px] font-semibold" style={{ color: (sessDraft[r.id]?.published ?? r.published) ? "#086c64" : "#c0622f" }}>
+                            {(sessDraft[r.id]?.published ?? r.published) ? "Fellows can see it" : "Hidden"}
+                          </span>
+                        </label>
+                      </div>
+                      <input
+                        value={sessDraft[r.id]?.zoomLink ?? ""}
+                        onChange={e => setSessDraft(d => ({ ...d, [r.id]: { ...d[r.id], zoomLink: e.target.value } }))}
+                        placeholder="https://zoom.us/j/…"
+                        className="w-full px-2 py-1.5 text-[11px] rounded-lg"
+                        style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+                      />
+                    </div>
+                  ))}
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <button onClick={saveSessions} disabled={sessBusy}
+                      className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                      style={{ background: "#086c64" }}>
+                      {sessBusy ? "Saving…" : "Save all sessions"}
+                    </button>
+                    {sessResult && (
+                      <span className="text-[11px] font-semibold" style={{ color: "#086c64" }}>{sessResult}</span>
+                    )}
+                    <a href={`${LMS_BASE}/admin/sessions`} target="_blank" rel="noopener noreferrer"
+                       className="text-[10px] underline ml-auto" style={{ color: "#949598" }}>
+                      Edit titles or descriptions in the LMS ↗
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           )}
