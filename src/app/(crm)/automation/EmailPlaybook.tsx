@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mail, Eye, X, Clock, Users, Zap, Pencil, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, Eye, X, Clock, Users, Zap, Pencil, CheckCircle2, Loader2, Search } from "lucide-react";
 
 /**
  * The Email Playbook — every automated email the program sends.
@@ -265,6 +265,10 @@ const PHASES: { label: string; ids: string[] }[] = [
 export function EmailPlaybook() {
   const [templates, setTemplates] = useState<Record<string, DbTemplate>>({});
   const [open, setOpen] = useState<PlaybookEmail | null>(null);
+  // Twenty-one templates across four groups, each filed under an internal name
+  // rather than the subject line you actually saw in your inbox. Searching the
+  // live subject is how anyone looks for one of these.
+  const [q, setQ] = useState("");
   const byId = Object.fromEntries(EMAILS.map(e => [e.id, e]));
 
   useEffect(() => {
@@ -283,11 +287,32 @@ export function EmailPlaybook() {
         are separate: manual drip campaigns for <em>leads</em>, auto-stopped at enrollment.</span>
       </div>
 
-      {PHASES.map(phase => (
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#c9c4b8" }} />
+        <input
+          value={q}
+          onChange={ev => setQ(ev.target.value)}
+          placeholder="Search by name, subject line, or wording you remember…"
+          className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl focus:outline-none"
+          style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+        />
+      </div>
+
+      {PHASES.map(phase => {
+        const q2 = q.trim().toLowerCase();
+        const visible = phase.ids.filter(id => {
+          if (!q2) return true;
+          const e = byId[id];
+          const dbT = e.templateKey ? templates[e.templateKey] : undefined;
+          return [e.name, e.subject, e.templateKey, dbT?.subject, dbT?.body]
+            .some(v => v?.toLowerCase().includes(q2));
+        });
+        if (visible.length === 0) return null;
+        return (
         <div key={phase.label}>
           <p className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#949598" }}>{phase.label}</p>
           <div className="space-y-2.5">
-            {phase.ids.map(id => {
+            {visible.map(id => {
               const e = byId[id];
               const dbT = e.templateKey ? templates[e.templateKey] : undefined;
               return (
@@ -339,7 +364,8 @@ export function EmailPlaybook() {
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {open && (
         open.templateKey && templates[open.templateKey]?.editable
