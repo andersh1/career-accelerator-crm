@@ -701,6 +701,34 @@ function CohortCard({
   const [oriSaving, setOriSaving] = useState(false);
   const [oriSaved,  setOriSaved]  = useState(false);
 
+  // The pre-orientation email. Sent by hand: it goes once, and the timing is a
+  // judgement call rather than something to put on a schedule.
+  const [oriMail,     setOriMail]     = useState<{ subject: string; html: string; recipients: string[]; alreadySent: string | null } | null>(null);
+  const [oriMailBusy, setOriMailBusy] = useState(false);
+  const [oriMailMsg,  setOriMailMsg]  = useState<string | null>(null);
+
+  async function orientationEmail(send: boolean, force = false) {
+    setOriMailBusy(true); setOriMailMsg(null);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/orientation-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(send ? { force } : { dryRun: true }),
+      });
+      const r = await res.json();
+      if (!res.ok) { setOriMailMsg(r.error ?? "Could not do that."); return; }
+      if (send) {
+        setOriMailMsg(`Sent to ${r.sent} of ${r.of}.`);
+        setOriMail(null);
+        await loadReadiness();
+      } else {
+        setOriMail({ subject: r.subject, html: r.html, recipients: r.recipients, alreadySent: r.alreadySent });
+      }
+    } finally {
+      setOriMailBusy(false);
+    }
+  }
+
   // One Zoom link across every module, without touching any date.
   const [bulkZoom,   setBulkZoom]   = useState("");
   const [bulkBusy,   setBulkBusy]   = useState(false);
@@ -1299,6 +1327,53 @@ function CohortCard({
                       <span className="text-xs font-semibold ml-2" style={{ color: "#086c64" }}>
                         Saved. The checklist above has been re-checked.
                       </span>
+                    )}
+                    <button
+                      onClick={() => orientationEmail(false)}
+                      disabled={oriMailBusy}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg ml-2 disabled:opacity-40"
+                      style={{ border: "1px solid #086c64", color: "#086c64" }}
+                    >
+                      {oriMailBusy ? "…" : "Preview the orientation email"}
+                    </button>
+                    {oriMailMsg && (
+                      <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{oriMailMsg}</p>
+                    )}
+
+                    {oriMail && (
+                      <div className="mt-3 rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "#fbfaf7" }}>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
+                          Goes to {oriMail.recipients.length} {oriMail.recipients.length === 1 ? "person" : "people"}
+                        </p>
+                        <p className="text-[11px] mb-2" style={{ color: "#5a6663" }}>
+                          {oriMail.recipients.join(", ") || "Nobody yet. Publish the cohort first."}
+                        </p>
+                        {oriMail.alreadySent && (
+                          <p className="text-[11px] mb-2 font-semibold" style={{ color: "#c0622f" }}>
+                            Already sent {new Date(oriMail.alreadySent).toLocaleDateString("en-US", { month: "short", day: "numeric" })}.
+                          </p>
+                        )}
+                        <p className="text-xs font-semibold mb-2" style={{ color: "#14211f" }}>{oriMail.subject}</p>
+                        <div
+                          className="rounded-lg overflow-auto bg-white"
+                          style={{ maxHeight: 340, border: "1px solid #e4e0d6" }}
+                          dangerouslySetInnerHTML={{ __html: oriMail.html }}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => orientationEmail(true, !!oriMail.alreadySent)}
+                            disabled={oriMailBusy || oriMail.recipients.length === 0}
+                            className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                            style={{ background: "#086c64" }}
+                          >
+                            {oriMailBusy ? "Sending…" : oriMail.alreadySent ? "Send again" : `Send to ${oriMail.recipients.length}`}
+                          </button>
+                          <button onClick={() => setOriMail(null)}
+                            className="px-3 py-1.5 text-xs rounded-lg" style={{ background: "#f1efe8", color: "#5a6663" }}>
+                            Close
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </>

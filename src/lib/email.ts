@@ -926,3 +926,73 @@ Your call with Dan starts at **{{time}}**, about an hour from now.
 [[Join the call]]({{joinUrl}})
 
 If something came up, [grab another time]({{rescheduleUrl}}) or [cancel]({{cancelUrl}}) — either is better than leaving him on the call alone.`;
+
+/**
+ * The pre-orientation email.
+ *
+ * Sits between the account invite and the Module 1 kick-off, which already
+ * assumes orientation has happened. Carries the orientation details, the link
+ * into the workspace, and the term's shape.
+ *
+ * The schedule is passed in, built from the cohort's own rows
+ * (src/lib/orientation-email.ts), so the copy never states a date of its own.
+ *
+ * `preview` renders without sending, so the thing that reaches a Fellow can be
+ * read first.
+ */
+export async function sendOrientationEmail({
+  to, studentName, parts, preview,
+}: {
+  to: string;
+  studentName: string;
+  parts: {
+    orientationWhen: string; orientationZoom: string | null;
+    liveSessions: string; workingSessions: string; hasWorkingSessions: boolean;
+  };
+  preview?: boolean;
+}): Promise<boolean | { subject: string; html: string }> {
+  const firstName = (studentName || "there").trim().split(/\s+/)[0];
+
+  const vars = {
+    firstName,
+    orientationWhen: parts.orientationWhen,
+    orientationZoom: parts.orientationZoom ?? "link to come",
+    lmsUrl: LMS_URL,
+    liveSessions: parts.liveSessions,
+    workingSessions: parts.hasWorkingSessions
+      ? `\n\n**Working sessions**\nOptional, hands on, with Caleb. Bring what you are stuck on.\n\n${parts.workingSessions}`
+      : "",
+  };
+
+  const t = await renderTemplate("orientation", {
+    subject: "{{firstName}}, your orientation is booked",
+    body: `Hi {{firstName}},
+
+Your account is set up and orientation is next. This is where we walk through how the program runs, what happens each week, and what you will have built by the end.
+
+**Orientation: {{orientationWhen}}**
+Joining link: {{orientationZoom}}
+
+Come with your laptop and one answer ready: what would make this program worth it for you. Nothing else to prepare.
+
+Calendar invites for everything below are already in your inbox, so you do not need to diary anything yourself.
+
+**Live sessions**
+The module itself, with Dan. These are the ones to protect.
+
+{{liveSessions}}{{workingSessions}}
+
+Your workspace is at {{lmsUrl}}. Module 1 is already open, so you can start whenever you are ready rather than waiting for orientation.
+
+See you there.`,
+  }, vars);
+  if (!t) return false; // switched off in the Email Playbook
+
+  if (preview) return { subject: t.subject, html: wrap(t.subject, t.bodyHtml) };
+
+  await sendChecked({
+    from: FROM, to, subject: t.subject,
+    html: wrap(t.subject, t.bodyHtml),
+  });
+  return true;
+}

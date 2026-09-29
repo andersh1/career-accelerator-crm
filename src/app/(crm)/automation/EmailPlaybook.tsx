@@ -189,6 +189,14 @@ const EMAILS: PlaybookEmail[] = [
     preview: wrap("🎓 You did it!", `<p style="color:#334155;font-size:15px;">Congratulations — you've officially completed the Vantage Career Accelerator!</p>`, { label: "View my certificate →" }),
   },
   {
+    id: "orientation", name: "Orientation — before the first session",
+    subject: "{{firstName}}, your orientation is booked",
+    audience: "Every invited Fellow in the cohort", when: "Sent by hand from Cohorts → Setup",
+    trigger: "Cohorts → Setup → Preview the orientation email. Once per cohort; a second press asks you to confirm. The schedule inside is built from that cohort's own dates, not typed into the copy.",
+    source: "CRM", guard: "Invited or onboarded only", templateKey: "orientation",
+    sampleVars: { firstName: "Jordan" },
+  },
+  {
     id: "module-preamble-1", name: "Module 1 Kick-off — Self",
     subject: "Module 1: Self — here is the week ahead",
     audience: "Every Fellow in the cohort", when: "9:00 AM ET on the preamble date set per cohort",
@@ -256,7 +264,7 @@ const EMAILS: PlaybookEmail[] = [
 
 const PHASES: { label: string; ids: string[] }[] = [
   { label: "Before enrollment", ids: ["intake", "app-alert", "consult-reminder-day", "consult-reminder-hour"] },
-  { label: "Enrollment (nothing sends until you choose)", ids: ["invite"] },
+  { label: "Enrollment (nothing sends until you choose)", ids: ["invite", "orientation"] },
   { label: "Weekly rhythm during the program", ids: ["prework-reminder", "session-tomorrow", "session-day", "assignment-reminder", "booking", "weekly-digest", "nudge", "coach-digest"] },
   { label: "Module kick-offs (one per module, date set per cohort)", ids: ["module-preamble-1", "module-preamble-2", "module-preamble-3", "module-preamble-4", "module-preamble-5", "module-preamble-6", "module-preamble-7", "module-preamble-8"] },
   { label: "Close", ids: ["graduation"] },

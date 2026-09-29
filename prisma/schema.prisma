@@ -92,6 +92,9 @@ model Cohort {
   orientationZoomLink     String?
   orientationDeckUrl      String?
   orientationRecordingUrl String?
+  /// Stamped when the pre-orientation email is sent, so a second press cannot
+  /// mail the cohort twice. Cleared by hand if it genuinely needs resending.
+  orientationEmailSentAt DateTime? @db.Timestamptz(6)
   capacity  Int?
   startDate DateTime? @db.Timestamptz(6)
   createdAt DateTime         @default(now())
