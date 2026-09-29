@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendSlack, enrolledBlocks } from "@/lib/slack";
+import { withdrawInLms, reinstateInLms, type WithdrawSyncResult } from "@/lib/withdraw-sync";
 import { fireWebhook } from "@/lib/webhooks";
 import { sendOutcomeFollowUpEmail } from "@/lib/email";
 
@@ -36,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const { stage: newStage, notesAppend, ...rest } = body;
 
-  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true, unsubscribed: true } });
+  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true, unsubscribed: true, enrolledUserId: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Whitelist patchable fields to prevent mass-assignment
@@ -70,7 +71,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   });
 
+  let lmsSync: WithdrawSyncResult | null = null;
+
   if (newStage && newStage !== existing.stage) {
+    /**
+     * Withdrawn has to mean withdrawn.
+     *
+     * Moving the stage used to change a label while the Fellow kept LMS access
+     * and every automated email, because User.withdrawnAt is what all of that
+     * keys on and only the LMS wrote it. The LMS route owns the logic —
+     * including the completion snapshot it writes to this lead before revoking
+     * anything — so this calls it rather than reimplementing it here.
+     *
+     * Best-effort on purpose: the stage change still stands if the LMS cannot
+     * be reached, and the result is reported back so nobody is left believing
+     * access was cut when it was not.
+     */
+    if (existing.enrolledUserId) {
+      if (newStage === "WITHDRAWN") {
+        lmsSync = await withdrawInLms(
+          existing.enrolledUserId,
+          `Moved to Withdrawn in the CRM${session?.user?.name ? ` by ${session.user.name}` : ""}.`,
+        );
+      } else if (existing.stage === "WITHDRAWN") {
+        lmsSync = await reinstateInLms(existing.enrolledUserId);
+      }
+      if (lmsSync && !lmsSync.ok) {
+        await prisma.leadActivity.create({
+          data: {
+            leadId: params.id, type: "NOTE",
+            content: `⚠️ The CRM stage moved, but the LMS was not updated: ${lmsSync.reason}. Their access and emails are unchanged. Withdraw them from Admin → Students in the LMS, or try again.`,
+          },
+        }).catch(() => {});
+      }
+    }
+
     await prisma.leadActivity.create({
       data: {
         leadId:    params.id,
@@ -238,7 +273,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await stageTriggers().catch(() => {});
   }
 
-  return NextResponse.json(lead);
+  // Surfaced so the UI can say whether access was actually cut, rather than
+  // letting a silent failure look like success.
+  return NextResponse.json({ ...lead, lmsSync });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
