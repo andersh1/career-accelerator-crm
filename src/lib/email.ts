@@ -1025,7 +1025,7 @@ Joining link: {{orientationZoom}}
 
 Come with your laptop and one answer ready: what would make this program worth it for you. Nothing else to prepare.
 
-Calendar invites for everything below are already in your inbox, so you do not need to diary anything yourself.
+You should already have a calendar invite for every session below. If one is missing, reply to this email and we will resend it.
 
 **Live sessions**
 The module itself, with Dan. These are the ones to protect.
