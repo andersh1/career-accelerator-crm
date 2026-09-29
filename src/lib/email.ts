@@ -198,6 +198,21 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
   if (!resend) return { ok: false, reason: "Email not configured" };
   const SAMPLES: Record<string, { vars: Record<string, string>; cta?: string; ctaUrl?: string }> = {
     "intake-confirmation": { vars: { firstName: "Jordan" } },
+    // The real send builds this from the cohort's own rows
+    // (src/lib/orientation-email.ts). The sample is abbreviated so a test email
+    // shows the shape without reprinting a whole term.
+    "orientation": {
+      vars: {
+        firstName: "Jordan",
+        orientationWhen: "Monday, October 5 at 11:00 AM ET",
+        orientationZoom: "https://zoom.us/j/0000000000",
+        lmsUrl: LMS_URL,
+        liveSessions: '**Mon, Oct 12** — Module 1: Self\nWhere you are strongest, with evidence behind it.  ·  assignment due Fri, Oct 16\n\n**Mon, Oct 19** — Module 2: Market Discovery\nWhat the market actually needs, from the people doing the work.  ·  assignment due Fri, Oct 23\n\n**Mon, Oct 26** — Module 3: Wedge\nNarrowing to one seat worth going after.  ·  assignment due Fri, Oct 30\n\n_(a real send lists all eight)_',
+        workingSessions: '\n\n**Working sessions**\nOptional, hands on, with Caleb. Bring what you are stuck on.\n\n**Wed, Oct 28** — Claude Build Session — ship your personal site\nYour site goes live, and the Module 4 MVP drops into it as the featured project.\n\n**Wed, Nov 4** — Build + Office Hours — MVP v1 week\nBring the build. We unstick whatever is in the way before Friday.',
+      },
+      cta: "Open my workspace \u2192", ctaUrl: LMS_URL,
+    },
+
     "student-invite": {
       vars: { firstName: "Jordan", cohortLine: "You've been enrolled in the **Fellowship**." },
       cta: "Set up my account →", ctaUrl: LMS_URL,
@@ -217,7 +232,7 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
     },
   };
   const sample = SAMPLES[key];
-  if (!sample) return { ok: false, reason: "No test sample for this template" };
+  if (!sample) return { ok: false, reason: `No test sample exists for "${key}" yet, so a test would send an email full of empty placeholders. Add one in sendTemplateTest.` };
   const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
   if (!row) return { ok: false, reason: "Template not found" };
   const subject = subVars(row.subject, sample.vars);

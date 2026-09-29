@@ -194,7 +194,17 @@ const EMAILS: PlaybookEmail[] = [
     audience: "Every invited Fellow in the cohort", when: "Sent by hand from Cohorts → Setup",
     trigger: "Cohorts → Setup → Preview the orientation email. Once per cohort; a second press asks you to confirm. The schedule inside is built from that cohort's own dates, not typed into the copy.",
     source: "CRM", guard: "Invited or onboarded only", templateKey: "orientation",
-    sampleVars: { firstName: "Jordan" },
+    // The live preview substitutes these. Without the schedule vars the preview
+    // renders an email with an empty date, no link and no sessions, which looks
+    // like the template is broken rather than like sample data is missing.
+    sampleVars: {
+      firstName: "Jordan",
+      orientationWhen: "Monday, October 5 at 11:00 AM ET",
+      orientationZoom: "https://zoom.us/j/0000000000",
+      lmsUrl: "https://lms.vantagecareer.co",
+      liveSessions: "**Mon, Oct 12** — Module 1: Self\nWhere you are strongest, with evidence behind it.  ·  assignment due Fri, Oct 16\n\n**Mon, Oct 19** — Module 2: Market Discovery\nWhat the market actually needs, from the people doing the work.  ·  assignment due Fri, Oct 23\n\n_(a real send lists all eight)_",
+      workingSessions: "\n\n**Working sessions**\nOptional, hands on, with Caleb. Bring what you are stuck on.\n\n**Wed, Oct 28** — Claude Build Session — ship your personal site\nYour site goes live, and the Module 4 MVP drops into it as the featured project.",
+    },
   },
   {
     id: "module-preamble-1", name: "Module 1 Kick-off — Self",
