@@ -670,7 +670,10 @@ function CohortCard({
         .filter(r => (sessDraft[r.id]?.zoomLink ?? "") !== (r.zoomLink ?? "")
                   || (sessDraft[r.id]?.published ?? r.published) !== r.published)
         .map(r => ({ id: r.id, zoomLink: sessDraft[r.id].zoomLink, published: sessDraft[r.id].published }));
-      if (updates.length === 0) { setSessResult("Nothing changed."); return; }
+      if (updates.length === 0) {
+        setSessResult("Nothing to save — no links or checkboxes were changed.");
+        return;
+      }
       const res = await fetch(`/api/crm/cohorts/${cohort.id}/sessions`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1346,16 +1349,26 @@ function CohortCard({
                             })} ET{r.durationMins ? ` · ${r.durationMins} min` : ""}
                           </p>
                         </div>
-                        <label className="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={sessDraft[r.id]?.published ?? r.published}
-                            onChange={e => setSessDraft(d => ({ ...d, [r.id]: { ...d[r.id], published: e.target.checked } }))}
-                          />
-                          <span className="text-[10px] font-semibold" style={{ color: (sessDraft[r.id]?.published ?? r.published) ? "#086c64" : "#c0622f" }}>
-                            {(sessDraft[r.id]?.published ?? r.published) ? "Fellows can see it" : "Hidden"}
-                          </span>
-                        </label>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!r.published && (
+                            <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
+                                  style={{ background: "#fdf0e8", color: "#c0622f", letterSpacing: "0.1em" }}>
+                              Hidden now
+                            </span>
+                          )}
+                          {/* The label says what ticking DOES. An unticked box
+                              beside the word "Hidden" reads as "tick to hide". */}
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={sessDraft[r.id]?.published ?? r.published}
+                              onChange={e => setSessDraft(d => ({ ...d, [r.id]: { ...d[r.id], published: e.target.checked } }))}
+                            />
+                            <span className="text-[10px] font-semibold" style={{ color: "#086c64" }}>
+                              Show to Fellows
+                            </span>
+                          </label>
+                        </div>
                       </div>
                       <input
                         value={sessDraft[r.id]?.zoomLink ?? ""}
@@ -1366,6 +1379,18 @@ function CohortCard({
                       />
                     </div>
                   ))}
+
+                  {sessions.some(r => !(sessDraft[r.id]?.published ?? r.published)) && (
+                    <button
+                      onClick={() => setSessDraft(d => Object.fromEntries(
+                        sessions.map(r => [r.id, { ...d[r.id], published: true }])
+                      ))}
+                      className="text-[11px] font-semibold underline"
+                      style={{ color: "#086c64" }}
+                    >
+                      Tick them all →
+                    </button>
+                  )}
 
                   <div className="flex items-center gap-3 pt-1">
                     <button onClick={saveSessions} disabled={sessBusy}
