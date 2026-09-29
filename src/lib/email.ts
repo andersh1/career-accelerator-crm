@@ -198,6 +198,25 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
   if (!resend) return { ok: false, reason: "Email not configured" };
   const SAMPLES: Record<string, { vars: Record<string, string>; cta?: string; ctaUrl?: string }> = {
     "intake-confirmation": { vars: { firstName: "Jordan" } },
+    "consultation-reminder-day-before": {
+      vars: {
+        firstName: "Jordan",
+        when: "Tuesday, October 7 at 2:00 PM ET",
+        joinUrl: "https://zoom.us/j/0000000000",
+        rescheduleUrl: "https://calendly.com/reschedulings/sample",
+        cancelUrl: "https://calendly.com/cancellations/sample",
+      },
+    },
+    "consultation-reminder-hour-before": {
+      vars: {
+        firstName: "Jordan",
+        time: "2:00 PM ET",
+        joinUrl: "https://zoom.us/j/0000000000",
+        rescheduleUrl: "https://calendly.com/reschedulings/sample",
+        cancelUrl: "https://calendly.com/cancellations/sample",
+      },
+    },
+
     // The real send builds this from the cohort's own rows
     // (src/lib/orientation-email.ts). The sample is abbreviated so a test email
     // shows the shape without reprinting a whole term.
@@ -231,6 +250,22 @@ export async function sendTemplateTest(key: string, to: string): Promise<{ ok: b
       cta: "Open the Assignment →", ctaUrl: `${LMS_URL}/modules`,
     },
   };
+  /**
+   * Emails whose body is generated from live data rather than from editable
+   * copy: the digests are assembled per recipient, and the session-day brief
+   * comes from per-module content in code. There is no template to preview, so
+   * a sample would be an invented email rather than a smaller version of the
+   * real one. Say that instead of sending something misleading.
+   */
+  const DYNAMIC: Record<string, string> = {
+    "coach-digest": "the coach digest is assembled from each day's real bookings",
+    "weekly-digest": "the weekly digest is assembled from each Fellow's own progress",
+    "session-day": "the session-day brief is built from that module's content in the LMS",
+  };
+  if (DYNAMIC[key]) {
+    return { ok: false, reason: `This one cannot be tested as a template, because ${DYNAMIC[key]} rather than from editable copy. What you see here is a description, not the email.` };
+  }
+
   const sample = SAMPLES[key];
   if (!sample) return { ok: false, reason: `No test sample exists for "${key}" yet, so a test would send an email full of empty placeholders. Add one in sendTemplateTest.` };
   const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true } });
