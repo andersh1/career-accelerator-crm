@@ -17,12 +17,27 @@ async function requireAdmin() {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   if (!await requireAdmin()) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const [modules, schedules] = await Promise.all([
+  // The deck and recording live as Resources on each module's RECORDING
+  // section in the LMS, tagged with the cohort whose session they are. Reading
+  // them here is a plain lookup with no invariants to break; WRITING them goes
+  // through the LMS route, for the reasons in src/lib/recording-sync.ts.
+  const [modules, schedules, recordingSections] = await Promise.all([
     prisma.module.findMany({ orderBy: { number: "asc" }, select: { id: true, number: true, title: true } }),
     prisma.cohortSchedule.findMany({ where: { cohortId: params.id } }),
+    prisma.section.findMany({
+      where:  { type: "RECORDING" },
+      select: {
+        moduleId: true,
+        resources: { where: { cohortId: params.id }, select: { type: true, url: true } },
+      },
+    }),
   ]);
 
   const scheduleMap = new Map(schedules.map(s => [s.moduleId, s]));
+  const mediaMap = new Map(recordingSections.map(s => [s.moduleId, {
+    recordingUrl: s.resources.find(r => r.type === "VIDEO")?.url ?? null,
+    deckUrl:      s.resources.find(r => r.type === "LINK")?.url  ?? null,
+  }]));
 
   const result = modules.map(m => {
     const override = scheduleMap.get(m.id);
@@ -43,6 +58,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       preambleDate:    override?.preambleDate    ?? null,
       preambleSentAt:  override?.preambleSentAt  ?? null,
       preambleSkipped: override?.preambleSkipped ?? false,
+      deckUrl:         mediaMap.get(m.id)?.deckUrl      ?? null,
+      recordingUrl:    mediaMap.get(m.id)?.recordingUrl ?? null,
     };
   });
 

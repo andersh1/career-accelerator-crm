@@ -53,6 +53,7 @@ const sections: Section[] = [
       { title: "Closing out a cohort", desc: "Archive a finished cohort with the power icon on its card in Cohorts. (The Graduate button is different — it emails certificates.)" },
       { title: "Module kick-off emails", desc: "In Cohorts → a cohort → Schedule, each module row can send its kick-off (the week-ahead preamble). Set a date to auto-send at 9am ET, or press \"Send kick-off now\" to send today. The copy lives in Automation → Email Playbook as module-preamble-1…8. It confirms the exact recipient list before sending, and won't send the same module's batch twice.", tip: "Admin only" },
       { title: "Resend to one Fellow", desc: "If a send drops someone (an email provider rate-limits the batch), the sent row shows a \"Resend to one…\" dropdown. Pick that Fellow by name to re-send just to them — the rest of the cohort is not re-mailed." },
+      { title: "Posting a deck and recording", desc: "After a session, open Cohorts → that cohort → Schedule → Edit on the module, and paste the slide deck and recording links under \"After the session\". They go straight into the LMS for that cohort only, so two cohorts covering the same module keep their own. Paste the normal Google share link — it is converted automatically so it plays inside the LMS instead of opening a sign-in page. Clear a box to remove it. The collapsed row shows \"Deck posted\" / \"Recording posted\" at a glance.", tip: "Admin only" },
     ],
   },
   {

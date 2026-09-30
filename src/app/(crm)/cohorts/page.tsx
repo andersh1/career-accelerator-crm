@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
-import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays } from "lucide-react";
+import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays, FileText, Film } from "lucide-react";
 
 // ─── LMS status helpers ───────────────────────────────────────────────────────
 
@@ -129,6 +129,11 @@ interface ScheduleEntry {
   preambleDate:    string | null;
   preambleSentAt:  string | null;
   preambleSkipped: boolean;
+  /** Slide deck and recording for THIS cohort's session. They live in the LMS
+   *  as resources on the module's replay section, tagged with this cohort, so
+   *  another cohort's Module 4 recording never appears on this one's. */
+  deckUrl:         string | null;
+  recordingUrl:    string | null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -949,20 +954,55 @@ function CohortCard({
   async function saveRow(moduleId: string) {
     setSavingRow(moduleId);
     try {
+      // The deck and recording are not CohortSchedule columns — they become
+      // resources in the LMS — so they travel separately.
+      const { deckUrl, recordingUrl, ...dates } = rowDraft;
+      const current = schedule?.find(r => r.moduleId === moduleId);
+
       const res = await fetch(`/api/crm/cohorts/${cohort.id}/schedule`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleId, ...rowDraft }),
+        body: JSON.stringify({ moduleId, ...dates }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setSchedule(prev => prev?.map(r =>
-          r.moduleId === moduleId
-            ? { ...r, startDate: updated.startDate, assignmentDue: updated.assignmentDue, titleOverride: updated.titleOverride, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt, preambleSkipped: updated.preambleSkipped }
-            : r
-        ) ?? null);
-        setEditingRow(null);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error ?? "The dates did not save. Nothing was changed.");
+        return;
       }
+      const updated = await res.json();
+
+      // Only post media when it actually changed, so re-saving a date does not
+      // rewrite a recording that is already right.
+      let media: { deckUrl: string | null; recordingUrl: string | null } | null = null;
+      const deckChanged = (deckUrl ?? "") !== (current?.deckUrl ?? "");
+      const recChanged  = (recordingUrl ?? "") !== (current?.recordingUrl ?? "");
+      if (deckChanged || recChanged) {
+        const mRes = await fetch(`/api/crm/cohorts/${cohort.id}/recording`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            moduleId,
+            ...(deckChanged ? { deckUrl: deckUrl || null } : {}),
+            ...(recChanged  ? { recordingUrl: recordingUrl || null } : {}),
+          }),
+        });
+        if (!mRes.ok) {
+          const err = await mRes.json().catch(() => ({}));
+          // The dates DID save. Say exactly that, so nobody re-enters them.
+          alert(`Dates saved, but the deck and recording did not reach the LMS:\n\n${err.error ?? mRes.status}\n\nYour links are still in the boxes. Try Save again.`);
+          return;
+        }
+        media = await mRes.json();
+      }
+
+      setSchedule(prev => prev?.map(r =>
+        r.moduleId === moduleId
+          ? { ...r, startDate: updated.startDate, assignmentDue: updated.assignmentDue, titleOverride: updated.titleOverride, preworkDue: updated.preworkDue, sessionDate: updated.sessionDate, sessionLocation: updated.sessionLocation, sessionZoomLink: updated.sessionZoomLink, preambleDate: updated.preambleDate, preambleSentAt: updated.preambleSentAt, preambleSkipped: updated.preambleSkipped,
+              deckUrl:      media ? media.deckUrl      : r.deckUrl,
+              recordingUrl: media ? media.recordingUrl : r.recordingUrl }
+          : r
+      ) ?? null);
+      setEditingRow(null);
     } finally {
       setSavingRow(null);
     }
@@ -1877,6 +1917,8 @@ function CohortCard({
                                   sessionZoomLink: row.sessionZoomLink ?? "",
                                   preambleDate:    toEasternInput(row.preambleDate),
                                   preambleSkipped: row.preambleSkipped,
+                                  deckUrl:         row.deckUrl ?? "",
+                                  recordingUrl:    row.recordingUrl ?? "",
                                 });
                               }}
                               className="text-xs font-semibold px-2.5 py-1 rounded-lg transition"
@@ -1977,6 +2019,46 @@ function CohortCard({
                                 style={{ borderColor: "#e4e0d6", color: "#14211f" }}
                               />
                             </div>
+
+                            {/* After the session: what the Fellows get to keep.
+                                Saved to the LMS against THIS cohort, so another
+                                cohort's Module 4 recording is never replaced. */}
+                            <div className="sm:col-span-2 rounded-lg border p-2.5" style={{ borderColor: "#e4e0d6", background: "#faf9f5" }}>
+                              <p className="text-[10px] font-semibold mb-2" style={{ color: "#14211f" }}>
+                                After the session — only {cohort.name} sees these
+                              </p>
+                              <div className="grid sm:grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                    <FileText size={10} /> Slide deck
+                                  </label>
+                                  <input
+                                    value={(rowDraft.deckUrl as string) ?? ""}
+                                    onChange={e => setRowDraft(d => ({ ...d, deckUrl: e.target.value }))}
+                                    placeholder="Google Slides or PDF link"
+                                    className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none font-mono"
+                                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                                    <Film size={10} /> Session recording
+                                  </label>
+                                  <input
+                                    value={(rowDraft.recordingUrl as string) ?? ""}
+                                    onChange={e => setRowDraft(d => ({ ...d, recordingUrl: e.target.value }))}
+                                    placeholder="Zoom cloud, Drive, YouTube…"
+                                    className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none font-mono"
+                                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                                  />
+                                </div>
+                              </div>
+                              <p className="text-[9px] mt-1.5" style={{ color: "#949598" }}>
+                                Paste the normal share link. Google links are converted so they play inside the LMS
+                                instead of opening a sign-in page. Clear a box to remove it. Saved with this module.
+                              </p>
+                            </div>
+
                             <div className="sm:col-span-2">
                               <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
                                 <Send size={10} /> Kick-off email — sends 9:00 AM ET on this date
@@ -2008,6 +2090,14 @@ function CohortCard({
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            <span className="text-xs flex items-center gap-1"
+                              style={{ color: row.deckUrl ? "#086c64" : "#949598" }}>
+                              <FileText size={10} /> {row.deckUrl ? "Deck posted" : "No deck"}
+                            </span>
+                            <span className="text-xs flex items-center gap-1"
+                              style={{ color: row.recordingUrl ? "#086c64" : "#949598" }}>
+                              <Film size={10} /> {row.recordingUrl ? "Recording posted" : "No recording"}
+                            </span>
                             {row.preambleSentAt ? (
                               <span className="text-xs flex items-center gap-1" style={{ color: "#086c64" }}>
                                 <Send size={10} />
