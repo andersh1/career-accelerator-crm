@@ -172,14 +172,20 @@ export default function ContentVersionsPage() {
             <p className="text-sm mt-1" style={{ color: "#5a6663" }}>
               A version is a package of module content. Cohorts enrol into one, and many cohorts can share it.
               A cohort keeps the version it started on, so rewriting the next one never changes what a group
-              part-way through is reading.
+              part-way through is reading. <strong>Pick a cohort&rsquo;s version on its Setup tab.</strong>
+            </p>
+            <p className="text-xs mt-2 rounded-lg p-2" style={{ background: "#fdf0e3", color: "#b45309" }}>
+              This page is read-only. Content is written and reviewed in the LMS, under Admin &rarr; Content,
+              because that is where the renderer lives and where a worksheet can be checked against the rules it
+              has to satisfy. Storing it from here could only check that the brackets matched.
             </p>
           </div>
-          <button onClick={() => setCreating(c => !c)}
+          <a href={`${process.env.NEXT_PUBLIC_LMS_URL ?? "https://lms.vantagecareer.co"}/admin/content`}
+            target="_blank" rel="noreferrer"
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white flex-shrink-0"
             style={{ background: "#086c64" }}>
-            <Plus size={13} /> New version
-          </button>
+            <Plus size={13} /> Edit in the LMS
+          </a>
         </div>
 
         {versions?.length === 0 && !creating && (
@@ -325,16 +331,15 @@ export default function ContentVersionsPage() {
                                 ? { background: "white", color: "#5a6663", borderColor: "#e4e0d6" }
                                 : { background: "#f1efe8", color: "#949598", borderColor: "#e4e0d6" };
                             return (
-                              <button key={k.kind}
-                                onClick={() => isEditing ? setEditing(null) : openPiece(v.id, row.moduleNumber, k.kind)}
-                                className="text-[10px] font-semibold px-2 py-1 rounded-lg border transition text-left"
+                              <span key={k.kind}
+                                className="text-[10px] font-semibold px-2 py-1 rounded-lg border text-left"
                                 style={style}
                                 title={k.from === "own" ? "Stored on this version" : k.from === "inherited" ? `Inherited from ${k.versionName}` : "Nothing in this chain defines it — the LMS code is still in charge"}>
                                 {KIND_LABELS[k.kind] ?? k.kind}
                                 <span className="block font-normal opacity-70">
                                   {k.from === "own" ? "this version" : k.from === "inherited" ? `from ${k.versionName}` : "from code"}
                                 </span>
-                              </button>
+                              </span>
                             );
                           })}
                         </div>
