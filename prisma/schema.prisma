@@ -124,6 +124,7 @@ model Cohort {
   resources       Resource[]
   announcements   Announcement[]
   emailOverrides  CohortEmailTemplate[]
+  moduleContent   ModuleContent[]
   programTools    ProgramTool[]
 }
 
@@ -1488,4 +1489,35 @@ model CohortEmailTemplate {
 
   @@unique([cohortId, key])
   @@index([cohortId])
+}
+
+/// Module content that used to live only in TypeScript.
+///
+/// Worksheets, the overview, the assignment, the survey and the workshop
+/// slides are ~137 KB of pure data spread across five .ts files. Because it
+/// was code, every cohort got whatever was last deployed: rewriting Module 1
+/// for a future cohort rewrote it for the cohort currently sitting in it.
+///
+/// One row per (module, kind), plus optional per-cohort rows. cohortId null is
+/// the shared version. Resolution order is cohort row, shared row, then the
+/// code constant, so a module with no rows behaves exactly as it always has
+/// and migrating is reversible by deleting rows.
+///
+/// `data` is the JSON of the same structure the code exports, verified
+/// byte-identical at migration time. See src/lib/module-content.ts.
+model ModuleContent {
+  id           String   @id @default(cuid())
+  moduleNumber Int
+  /// worksheets | overview | assignment | survey | slides
+  kind         String
+  /// Null is the shared version every cohort gets.
+  cohortId     String?
+  cohort       Cohort?  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  data         Json
+  /// Why this version exists, for whoever finds it in a year.
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([moduleNumber, kind, cohortId])
 }
