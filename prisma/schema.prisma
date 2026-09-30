@@ -104,6 +104,7 @@ model Cohort {
   liveSessions    LiveSession[]
   publishedAt          DateTime? @db.Timestamptz(6) // when the cohort was published to the LMS
   invitesSent          Int       @default(0) // invite emails sent by that publish
+  resources       Resource[]
 }
 
 /// A live group session that is NOT one of the eight modules — the Claude build
@@ -914,6 +915,17 @@ model Resource {
   order     Int             @default(0)
   createdAt DateTime        @default(now())
   videoProgress VideoProgress[]
+  /// Which cohort this belongs to. NULL means every cohort sees it, which is
+  /// how every resource behaved before this column existed.
+  ///
+  /// Recordings and slide decks are the reason it is here. They hang off a
+  /// Section, and a Section is global, so Fellowship 2's Module 4 recording
+  /// appeared on Module 4 for every cohort — and recording the next one would
+  /// have overwritten it rather than sitting beside it. Same idiom as
+  /// LiveSession.cohortId, so a reader that forgets to filter degrades to
+  /// showing everything rather than showing nothing.
+  cohortId  String?
+  cohort    Cohort?         @relation(fields: [cohortId], references: [id], onDelete: SetNull)
 }
 
 model Section {
