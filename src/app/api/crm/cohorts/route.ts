@@ -18,6 +18,7 @@ export async function GET() {
       // roster and quietly corrupts fill % and spots-left, which is what
       // capacity decisions are made from.
       _count: { select: { users: { where: { withdrawnAt: null } } } },
+      contentVersion: { select: { name: true } },
     },
   });
 
@@ -30,6 +31,8 @@ export async function GET() {
     orientationZoomLink: c.orientationZoomLink,
     orientationDeckUrl:  c.orientationDeckUrl,
     slackInviteUrl:      c.slackInviteUrl,
+    contentVersionId:    c.contentVersionId,
+    contentVersionName:  c.contentVersion?.name ?? null,
     founderMode: c.founderMode,
     capacity:  c.capacity,
     startDate: c.startDate,

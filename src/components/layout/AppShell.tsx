@@ -7,8 +7,7 @@ import {
   Kanban, TrendingUp, Settings, LogOut, Menu, X,
   CheckSquare, Search, Mail, LifeBuoy, LayoutDashboard, Zap,
   UserRound, UsersRound, GraduationCap, AlertCircle, BookOpen,
-  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles, ChevronRight, ListChecks, Building2,
-} from "lucide-react";
+  ExternalLink, Handshake, Trophy, Tag, Share2, Calendar, Sparkles, ChevronRight, ListChecks, Building2, Layers } from "lucide-react";
 import GlobalSearch from "@/components/crm/GlobalSearch";
 import NotificationBell from "@/components/crm/NotificationBell";
 import HelpBeacon from "@/components/crm/HelpBeacon";
@@ -19,6 +18,7 @@ const baseNav = [
   { href: "/pipeline",   label: "Pipeline",    icon: Kanban,          adminOnly: false },
   { href: "/students",   label: "Students",    icon: GraduationCap,   adminOnly: false },
   { href: "/cohorts",   label: "Cohorts",     icon: BookOpen,        adminOnly: false },
+  { href: "/content",    label: "Content",     icon: Layers,          adminOnly: true  },
   { href: "/leads",      label: "Leads",       icon: UserRound,       adminOnly: false },
   { href: "/tickets",    label: "Support",     icon: LifeBuoy,        adminOnly: false },
   { href: "/tasks",      label: "Tasks",       icon: CheckSquare,     adminOnly: false },
@@ -38,7 +38,7 @@ const baseNav = [
 ];
 
 const NAV_SECTIONS = [
-  { label: "CRM",          keys: ["/home", "/ask", "/pipeline", "/students", "/cohorts", "/leads", "/tickets"] },
+  { label: "CRM",          keys: ["/home", "/ask", "/pipeline", "/students", "/cohorts", "/content", "/leads", "/tickets"] },
   { label: "Outreach",    keys: ["/tasks", "/sequences", "/blast"] },
   { label: "Growth",      keys: ["/events", "/referrals", "/promo-codes"] },
   { label: "Partnerships", keys: ["/partnerships/organizations", "/partnerships/deals", "/partnerships/contacts"] },

@@ -75,6 +75,9 @@ interface Cohort {
   orientationZoomLink: string | null;
   /** This cohort's own Slack invite. Null falls back to the shared one. */
   slackInviteUrl: string | null;
+  /** Which content package this cohort is running. Null = the code constants. */
+  contentVersionId: string | null;
+  contentVersionName: string | null;
   orientationDeckUrl: string | null;
   startDate: string | null; createdAt: string;
   publishedAt: string | null; invitesSent: number;
@@ -720,6 +723,10 @@ function CohortCard({
   const [oriZoom, setOriZoom] = useState("");
   const [oriDeck, setOriDeck] = useState("");
   const [slackUrl, setSlackUrl] = useState("");
+  const [contentVersionId, setContentVersionId] = useState("");
+  // Only PUBLISHED versions are offered. A draft is a rewrite in progress, and
+  // enrolling a live cohort into one means every save reaches them mid-module.
+  const [contentVersions, setContentVersions] = useState<{ id: string; name: string; track: string; status: string }[]>([]);
   const [oriSaving, setOriSaving] = useState(false);
   const [oriSaved,  setOriSaved]  = useState(false);
 
@@ -827,6 +834,10 @@ function CohortCard({
       setOriZoom(cohort.orientationZoomLink ?? "");
       setOriDeck(cohort.orientationDeckUrl ?? "");
       setSlackUrl(cohort.slackInviteUrl ?? "");
+      setContentVersionId(cohort.contentVersionId ?? "");
+      fetch("/api/crm/content-versions").then(r => r.ok ? r.json() : [])
+        .then(d => setContentVersions(Array.isArray(d) ? d : []))
+        .catch(() => setContentVersions([]));
     }
   }, [expanded, activeTab, loadReadiness, cohort.orientationDate, cohort.orientationZoomLink, cohort.orientationDeckUrl]);
 
@@ -841,6 +852,7 @@ function CohortCard({
           orientationZoomLink: oriZoom || null,
           orientationDeckUrl: oriDeck || null,
           slackInviteUrl: slackUrl || null,
+          contentVersionId: contentVersionId || null,
         }),
       });
       if (res.ok) {
@@ -1541,6 +1553,21 @@ function CohortCard({
                         <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
                         <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
                           className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1 sm:col-span-2">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Content version</span>
+                        <select value={contentVersionId} onChange={e => setContentVersionId(e.target.value)}
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
+                          <option value="">Latest code — whatever is deployed</option>
+                          {contentVersions.filter(v => v.status === "PUBLISHED" || v.id === contentVersionId)
+                            .map(v => <option key={v.id} value={v.id}>{v.name} ({v.track}){v.status !== "PUBLISHED" ? ` — ${v.status.toLowerCase()}` : ""}</option>)}
+                        </select>
+                        <span className="text-[9px]" style={{ color: "#949598" }}>
+                          The module content this cohort runs. Pick it once at launch and it stays put, so
+                          rewriting the next version never changes what this group is reading. Leave it on
+                          &ldquo;Latest code&rdquo; and nothing changes from how it has always worked. Manage versions
+                          under Content.
+                        </span>
                       </label>
                       <label className="flex flex-col gap-1 sm:col-span-2">
                         <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Slack invite for this cohort</span>
