@@ -29,6 +29,7 @@ export async function GET() {
     orientationDate:     c.orientationDate,
     orientationZoomLink: c.orientationZoomLink,
     orientationDeckUrl:  c.orientationDeckUrl,
+    slackInviteUrl:      c.slackInviteUrl,
     founderMode: c.founderMode,
     capacity:  c.capacity,
     startDate: c.startDate,

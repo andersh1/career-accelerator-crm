@@ -32,6 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         orientationDate: body.orientationDate ? fromEasternNaive(body.orientationDate) : null }),
       ...(body.orientationZoomLink !== undefined && { orientationZoomLink: body.orientationZoomLink?.trim() || null }),
       ...(body.orientationDeckUrl !== undefined && { orientationDeckUrl: body.orientationDeckUrl?.trim() || null }),
+      // Null falls back to the shared slack_invite_url AppSetting in the LMS.
+      ...(body.slackInviteUrl !== undefined && { slackInviteUrl: body.slackInviteUrl?.trim() || null }),
     },
   });
 

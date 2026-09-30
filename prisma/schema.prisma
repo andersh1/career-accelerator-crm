@@ -27,12 +27,19 @@ model Announcement {
   title        String
   body         String
   emoji        String    @default("📣")
+  /// DEPRECATED targeting by the cohort's free-text NAME. Renaming a
+  /// cohort silently broke it. Kept so old rows still resolve; new
+  /// ones set cohortId instead.
   cohort       String?
+  /// Who it is for. Null means every cohort.
+  cohortId     String?
+  cohortRef    Cohort?   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   pinned       Boolean   @default(false)
   scheduledFor DateTime? // null = publish immediately
   emailsSentAt DateTime? // null = emails not yet sent
   createdAt    DateTime  @default(now())
   createdBy    String
+  @@index([cohortId])
 }
 
 model AppSetting {
@@ -104,7 +111,14 @@ model Cohort {
   liveSessions    LiveSession[]
   publishedAt          DateTime? @db.Timestamptz(6) // when the cohort was published to the LMS
   invitesSent          Int       @default(0) // invite emails sent by that publish
+  /// This cohort's own Slack invite. Null falls back to the shared
+  /// slack_invite_url AppSetting, which is how every cohort behaved
+  /// before. A private 1:1 client should not be invited into the
+  /// group cohort's workspace.
+  slackInviteUrl  String?
   resources       Resource[]
+  announcements   Announcement[]
+  programTools    ProgramTool[]
 }
 
 /// A live group session that is NOT one of the eight modules — the Claude build
@@ -851,6 +865,11 @@ model ProgramTool {
   order         Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
+  /// Which cohort sees this tool. Null means every cohort, which is
+  /// how all of them behaved before.
+  cohortId      String?
+  cohort        Cohort?  @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  @@index([cohortId])
 }
 
 model Progress {

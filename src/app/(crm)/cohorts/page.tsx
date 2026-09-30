@@ -73,6 +73,8 @@ interface Cohort {
   track: string;
   orientationDate: string | null;
   orientationZoomLink: string | null;
+  /** This cohort's own Slack invite. Null falls back to the shared one. */
+  slackInviteUrl: string | null;
   orientationDeckUrl: string | null;
   startDate: string | null; createdAt: string;
   publishedAt: string | null; invitesSent: number;
@@ -703,6 +705,7 @@ function CohortCard({
   const [oriDate, setOriDate] = useState("");
   const [oriZoom, setOriZoom] = useState("");
   const [oriDeck, setOriDeck] = useState("");
+  const [slackUrl, setSlackUrl] = useState("");
   const [oriSaving, setOriSaving] = useState(false);
   const [oriSaved,  setOriSaved]  = useState(false);
 
@@ -809,6 +812,7 @@ function CohortCard({
       setOriDate(toEasternInput(cohort.orientationDate));
       setOriZoom(cohort.orientationZoomLink ?? "");
       setOriDeck(cohort.orientationDeckUrl ?? "");
+      setSlackUrl(cohort.slackInviteUrl ?? "");
     }
   }, [expanded, activeTab, loadReadiness, cohort.orientationDate, cohort.orientationZoomLink, cohort.orientationDeckUrl]);
 
@@ -822,6 +826,7 @@ function CohortCard({
           orientationDate: oriDate || null,
           orientationZoomLink: oriZoom || null,
           orientationDeckUrl: oriDeck || null,
+          slackInviteUrl: slackUrl || null,
         }),
       });
       if (res.ok) {
@@ -1356,6 +1361,16 @@ function CohortCard({
                         <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
                         <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
                           className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1 sm:col-span-2">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Slack invite for this cohort</span>
+                        <input value={slackUrl} onChange={e => setSlackUrl(e.target.value)} placeholder="Leave blank to use the shared Vantage Slack invite"
+                          className="text-xs border rounded-lg px-2 py-1.5 font-mono" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                        <span className="text-[9px]" style={{ color: "#949598" }}>
+                          Blank means this cohort gets the shared invite, which is how every cohort worked before.
+                          Set one when a group needs its own workspace: a private 1:1 client should not land in a
+                          group cohort&rsquo;s Slack.
+                        </span>
                       </label>
                     </div>
                     <button onClick={saveOrientation} disabled={oriSaving}
