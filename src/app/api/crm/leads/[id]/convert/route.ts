@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const hashed       = await bcrypt.hash(tempPassword, 12);
 
   const cohort = cohortId
-    ? await prisma.cohort.findUnique({ where: { id: cohortId }, select: { name: true, track: true } })
+    ? await prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true, name: true, track: true } })
     : null;
 
   const user = await prisma.user.create({
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       resetUrl,
       cohort:      cohort?.name ?? cohortName ?? undefined,
       track:       cohort?.track,
+      cohortId:    cohort?.id ?? null,
     }).catch(() => {});
   }
 

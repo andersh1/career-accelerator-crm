@@ -83,6 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       sessionDate: fmt(row.sessionDate),
       moduleUrl: `${LMS_URL}/modules/${row.module.id}`,
       ignoreEnabled: true,
+      cohortId: params.id,
     }).catch(() => false);
     return NextResponse.json({ ok, resendTo: one.email, name: one.name }, { status: ok ? 200 : 502 });
   }
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       moduleUrl: `${LMS_URL}/modules/${row.module.id}`,
       // The button press is the decision; the enabled flag governs the cron.
       ignoreEnabled: true,
+      cohortId: params.id,
     }).catch(() => false);
 
   // Resend caps us at 10 requests/second. A tight loop over a full cohort trips

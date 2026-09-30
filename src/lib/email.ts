@@ -91,19 +91,50 @@ function textToHtml(t: string) {
     }).join("");
   }).join("");
 }
+/**
+ * Resolve an email's copy and its on/off switch.
+ *
+ * Three layers, each overriding the one before it:
+ *   1. the code defaults passed in,
+ *   2. the shared EmailTemplate row (the Email Playbook),
+ *   3. this cohort's own override, when a cohortId is given.
+ *
+ * The cohort layer is a DELTA: each of subject, body and enabled is nullable,
+ * and null means "inherit". Overriding only the subject leaves the body
+ * tracking later edits to the shared copy, rather than freezing a snapshot
+ * that quietly goes stale.
+ *
+ * Why it exists: the copy and the switch used to be shared by every cohort at
+ * once, so module-preamble-1 carried one cohort's dates and its Demo Day, and
+ * a private 1:1 client running the same module on their own schedule got the
+ * group's calendar.
+ *
+ * Returns null when the email is switched off at whichever layer decides.
+ */
 export async function renderTemplate(
   key: string,
   defaults: { subject: string; body: string },
-  vars: Record<string, string>
+  vars: Record<string, string>,
+  cohortId?: string | null,
 ): Promise<{ subject: string; bodyHtml: string } | null> {
   let t: { subject: string; body: string } = defaults;
+  let enabled = true;
   try {
     const row = await prisma.emailTemplate.findUnique({ where: { key }, select: { subject: true, body: true, enabled: true } });
-    if (row) {
-      if (!row.enabled) return null; // switched off in the Email Playbook
-      t = row;
+    if (row) { enabled = row.enabled; t = { subject: row.subject, body: row.body }; }
+
+    if (cohortId) {
+      const ov = await prisma.cohortEmailTemplate.findUnique({
+        where: { cohortId_key: { cohortId, key } },
+        select: { subject: true, body: true, enabled: true },
+      });
+      if (ov) {
+        if (ov.enabled !== null) enabled = ov.enabled;
+        t = { subject: ov.subject ?? t.subject, body: ov.body ?? t.body };
+      }
     }
-  } catch { /* fall back to defaults */ }
+  } catch { /* fall back to defaults, switched on */ }
+  if (!enabled) return null;
   return { subject: subVars(t.subject, vars), bodyHtml: textToHtml(subVars(t.body, vars)) };
 }
 
@@ -638,24 +669,37 @@ function preambleHtml(subject: string, bodyHtml: string, moduleNumber: number, m
 
 export async function sendModulePreambleEmail({
   to, studentName, moduleNumber, moduleTitle, preworkDue, sessionDate, moduleUrl,
-  ignoreEnabled = false,
+  ignoreEnabled = false, cohortId = null,
 }: {
   to: string; studentName: string | null; moduleNumber: number; moduleTitle: string;
   preworkDue: string; sessionDate: string; moduleUrl: string;
   /** Send even if the template is switched off — for an explicit "send now",
    *  where the button press is the decision and the flag governs the cron. */
   ignoreEnabled?: boolean;
+  /** Whose kick-off this is. Picks up that cohort's own copy when it has one:
+   *  the shared module-preamble copy names one cohort's dates and its Demo
+   *  Day, which is wrong for anyone running the module on another schedule. */
+  cohortId?: string | null;
 }): Promise<boolean> {
   if (!resend) return false;
   const firstName = (studentName || "there").trim().split(/\s+/)[0];
   const bookingUrl = await moduleBookingUrl(moduleUrl.split("/").pop() || null);
 
   if (ignoreEnabled) {
-    const row = await prisma.emailTemplate.findUnique({
-      where: { key: `module-preamble-${moduleNumber}` },
-      select: { subject: true, body: true },
+    const key = `module-preamble-${moduleNumber}`;
+    const shared = await prisma.emailTemplate.findUnique({
+      where: { key }, select: { subject: true, body: true },
     });
+    // The cohort's own copy wins here exactly as it does in renderTemplate, so
+    // "send now" cannot quietly send different words from the scheduled send.
+    const ov = cohortId
+      ? await prisma.cohortEmailTemplate.findUnique({
+          where: { cohortId_key: { cohortId, key } }, select: { subject: true, body: true },
+        })
+      : null;
+    const row = shared || (ov?.subject && ov?.body ? { subject: ov.subject, body: ov.body } : null);
     if (!row) return false;
+    if (ov) { row.subject = ov.subject ?? row.subject; row.body = ov.body ?? row.body; }
     const vars = { firstName, moduleNumber: String(moduleNumber), moduleTitle,
                    preworkDue, sessionDate, bookingUrl };
     const subject = subVars(row.subject, vars);
@@ -669,7 +713,7 @@ export async function sendModulePreambleEmail({
   const t = await renderTemplate(`module-preamble-${moduleNumber}`, {
     subject: `Module ${moduleNumber}: ${moduleTitle} — {{firstName}}, here is the week ahead`,
     body: `{{firstName}} —\n\nModule {{moduleNumber}} — {{moduleTitle}} is open.\n\nYour pre-work is due {{preworkDue}}, and we are together live on {{sessionDate}}.`,
-  }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate, bookingUrl });
+  }, { firstName, moduleNumber: String(moduleNumber), moduleTitle, preworkDue, sessionDate, bookingUrl }, cohortId);
   if (!t) return false; // no copy written yet, or switched off
 
   await sendChecked({
@@ -764,11 +808,13 @@ export async function renderModulePreamblePreview(
 }
 
 export async function sendStudentInviteEmail({
-  to, studentName, resetUrl, cohort, track,
+  to, studentName, resetUrl, cohort, track, cohortId,
 }: {
   to: string; studentName: string; resetUrl: string; cohort?: string;
   /** The cohort's track — see src/lib/track.ts. Absent means a normal cohort. */
   track?: string | null;
+  /** The cohort's id, so it can have its own welcome copy. */
+  cohortId?: string | null;
 }) {
   if (!resend) return;
   const t = await renderTemplate("student-invite", {
@@ -781,7 +827,7 @@ export async function sendStudentInviteEmail({
     cohortLine: (cohort && showsCohortLabel(track))
       ? `You've been enrolled in the **${publicCohortLabel(cohort)}**.`
       : "",
-  });
+  }, cohortId);
   if (!t) return; // switched off in the Email Playbook
   const body = `${t.bodyHtml}
     <a href="${resetUrl}" style="display:inline-block;margin:8px 0 24px;background:#086c64;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">

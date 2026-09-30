@@ -90,6 +90,7 @@ export async function GET(req: Request) {
         preworkDue: fmt(row.preworkDue),
         sessionDate: fmt(row.sessionDate),
         moduleUrl: `${LMS_URL}/modules/${row.module.id}`,
+        cohortId: row.cohortId,
       }).catch(() => false);
       if (ok) sent++;
     }

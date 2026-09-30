@@ -33,6 +33,11 @@ model Announcement {
   cohort       String?
   /// Who it is for. Null means every cohort.
   cohortId     String?
+  /// An admin-only record rather than something to tell Fellows. The
+  /// email blast logs itself here so its history sits with the other
+  /// announcements for admins, but a Fellow must never see
+  /// "Sent to 47 recipients. Filters: {...}" on their dashboard.
+  internal     Boolean   @default(false)
   cohortRef    Cohort?   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   pinned       Boolean   @default(false)
   scheduledFor DateTime? // null = publish immediately
@@ -118,6 +123,7 @@ model Cohort {
   slackInviteUrl  String?
   resources       Resource[]
   announcements   Announcement[]
+  emailOverrides  CohortEmailTemplate[]
   programTools    ProgramTool[]
 }
 
@@ -1455,4 +1461,31 @@ model Organization {
   promoCodes  PromoCode[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
+}
+
+/// One cohort's override of an automated email.
+///
+/// A delta, not a copy: every field is nullable and null means "inherit the
+/// shared EmailTemplate". So a cohort can change only the subject, or only
+/// switch the email off, without taking a snapshot of copy that then stops
+/// tracking edits to the shared version.
+///
+/// This exists because the copy AND the on/off switch used to be shared by
+/// every cohort at once. module-preamble-1 carried one cohort's dates and
+/// its Demo Day, which is wrong for a private 1:1 client running the same
+/// module on their own schedule.
+model CohortEmailTemplate {
+  id        String   @id @default(cuid())
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  /// Matches EmailTemplate.key, e.g. "module-preamble-1".
+  key       String
+  subject   String?
+  body      String?
+  enabled   Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([cohortId, key])
+  @@index([cohortId])
 }

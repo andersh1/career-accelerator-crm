@@ -115,6 +115,20 @@ interface GenRow {
   preambleLocked: boolean;
 }
 
+/** One automated email, with the shared copy and this cohort's override side
+ *  by side. A null override field means this cohort inherits the shared one. */
+interface EmailRow {
+  key: string;
+  name: string;
+  sharedSubject: string;
+  sharedBody: string;
+  sharedEnabled: boolean;
+  subject: string | null;
+  body: string | null;
+  enabled: boolean | null;
+  overridden: boolean;
+}
+
 interface ScheduleEntry {
   moduleId:        string;
   moduleNumber:    number;
@@ -641,7 +655,7 @@ function CohortCard({
   const unenrolled = students.filter(s => !s.cohortId || s.cohortId !== cohort.id);
 
   // Schedule tab state
-  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule" | "sessions">("setup");
+  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule" | "sessions" | "emails">("setup");
 
   // Working sessions: links and publishing, where the rest of the cohort is set
   // up. Creating them and writing descriptions stays in the LMS.
@@ -840,6 +854,48 @@ function CohortCard({
       setOriSaving(false);
     }
   }
+  // Per-cohort email overrides. Null until the tab is opened.
+  const [emails,       setEmails]       = useState<EmailRow[] | null>(null);
+  const [emailsLoading, setEmailsLoading] = useState(false);
+  const [emailEditing, setEmailEditing]  = useState<string | null>(null);
+  const [emailDraft,   setEmailDraft]    = useState<{ subject: string; body: string; enabled: "inherit" | "on" | "off" }>({ subject: "", body: "", enabled: "inherit" });
+  const [emailSaving,  setEmailSaving]   = useState<string | null>(null);
+
+  const loadEmails = useCallback(async () => {
+    setEmailsLoading(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/emails`);
+      if (res.ok) setEmails(await res.json());
+    } finally { setEmailsLoading(false); }
+  }, [cohort.id]);
+
+  useEffect(() => {
+    if (expanded && activeTab === "emails" && emails === null) loadEmails();
+  }, [expanded, activeTab, emails, loadEmails]);
+
+  async function saveEmail(key: string) {
+    setEmailSaving(key);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/emails`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key,
+          subject: emailDraft.subject.trim() || null,
+          body:    emailDraft.body.trim() || null,
+          enabled: emailDraft.enabled === "inherit" ? null : emailDraft.enabled === "on",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error ?? "That did not save.");
+        return;
+      }
+      await loadEmails();
+      setEmailEditing(null);
+    } finally { setEmailSaving(null); }
+  }
+
   const [schedule,     setSchedule]     = useState<ScheduleEntry[] | null>(null);
   const [schedLoading, setSchedLoading] = useState(false);
   const [editingRow,   setEditingRow]   = useState<string | null>(null);
@@ -1255,7 +1311,7 @@ function CohortCard({
         <div className="border-t" style={{ borderColor: "#e4e0d6" }}>
           {/* Tab bar */}
           <div className="flex border-b px-5" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-            {(["setup", "roster", "schedule", "sessions"] as const).map(tab => (
+            {(["setup", "roster", "schedule", "sessions", "emails"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1268,10 +1324,134 @@ function CohortCard({
                 {tab === "setup"
                   ? (readiness && readiness.outstanding > 0 ? `Setup (${readiness.outstanding})` : "Setup")
                   : tab === "roster" ? `Roster (${enrolled.length})`
-                  : tab === "schedule" ? "Schedule" : "Sessions"}
+                  : tab === "schedule" ? "Schedule"
+                  : tab === "sessions" ? "Sessions"
+                  : (emails && emails.some(e => e.overridden) ? `Emails (${emails.filter(e => e.overridden).length})` : "Emails")}
               </button>
             ))}
           </div>
+
+
+          {/* Emails tab — per-cohort overrides of the shared copy. */}
+          {activeTab === "emails" && (
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xs" style={{ color: "#5a6663" }}>
+                Every automated email uses the shared copy from <strong>Automation → Email Playbook</strong>.
+                Override one here and only <strong>{cohort.name}</strong> gets the different version. Leave a
+                box blank to keep using the shared one, so changing just the subject still picks up later
+                edits to the shared body.
+              </p>
+
+              {emailsLoading && <p className="text-xs" style={{ color: "#949598" }}>Loading…</p>}
+
+              {emails?.map(row => {
+                const isEditing = emailEditing === row.key;
+                const effEnabled = row.enabled ?? row.sharedEnabled;
+                return (
+                  <div key={row.key} className="rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "white" }}>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold font-mono" style={{ color: "#14211f" }}>{row.key}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                          style={effEnabled
+                            ? { background: "#e6f4f1", color: "#086c64" }
+                            : { background: "#f1efe8", color: "#949598" }}>
+                          {effEnabled ? "On" : "Off"}
+                        </span>
+                        {row.overridden && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                            style={{ background: "#fdf0e3", color: "#b45309" }}>
+                            Custom for this cohort
+                          </span>
+                        )}
+                      </div>
+                      {isEditing ? (
+                        <div className="flex gap-1.5">
+                          <button onClick={() => saveEmail(row.key)} disabled={emailSaving === row.key}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg text-white" style={{ background: "#086c64" }}>
+                            {emailSaving === row.key ? "Saving…" : "Save"}
+                          </button>
+                          <button onClick={() => setEmailEditing(null)}
+                            className="text-xs px-2 py-1 rounded-lg" style={{ background: "#f1efe8", color: "#5a6663" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEmailEditing(row.key);
+                            setEmailDraft({
+                              subject: row.subject ?? "",
+                              body:    row.body ?? "",
+                              enabled: row.enabled === null ? "inherit" : row.enabled ? "on" : "off",
+                            });
+                          }}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+                          style={{ background: "#f1efe8", color: "#5a6663" }}>
+                          {row.overridden ? "Edit override" : "Override for this cohort"}
+                        </button>
+                      )}
+                    </div>
+
+                    {!isEditing && (
+                      <p className="text-xs mt-1.5" style={{ color: "#949598" }}>
+                        {row.subject ?? row.sharedSubject}
+                        {!row.overridden && " · using the shared copy"}
+                      </p>
+                    )}
+
+                    {isEditing && (
+                      <div className="mt-3 space-y-2">
+                        <div>
+                          <label className="text-[10px] font-semibold block mb-1" style={{ color: "#949598" }}>
+                            Subject — blank keeps the shared one
+                          </label>
+                          <input
+                            value={emailDraft.subject}
+                            onChange={e => setEmailDraft(d => ({ ...d, subject: e.target.value }))}
+                            placeholder={row.sharedSubject}
+                            className="w-full text-xs border rounded-lg px-2 py-1.5"
+                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold block mb-1" style={{ color: "#949598" }}>
+                            Body — blank keeps the shared one
+                          </label>
+                          <textarea
+                            value={emailDraft.body}
+                            onChange={e => setEmailDraft(d => ({ ...d, body: e.target.value }))}
+                            placeholder={row.sharedBody}
+                            rows={8}
+                            className="w-full text-xs border rounded-lg px-2 py-1.5 font-mono"
+                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold block mb-1" style={{ color: "#949598" }}>
+                            On or off, for this cohort only
+                          </label>
+                          <select
+                            value={emailDraft.enabled}
+                            onChange={e => setEmailDraft(d => ({ ...d, enabled: e.target.value as "inherit" | "on" | "off" }))}
+                            className="text-xs border rounded-lg px-2 py-1.5"
+                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
+                            <option value="inherit">Follow the shared setting ({row.sharedEnabled ? "on" : "off"})</option>
+                            <option value="on">On for this cohort</option>
+                            <option value="off">Off for this cohort</option>
+                          </select>
+                        </div>
+                        <p className="text-[10px]" style={{ color: "#949598" }}>
+                          Clearing both boxes and choosing &ldquo;Follow the shared setting&rdquo; removes the
+                          override entirely and puts this cohort back on the shared email.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Setup tab — the ordered walkthrough, read from the database so it
               cannot disagree with what is actually configured. */}
