@@ -1120,9 +1120,19 @@ function CohortCard({
   const pendingCount  = enrolled.filter(s => lmsStatus(s) === "pending").length;
 
   const fillPct  = cohort.capacity ? Math.round((cohort.enrolled / cohort.capacity) * 100) : null;
+  /**
+   * Filling up is the goal, so it should not look like an emergency.
+   *
+   * This went red at 90%, which meant a private 1:1 client with one seat and
+   * one Fellow — exactly right — rendered as a red 100% bar. Red is now
+   * reserved for the one state that is genuinely wrong: more Fellows enrolled
+   * than there are seats. Full is amber, as a "plan the next one" nudge, and a
+   * private cohort at capacity is simply done.
+   */
   const fillColor = fillPct == null ? "#086c64"
-    : fillPct >= 90 ? "#dc2626"
-    : fillPct >= 70 ? "#d97706"
+    : cohort.track === "PRIVATE" ? "#086c64"
+    : fillPct > 100 ? "#dc2626"
+    : fillPct >= 90 ? "#d97706"
     : "#086c64";
 
   return (
@@ -1293,8 +1303,8 @@ function CohortCard({
               <button
                 onClick={onToggleFounder}
                 title={cohort.founderMode
-                  ? "Founder Mode is ON — students see the founder dashboard layer. Click to turn off."
-                  : "Turn on Founder Mode — adds the momentum chip, weekly founder moves, and pipeline teaser to this cohort's student dashboard."}
+                  ? "ON — every Fellow in this cohort sees a momentum score and suggested next moves at the top of their dashboard. Click to turn it off."
+                  : "OFF — turning it on adds a momentum score and suggested next moves to the top of every Fellow's dashboard in this cohort. It changes what they see, not what you see."}
                 className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition"
                 style={cohort.founderMode
                   ? { background: "#086c64", color: "#ffffff" }
@@ -1623,6 +1633,20 @@ function CohortCard({
                         Saved. The checklist above has been re-checked.
                       </span>
                     )}
+                    {/* What the Founder Mode button in the header actually does.
+                        It had a tooltip, but a tooltip you have to hover is how
+                        a control ends up unexplained for months. */}
+                    <div className="mt-4 pt-3 border-t" style={{ borderColor: "#e4e0d6" }}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
+                        Founder Mode — currently {cohort.founderMode ? "ON" : "off"} for this cohort
+                      </p>
+                      <p className="text-[11px]" style={{ color: "#5a6663" }}>
+                        It changes what <strong>Fellows</strong> see, not what you see. With it on, everyone in this
+                        cohort gets a momentum score and a short list of suggested next moves at the top of their
+                        dashboard. The toggle is the rocket button at the top of this card.
+                      </p>
+                    </div>
+
                     <button
                       onClick={() => orientationEmail(false)}
                       disabled={oriMailBusy}
