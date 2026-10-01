@@ -696,6 +696,32 @@ function CohortCard({
   const [sessions,     setSessions]     = useState<WorkingSession[] | null>(null);
   const [sessLoading,  setSessLoading]  = useState(false);
   const [sessDraft,    setSessDraft]    = useState<Record<string, { zoomLink: string; published: boolean }>>({});
+  // Generating the five working sessions from the cohort's own schedule.
+  const [wsTime, setWsTime]   = useState(cohort.track === "PRIVATE" ? "11:00" : "13:00");
+  const [wsMins, setWsMins]   = useState(cohort.track === "PRIVATE" ? 45 : 60);
+  const [wsBusy, setWsBusy]   = useState(false);
+  const [wsPlan, setWsPlan]   = useState<{ wouldCreate: number; sessions: { moduleNumber: number; title: string; startsAt: string; status: string }[]; skipped: number[] } | null>(null);
+  const [wsMsg,  setWsMsg]    = useState("");
+
+  async function generateWorkingSessions(apply: boolean) {
+    setWsBusy(true); setWsMsg("");
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}/working-sessions`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeOfDay: wsTime, durationMins: wsMins, apply }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setWsMsg(d.error ?? "That did not work."); return; }
+      if (apply) {
+        setWsMsg(`${d.created} created as drafts${d.tagged ? `, ${d.tagged} existing session(s) linked to their module` : ""}. Publish them below when the titles read right.`);
+        setWsPlan(null);
+        setSessions(null);
+        onChanged?.();
+      } else {
+        setWsPlan(d);
+      }
+    } finally { setWsBusy(false); }
+  }
   const [sessBusy,     setSessBusy]     = useState(false);
   const [sessResult,   setSessResult]   = useState<string | null>(null);
 
@@ -1706,6 +1732,68 @@ function CohortCard({
               session and writing its description stays in the LMS. */}
           {activeTab === "sessions" && (
             <div className="px-5 py-4">
+              {/* Generate from the cohort's own schedule. The cadence is one
+                  session the day after each of Modules 4-8 opens, read off what
+                  was already built by hand for both running cohorts. */}
+              <div className="rounded-xl border p-3 mb-4" style={{ borderColor: "#e4e0d6", background: "#faf9f5" }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: "#14211f" }}>
+                  Generate the five working sessions
+                </p>
+                <p className="text-[11px] mb-2" style={{ color: "#5a6663" }}>
+                  One the day after each of Modules 4 to 8 opens, from this cohort&apos;s own schedule. All optional,
+                  all created as drafts so you can read them before any Fellow can. Anything already there is left
+                  alone.
+                </p>
+                <div className="flex items-end gap-2 flex-wrap">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Time (ET)</span>
+                    <input type="time" value={wsTime} onChange={e => setWsTime(e.target.value)}
+                      className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Minutes</span>
+                    <input type="number" min={15} max={180} value={wsMins}
+                      onChange={e => setWsMins(Number(e.target.value) || 60)}
+                      className="w-20 text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                  </label>
+                  <button onClick={() => generateWorkingSessions(false)} disabled={wsBusy}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40"
+                    style={{ border: "1px solid #086c64", color: "#086c64" }}>
+                    {wsBusy ? "…" : "Preview"}
+                  </button>
+                  {wsPlan && wsPlan.wouldCreate > 0 && (
+                    <button onClick={() => generateWorkingSessions(true)} disabled={wsBusy}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-40"
+                      style={{ background: "#086c64" }}>
+                      Create {wsPlan.wouldCreate}
+                    </button>
+                  )}
+                </div>
+
+                {wsPlan && (
+                  <div className="mt-2 space-y-1">
+                    {wsPlan.sessions.map(s2 => (
+                      <p key={s2.moduleNumber} className="text-[11px]" style={{ color: s2.status === "new" ? "#086c64" : "#949598" }}>
+                        M{s2.moduleNumber} · {new Date(s2.startsAt).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric" })}
+                        {" · "}{s2.status === "new" ? "new" : "already there"}
+                        {" — "}{s2.title}
+                      </p>
+                    ))}
+                    {wsPlan.wouldCreate === 0 && (
+                      <p className="text-[11px] font-semibold" style={{ color: "#086c64" }}>
+                        All five are already there. Nothing to create.
+                      </p>
+                    )}
+                    {wsPlan.skipped.length > 0 && (
+                      <p className="text-[11px]" style={{ color: "#b45309" }}>
+                        No opening date on M{wsPlan.skipped.join(", M")}, so those were skipped. Set the schedule first.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {wsMsg && <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{wsMsg}</p>}
+              </div>
+
               {sessLoading && !sessions ? (
                 <div className="flex items-center gap-2 py-4">
                   <Loader2 size={14} className="animate-spin" style={{ color: "#949598" }} />

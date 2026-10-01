@@ -153,6 +153,17 @@ model LiveSession {
   /// Markdown body: what it's for, what to bring, what you leave with.
   description  String?
   startsAt     DateTime? @db.Timestamptz(6)
+  /// Which module's week this session supports. Null is a standing session
+  /// tied to no module. It exists because nothing could be inferred: the
+  /// sessions sit one day after a module OPENS, which is before that module's
+  /// own live session, so matching on nearest session date picked the module
+  /// before. The Overview's journey card reads this for its date.
+  moduleId     String?
+  module       Module?   @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  /// Working sessions are drop-in: coming is a choice, not a requirement, and
+  /// the Fellow should be told so rather than left to wonder. Defaults true
+  /// because that is true of every one of them today.
+  optional     Boolean   @default(true)
   durationMins Int?
   zoomLink     String?
   /// Fellows only see published sessions; drafts stay admin-side.
@@ -705,6 +716,7 @@ model Module {
   discussionPosts   DiscussionPost[]
   weeklyCheckins    WeeklyCheckin[]
   hotSeatSessions   HotSeatSession[]
+  liveSessions LiveSession[]
 }
 
 model Note {
