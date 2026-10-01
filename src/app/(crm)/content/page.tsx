@@ -25,7 +25,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import AppShell from "@/components/layout/AppShell";
 import {
   Layers, Plus, Loader2, Trash2, ChevronDown, ChevronUp, Save, X,
   GitBranch, AlertTriangle, Users,
@@ -162,8 +161,7 @@ export default function ContentVersionsPage() {
   const tracks = Array.from(new Set([...(versions ?? []).map(v => v.track), "COHORT", "PRIVATE", "UNIVERSITY"]));
 
   return (
-    <AppShell>
-      <div className="p-5 sm:p-8 max-w-5xl mx-auto">
+    <div className="p-5 sm:p-8 max-w-5xl mx-auto">
         <div className="flex items-start justify-between gap-3 mb-1">
           <div>
             <h1 className="font-display font-semibold flex items-center gap-2" style={{ fontSize: "1.6rem", color: "#14211f" }}>
@@ -396,7 +394,6 @@ export default function ContentVersionsPage() {
             );
           })}
         </div>
-      </div>
-    </AppShell>
+    </div>
   );
 }
