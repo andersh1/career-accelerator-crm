@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import CohortBoard from "@/components/crm/CohortBoard";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
 import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays, FileText, Film } from "lucide-react";
@@ -132,6 +133,8 @@ interface EmailRow {
   overridden: boolean;
 }
 
+type CohortTab = "setup" | "roster" | "schedule" | "sessions" | "emails";
+
 interface ScheduleEntry {
   moduleId:        string;
   moduleNumber:    number;
@@ -162,6 +165,10 @@ export default function CohortsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  /** Set by the board when a step is clicked, so the card opens on the tab
+   *  where that work actually happens rather than always on Setup. */
+  const [jumpTo, setJumpTo] = useState<{ id: string; tab: CohortTab; n: number } | null>(null);
+  const [boardKey, setBoardKey] = useState(0);
 
   // Create
   const [creating,      setCreating]      = useState(false);
@@ -331,6 +338,18 @@ export default function CohortsPage() {
         </button>
       </div>
 
+      {/* The board. Every cohort in the column its data puts it in, with the
+          one thing that needs doing next. Clicking a step opens that cohort's
+          panel below, on the tab where the work happens. */}
+      <CohortBoard
+        refreshKey={boardKey}
+        onOpen={(id, tab) => {
+          setExpanded(id);
+          setJumpTo({ id, tab, n: Date.now() });
+          document.getElementById(`cohort-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
+
       {/* Publish success banner */}
       {publishResult && (
         <div className="flex items-center gap-3 rounded-2xl px-5 py-4" style={{ background: "#edf5f4", border: "1px solid #d0e8e6" }}>
@@ -457,6 +476,8 @@ export default function CohortsPage() {
                 cohort={cohort}
                 students={students}
                 expanded={expanded === cohort.id}
+                jumpTo={jumpTo?.id === cohort.id ? jumpTo : null}
+                onChanged={() => setBoardKey(k => k + 1)}
                 onToggleExpand={() => setExpanded(expanded === cohort.id ? null : cohort.id)}
                 editing={editingId === cohort.id}
                 editName={editName}
@@ -499,6 +520,8 @@ export default function CohortsPage() {
                 cohort={cohort}
                 students={students}
                 expanded={expanded === cohort.id}
+                jumpTo={jumpTo?.id === cohort.id ? jumpTo : null}
+                onChanged={() => setBoardKey(k => k + 1)}
                 onToggleExpand={() => setExpanded(expanded === cohort.id ? null : cohort.id)}
                 editing={editingId === cohort.id}
                 editName={editName}
@@ -615,6 +638,10 @@ export default function CohortsPage() {
 // ─── Cohort Card ──────────────────────────────────────────────────────────────
 
 interface CohortCardProps {
+  /** The board asked to open this cohort on a tab. `n` makes repeat clicks work. */
+  jumpTo?: { tab: CohortTab; n: number } | null;
+  /** Tell the board to re-read after something here changes it. */
+  onChanged?: () => void;
   cohort: Cohort;
   students: Student[];
   expanded: boolean;
@@ -639,7 +666,7 @@ interface CohortCardProps {
 }
 
 function CohortCard({
-  cohort, students, expanded, onToggleExpand,
+  cohort, students, expanded, onToggleExpand, jumpTo, onChanged,
   editing, editName, editCap, editStartDate,
   onEditStart, onEditName, onEditCap, onEditStartDate,
   onEditSave, onEditCancel, saving,
@@ -658,7 +685,11 @@ function CohortCard({
   const unenrolled = students.filter(s => !s.cohortId || s.cohortId !== cohort.id);
 
   // Schedule tab state
-  const [activeTab,    setActiveTab]    = useState<"setup" | "roster" | "schedule" | "sessions" | "emails">("setup");
+  const [activeTab,    setActiveTab]    = useState<CohortTab>("setup");
+
+  // The board asked for a particular tab. Keyed on `n` rather than the tab
+  // name so clicking the same step twice still works.
+  useEffect(() => { if (jumpTo) setActiveTab(jumpTo.tab); }, [jumpTo?.n, jumpTo]);
 
   // Working sessions: links and publishing, where the rest of the cohort is set
   // up. Creating them and writing descriptions stays in the LMS.
@@ -860,6 +891,7 @@ function CohortCard({
         // The checklist above updates, but quietly. Without a word here it
         // reads as if the button did nothing.
         setOriSaved(true);
+        onChanged?.();
         setTimeout(() => setOriSaved(false), 4000);
       }
     } finally {
@@ -1076,6 +1108,7 @@ function CohortCard({
           : r
       ) ?? null);
       setEditingRow(null);
+      onChanged?.();
     } finally {
       setSavingRow(null);
     }
@@ -1093,7 +1126,7 @@ function CohortCard({
     : "#086c64";
 
   return (
-    <div className="card overflow-hidden">
+    <div id={`cohort-${cohort.id}`} className="card overflow-hidden scroll-mt-4">
       {/* Main row */}
       <div className="flex items-center gap-4 px-5 py-4">
         {/* Icon */}
@@ -1323,7 +1356,7 @@ function CohortCard({
         <div className="border-t" style={{ borderColor: "#e4e0d6" }}>
           {/* Tab bar */}
           <div className="flex border-b px-5" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-            {(["setup", "roster", "schedule", "sessions", "emails"] as const).map(tab => (
+            {(["setup", "roster", "schedule", "sessions", "emails"] as CohortTab[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
