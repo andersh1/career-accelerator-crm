@@ -75,7 +75,11 @@ export default function CohortBoard({
         </label>
       </div>
 
-      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))" }}>
+      {/* Four explicit columns rather than auto-fit: auto-fit silently wraps
+          Launched onto a second row the moment the container is a little too
+          narrow, and a board whose last column falls below the others stops
+          reading as a sequence. Stacks on a phone, two up on a tablet. */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start">
         {PHASES.map(ph => {
           const inCol = cards.filter(c => c.phase === ph.key);
           return (

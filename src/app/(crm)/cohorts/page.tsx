@@ -313,7 +313,7 @@ export default function CohortsPage() {
   }
 
   return (
-    <div className="p-6 sm:p-8 max-w-4xl mx-auto animate-fade-up space-y-8">
+    <div className="p-6 sm:p-8 max-w-6xl mx-auto animate-fade-up space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
