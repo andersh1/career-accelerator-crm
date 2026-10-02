@@ -1078,7 +1078,7 @@ The module itself, with Dan. These are the ones to protect.
 
 {{liveSessions}}{{workingSessions}}
 
-Your workspace is at {{lmsUrl}}. Module 1 is already open, so you can start whenever you are ready rather than waiting for orientation.
+Your workspace is at {{lmsUrl}}. After orientation, you will start working on Module 1. For now, set up your account and look around.
 
 See you there.`,
   }, vars);
