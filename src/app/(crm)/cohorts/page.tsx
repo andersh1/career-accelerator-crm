@@ -1958,6 +1958,13 @@ function CohortCard({
                               Last active {new Date(s.lastActiveAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
+                          {/* Coaching notes live in the LMS, on the Fellow. They were
+                              there all along and nobody could find them, which is why
+                              a 1:1 write-up had nowhere obvious to go. */}
+                          <a href={`${LMS_BASE}/admin/students/${s.id}`} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] font-semibold flex-shrink-0 hover:underline" style={{ color: "#086c64" }}>
+                            Coaching notes ↗
+                          </a>
                         </div>
                       </div>
                     </div>
