@@ -18,15 +18,20 @@ deploy and a dirty-tree deploy fight each other, and the loser is always
 whatever was never committed.
 
 1. **Commit before you hand work off or ask for a deploy.**
-2. **Deploy from a clean worktree off `origin/main`**, never from the local
-   folder, which ships whatever is sitting in it:
+2. **Pushing to `main` IS the deploy.** This project is connected to GitHub
+   (`andersh1/career-accelerator-crm`), so a push to `main` builds and goes to
+   `crm.vantagecareer.co` by itself:
    ```bash
-   git worktree add -q --detach /tmp/deploy origin/main
-   cp -R .vercel /tmp/deploy/.vercel
-   cd /tmp/deploy && npx vercel deploy --prod --yes --scope team_Nvu1yh8J9J7fl7hAoTRdV1i4
+   git push origin main
    ```
-   A first attempt sometimes returns `"Not authorized"`. Retry once; it is
-   transient.
+   Then confirm the resulting deployment's `meta.githubCommitSha` equals your
+   `HEAD` (the Vercel MCP `get_deployment` with `withGitRepoInfo` shows it;
+   `vercel inspect` does not). `source: "git"` means it came from a push.
+
+   **Do not run `vercel deploy --prod` from a folder.** It uploads whatever is
+   on disk with no commit attached, which is how the 8 October breakage
+   happened. Undo with
+   `npx vercel promote <previous-url> --scope team_Nvu1yh8J9J7fl7hAoTRdV1i4`.
 3. **Never commit** `tsconfig.tsbuildinfo` or `.DS_Store`.
 4. **Check before deploying**: `git fetch && git status`. Other sessions push
    here. If the tree is dirty with someone else's work, find out whether it is
