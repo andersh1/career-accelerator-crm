@@ -1227,6 +1227,10 @@ model User {
   /// blocks login and drops them from every cron, count and report instead.
   withdrawnAt          DateTime?
   withdrawnReason      String?
+  /// Caleb's own seats for testing the Fellow experience. Real accounts that
+  /// must keep working; the flag only takes them out of MEASUREMENT, where a
+  /// test seat inflates a denominator. Mirrored from the LMS schema.
+  isTestAccount        Boolean   @default(false)
   /// Per-person UI preferences that should follow the account, not the browser.
   uiPrefs              Json?
   threeSixtyResponses  ThreeSixtyResponse[]
