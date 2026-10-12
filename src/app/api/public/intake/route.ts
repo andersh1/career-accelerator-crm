@@ -149,23 +149,30 @@ export async function POST(req: NextRequest) {
      * damage this branch exists to stop. Anything decided (enrolled, withdrawn,
      * denied, unsubscribed) or past application is absent, so it never moves.
      */
-    // Rank the FULL pipeline so a forward-only move works for every stage. The
-    // old map listed only a handful of early stages, so a lead sitting at one it
-    // didn't name (e.g. CONTACTED) could never be advanced by an application — it
-    // just stayed put until someone moved it by hand. Decided / terminal stages
-    // (WITHDRAWN, DENIED, LOST, UNSUBSCRIBED) are deliberately absent, so a form
-    // never reactivates them; later stages outrank APPLIED, so an application
-    // never drags a lead backward.
+    // Non-application resubmissions (e.g. a keep-in-touch form) only move a lead
+    // forward within the ranked pipeline, never backward.
     const STAGE_RANK: Record<string, number> = Object.fromEntries(
       ["WAITLIST", "COLD", "KEEP_IN_TOUCH", "LEAD", "CONTACTED", "WAITING_TO_MEET",
        "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "ENROLLED", "COMPLETED", "GRADUATED"]
         .map((s, i) => [s, i]),
     );
+    // An APPLICATION must never be stranded in an earlier column. It moves the
+    // lead to APPLIED from ANY stage except one already at/past the application
+    // or decided — so even a stage we never anticipated still advances. A lead at
+    // a decided stage stays put, but the admin alert + notification below still
+    // fire, so a re-application is never silently lost.
+    const AT_OR_PAST_APPLICATION = new Set([
+      "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "ENROLLED", "COMPLETED",
+      "GRADUATED", "DECLINED", "DENIED", "WITHDRAWN", "LOST", "UNSUBSCRIBED",
+    ]);
     const incomingStage = stage?.trim();
-    const moveStage = !!incomingStage
-      && (existing.stage ?? "") in STAGE_RANK
-      && incomingStage in STAGE_RANK
-      && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage!];
+    const moveStage = isApp
+      ? !AT_OR_PAST_APPLICATION.has(existing.stage ?? "")
+      : (!!incomingStage
+          && (existing.stage ?? "") in STAGE_RANK
+          && incomingStage in STAGE_RANK
+          && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage!]);
+    const targetStage = isApp ? "APPLIED" : incomingStage;
 
     // Owner follows what the lead IS after this submission, not what the latest
     // form said — a Consultation that also ticks keep-in-touch is still Dan's.
@@ -181,7 +188,7 @@ export async function POST(req: NextRequest) {
       submitted: { phone, school, academicYear, jobTitle, zip },
       changes: {
         ...(upgradeType ? { leadType: incomingType } : {}),
-        ...(moveStage ? { stage: incomingStage } : {}),
+        ...(moveStage ? { stage: targetStage } : {}),
         ...(isApp ? { priority: "HIGH" } : {}),
         ...(owner && !existing.assignedTo ? { assignedTo: owner } : {}),
       },
@@ -190,7 +197,8 @@ export async function POST(req: NextRequest) {
         : `Re-submitted via web form (${incomingType.toLowerCase()})`,
       details: [
         upgradeType ? `Lead type ${existing.leadType} → ${incomingType}` : null,
-        moveStage ? `Stage ${existing.stage} → ${incomingStage}` : null,
+        moveStage ? `Stage ${existing.stage} → ${targetStage}` : null,
+        (isApp && !moveStage) ? `Application received while at ${existing.stage} (a decided stage) — left for review` : null,
       ],
       body: notes,
     });
@@ -211,7 +219,9 @@ export async function POST(req: NextRequest) {
           // in the same place in the feed rather than looking like a lesser event.
           type:   "NEW_INTAKE",
           title:  `New application: ${firstName.trim()} ${lastName.trim()}`,
-          body:   `Already in the CRM as ${(existing.leadType ?? "a lead").toLowerCase().replace(/_/g, " ")} — moved to Application.`,
+          body:   moveStage
+            ? `Already in the CRM as ${(existing.leadType ?? "a lead").toLowerCase().replace(/_/g, " ")} — moved to Application.`
+            : `⚠️ Applied while at ${(existing.stage ?? "a decided stage").toLowerCase().replace(/_/g, " ")} (a decided stage). Left as-is — review and move manually if this should re-open.`,
           leadId: existing.id,
           href:   `/leads/${existing.id}`,
         },
