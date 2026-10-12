@@ -149,14 +149,23 @@ export async function POST(req: NextRequest) {
      * damage this branch exists to stop. Anything decided (enrolled, withdrawn,
      * denied, unsubscribed) or past application is absent, so it never moves.
      */
-    const STAGE_RANK: Record<string, number> = {
-      WAITLIST: 0, COLD: 0, LEAD: 1, KEEP_IN_TOUCH: 1, WAITING_TO_MEET: 2, APPLIED: 3,
-    };
+    // Rank the FULL pipeline so a forward-only move works for every stage. The
+    // old map listed only a handful of early stages, so a lead sitting at one it
+    // didn't name (e.g. CONTACTED) could never be advanced by an application — it
+    // just stayed put until someone moved it by hand. Decided / terminal stages
+    // (WITHDRAWN, DENIED, LOST, UNSUBSCRIBED) are deliberately absent, so a form
+    // never reactivates them; later stages outrank APPLIED, so an application
+    // never drags a lead backward.
+    const STAGE_RANK: Record<string, number> = Object.fromEntries(
+      ["WAITLIST", "COLD", "KEEP_IN_TOUCH", "LEAD", "CONTACTED", "WAITING_TO_MEET",
+       "APPLIED", "STRATEGY_CALL", "ADMITTED", "OFFER_SENT", "ENROLLED", "COMPLETED", "GRADUATED"]
+        .map((s, i) => [s, i]),
+    );
     const incomingStage = stage?.trim();
     const moveStage = !!incomingStage
-      && existing.stage in STAGE_RANK
+      && (existing.stage ?? "") in STAGE_RANK
       && incomingStage in STAGE_RANK
-      && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage];
+      && STAGE_RANK[incomingStage] > STAGE_RANK[existing.stage!];
 
     // Owner follows what the lead IS after this submission, not what the latest
     // form said — a Consultation that also ticks keep-in-touch is still Dan's.
