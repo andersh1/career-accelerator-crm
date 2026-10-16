@@ -397,10 +397,10 @@ export default function SettingsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[#e4e0d6] mb-6">
+      <div className="flex gap-1 border-b border-[#e4e0d6] mb-6 overflow-x-auto scrollbar-thin">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition shrink-0 whitespace-nowrap ${
               activeTab === t.key
                 ? "border-[#086c64] text-[#086c64]"
                 : "border-transparent hover:border-[#e4e0d6]"

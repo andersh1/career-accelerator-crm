@@ -600,6 +600,7 @@ export default function AnalyticsPage() {
                   <h2 className="text-sm font-bold" style={{ color: "#14211f" }}>Rep Performance</h2>
                   <p className="text-xs mt-0.5" style={{ color: "#949598" }}>Pipeline value and conversion by team member</p>
                 </div>
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#e4e0d6]" style={{ background: "#f8f6f1" }}>
@@ -644,6 +645,7 @@ export default function AnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               {/* Bar chart: pipeline by rep */}

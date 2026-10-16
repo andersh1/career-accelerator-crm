@@ -37,7 +37,7 @@ export default function ReferralsPage() {
 
       {/* Summary chips */}
       {!loading && rows.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
           {[
             { label: "Active referrers", value: rows.length,    icon: Users },
             { label: "Total referrals",  value: totalLeads,     icon: Share2 },

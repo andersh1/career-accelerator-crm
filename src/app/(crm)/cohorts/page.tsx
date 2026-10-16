@@ -2201,7 +2201,7 @@ function CohortCard({
                         )}
 
                         {genPreview && (
-                          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #e4e0d6" }}>
+                          <div className="rounded-lg overflow-x-auto" style={{ border: "1px solid #e4e0d6" }}>
                             <table className="w-full text-[10px]">
                               <thead>
                                 <tr style={{ background: "#f8f6f1", color: "#5a6663" }}>

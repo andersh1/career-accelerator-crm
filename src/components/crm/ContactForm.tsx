@@ -103,7 +103,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
         <form onSubmit={submit} className="p-6 space-y-4">
 
           {/* Name */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>First Name *</label>
               <div className="relative">
@@ -132,7 +132,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           </div>
 
           {/* Email + Phone */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Email *</label>
               <div className="relative">
@@ -165,7 +165,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           </div>
 
           {/* Company + Job Title */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>Organization</label>
               <div className="relative">
@@ -210,7 +210,7 @@ export default function ContactForm({ onClose, onSaved }: Props) {
           </div>
 
           {/* Source + Assigned To */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: "#949598" }}>How you met</label>
               <select

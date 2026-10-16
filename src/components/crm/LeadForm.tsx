@@ -105,7 +105,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
         </div>
 
         <form onSubmit={submit} className="p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">First Name *</label>
               <div className="relative">
@@ -123,7 +123,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Email *</label>
               <div className="relative">
@@ -144,7 +144,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Company</label>
               <div className="relative">
@@ -175,7 +175,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Stage</label>
               <select value={form.stage} onChange={e => set("stage", e.target.value)}
@@ -194,7 +194,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Source</label>
               <select value={form.source} onChange={e => set("source", e.target.value)}
@@ -212,7 +212,7 @@ export default function LeadForm({ onClose, onSaved, initial, editId }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1">Payment Status</label>
               <select value={form.paymentStatus} onChange={e => set("paymentStatus", e.target.value)}

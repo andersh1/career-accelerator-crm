@@ -99,7 +99,7 @@ export default function TicketsPage() {
 
       {/* Stats row */}
       {stats && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: "Open",         val: stats.open,        color: "bg-blue-50 border-blue-200",      text: "text-blue-700",    icon: <MessageSquare size={14} className="text-blue-500" /> },
             { label: "In Progress",  val: stats.inProgress,  color: "bg-amber-50 border-amber-200",    text: "text-amber-700",   icon: <Clock size={14} className="text-amber-500" />         },

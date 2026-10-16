@@ -70,7 +70,7 @@ export default function BlastPage() {
       <div className="card shadow-sm p-5 space-y-4">
         <h2 className="font-semibold text-sm" style={{ color: "#14211f" }}>Audience Filters</h2>
         <p className="text-xs" style={{ color: "#949598" }}>Leave filters empty to reach all active leads.</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Stage</label>
             <select value={stage} onChange={e => { setStage(e.target.value); setPreview(null); setConfirmed(false); }}

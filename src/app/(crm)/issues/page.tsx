@@ -349,7 +349,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
           </div>
 
           {/* Type + Priority */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>Type</label>
               <select value={type} onChange={e => setType(e.target.value)}
@@ -380,7 +380,7 @@ function IssueForm({ initial, team, onSave, onClose, saving }: FormProps) {
           </div>
 
           {/* Due date + who wants to hear about progress */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: "#5a6663" }}>Due date</label>
               <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
