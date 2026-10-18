@@ -282,7 +282,7 @@ export default function TranscriptParser({ leadId, currentStage, leadName, onApp
 
               {/* Pain points + Objections */}
               {(result.painPoints?.length > 0 || result.objections?.length > 0) && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {result.painPoints?.length > 0 && (
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Pain Points</p>

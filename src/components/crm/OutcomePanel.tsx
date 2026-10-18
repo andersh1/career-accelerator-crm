@@ -153,7 +153,7 @@ export default function OutcomePanel({ leadId, outcome, onSave }: Props) {
           </div>
 
           {/* Company + Role */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Company</label>
               <input value={company} onChange={e => setCompany(e.target.value)}
@@ -171,7 +171,7 @@ export default function OutcomePanel({ leadId, outcome, onSave }: Props) {
           </div>
 
           {/* Salary + Start date */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: "#949598" }}>Salary (annual $)</label>
               <input value={salary} onChange={e => setSalary(e.target.value.replace(/\D/g, ""))}

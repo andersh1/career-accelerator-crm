@@ -221,7 +221,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                 )}
               </div>
             ))}
-            <div className="pt-2 grid grid-cols-4 gap-1.5 text-center">
+            <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center">
               {[
                 { label: "Pending",  val: submissionSummary.pending,       cls: "bg-amber-50  text-amber-700"   },
                 { label: "Approved", val: submissionSummary.approved,      cls: "bg-emerald-50 text-emerald-700" },
@@ -384,7 +384,7 @@ export default function StudentProgressPanel({ leadId }: { leadId: string }) {
                   </div>
 
                   {/* Ratings row */}
-                  <div className="px-4 py-2 grid grid-cols-4 gap-2 border-t" style={{ borderColor: "#e4e0d6" }}>
+                  <div className="px-4 py-2 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t" style={{ borderColor: "#e4e0d6" }}>
                     {[
                       { label: "Overall",     val: sr.overallRating },
                       { label: "Content",     val: sr.contentRating },

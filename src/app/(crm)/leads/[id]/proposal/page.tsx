@@ -57,7 +57,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
         <div className="max-w-[760px] mx-auto bg-white print:shadow-none shadow-2xl print:rounded-none rounded-2xl overflow-hidden my-8 print:my-0">
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 px-12 py-10 text-white">
+          <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 px-5 sm:px-12 py-10 text-white">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-blue-300 text-xs font-bold tracking-widest uppercase mb-2">Vantage Career Accelerator</p>
@@ -72,10 +72,10 @@ export default async function ProposalPage({ params }: { params: { id: string } 
             </div>
           </div>
 
-          <div className="px-12 py-10 space-y-10">
+          <div className="px-5 sm:px-12 py-10 space-y-10">
 
             {/* Recipient info */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Prepared For</p>
                 <p className="text-lg font-bold text-slate-900">{lead.firstName} {lead.lastName}</p>
@@ -103,7 +103,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
             {/* What's included */}
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">What&apos;s Included</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { icon: "🎯", title: "8-Module Curriculum",    desc: "Structured coaching across positioning, networking, interviewing, and offers" },
                   { icon: "👤", title: "1:1 Coaching Sessions",  desc: "Direct access to your coach throughout the program" },
@@ -189,7 +189,7 @@ export default async function ProposalPage({ params }: { params: { id: string } 
           </div>
 
           {/* Footer */}
-          <div className="px-12 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <div className="px-5 sm:px-12 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
             <p className="text-xs text-slate-400">{footer}</p>
             <p className="text-xs text-slate-300">Vantage Career Accelerator · {today}</p>
           </div>

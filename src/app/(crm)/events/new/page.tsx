@@ -155,7 +155,7 @@ export default function NewEventPage() {
         {/* Event Type */}
         <div className="rounded-2xl border p-5" style={{ borderColor: "#e4e0d6", background: "#fff" }}>
           <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>Event Type</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { val: "IN_PERSON", label: "In Person", icon: MapPin, desc: "Dinner, panel, or gathering" },
               { val: "ZOOM",      label: "Online",    icon: Video,  desc: "Webinar or Zoom session"    },
