@@ -109,11 +109,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const existing = await prisma.lead.findFirst({
+  const existingAny = await prisma.lead.findFirst({
     where: { email: normalizedEmail },
     select: { id: true, stage: true, leadType: true, assignedTo: true,
               phone: true, school: true, academicYear: true, jobTitle: true, zip: true, priority: true },
   });
+
+  /**
+   * Relationship contacts and programme participants are different tracks, and
+   * merging across them loses one of the two.
+   *
+   * A college's Head of Careers enquiring through "Partner with Us" is not the
+   * same record as a student who asked for a consultation, even on a shared
+   * address. The first time this ran, a partner enquiry was absorbed into an
+   * existing consultation lead and relabelled Consultation, because PARTNER is
+   * not in the INTENT ranking below and so can never win an upgrade. The
+   * enquiry was not lost, but nothing in the CRM said a college had been in
+   * touch.
+   *
+   * So a submission only merges with a lead on its own track. Across tracks it
+   * creates a separate record, which is what the two relationships are.
+   */
+  const RELATIONSHIP_TYPES = new Set(["PARTNER", "CONTACT"]);
+  const incomingIsRelationship = RELATIONSHIP_TYPES.has(leadType?.trim() ?? "");
+  const existingIsRelationship = RELATIONSHIP_TYPES.has(existingAny?.leadType ?? "");
+  const existing =
+    existingAny && incomingIsRelationship === existingIsRelationship ? existingAny : null;
 
   /**
    * Someone already in the CRM submitting again.
@@ -138,7 +159,11 @@ export async function POST(req: NextRequest) {
     const isApp = incomingType === "APPLICATION";
 
     const INTENT: Record<string, number> = {
-      WAITLIST: 1, CONTACT: 1, KEEP_IN_TOUCH: 2, PARENT: 2, CONSULTATION: 3, APPLICATION: 4,
+      // Participant track.
+      WAITLIST: 1, KEEP_IN_TOUCH: 2, PARENT: 2, CONSULTATION: 3, APPLICATION: 4,
+      // Relationship track. Ranked among themselves only: a cross-track merge
+      // cannot reach here, so these never compete with a student's intent.
+      CONTACT: 1, PARTNER: 2,
     };
     const upgradeType = (INTENT[incomingType] ?? 0) > (INTENT[existing.leadType ?? ""] ?? 0);
 
