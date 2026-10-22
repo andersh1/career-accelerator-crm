@@ -925,6 +925,38 @@ export async function sendLeadAlert({
   });
 }
 
+/**
+ * A college getting in touch through "Partner with Us".
+ *
+ * Separate from sendLeadAlert because the useful fields are different: the
+ * institution and the person's role matter, academic year and school do not.
+ * Goes to the same list as every other lead alert, so a partner enquiry is as
+ * visible as a student one.
+ */
+export async function sendPartnerAlert({
+  firstName, lastName, email, company, jobTitle, leadId, landingPage,
+}: {
+  firstName: string; lastName: string; email: string;
+  company?: string | null; jobTitle?: string | null;
+  leadId?: string | null; landingPage?: string | null;
+}) {
+  const label = "Campus partner enquiry";
+  const body = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      ${alertRow("Name", `${firstName} ${lastName}`)}
+      ${company ? alertRow("Institution", company) : ""}
+      ${jobTitle ? alertRow("Role", jobTitle) : ""}
+      ${alertRowLink("Email", `mailto:${email}`, email)}
+      ${landingPage && landingPage !== "/" ? alertRow("Came from", landingPage) : ""}
+    </table>
+    ${leadId ? ctaButton(`${CRM_URL}/leads/${leadId}`, "Open in CRM →") : ""}`;
+  await sendChecked({
+    from: FROM, to: LEAD_ALERT_EMAILS, reply_to: email,
+    subject: `🤝 ${label} — ${company || `${firstName} ${lastName}`}`,
+    html: wrap(label, body),
+  });
+}
+
 /** Internal alert when a consultation is actually booked on Calendly. */
 export async function sendConsultationBookedAlert({
   name, email, startTime, joinUrl, leadId, isNewLead,

@@ -12,6 +12,7 @@ import { routeLead, ownerName } from "@/lib/lead-routing";
 import {
   sendAdminApplicationAlert,
   sendLeadAlert,
+  sendPartnerAlert,
   sendConsultationConfirmation,
   sendStayInTouchConfirmation,
 } from "@/lib/email";
@@ -231,6 +232,16 @@ export async function POST(req: NextRequest) {
      */
     if (isPartnerEnquiry) {
       try {
+        await sendPartnerAlert({
+          firstName: firstName.trim(), lastName: lastName.trim(), email: normalizedEmail,
+          company: company?.trim() || existing.company || null,
+          jobTitle: jobTitle?.trim() || existing.jobTitle || null,
+          leadId: existing.id, landingPage: landingPage?.trim() || null,
+        });
+      } catch (err) {
+        console.error("[intake] partner alert failed:", err);
+      }
+      try {
         await prisma.cRMNotification.create({
           data: {
             type:   "NEW_INTAKE",
@@ -385,6 +396,21 @@ export async function POST(req: NextRequest) {
   // Never fail the request over email; the lead is already saved.
   const isConsultation = leadType?.trim() === "CONSULTATION";
   const isKeepInTouch  = leadType?.trim() === "KEEP_IN_TOUCH";
+
+  // A college writing in for the first time. Alerted like any other lead, so
+  // "Partner with Us" is never the one form nobody hears about.
+  if (leadType?.trim() === "PARTNER") {
+    try {
+      await sendPartnerAlert({
+        firstName: firstName.trim(), lastName: lastName.trim(), email: normalizedEmail,
+        company: company?.trim() || null, jobTitle: jobTitle?.trim() || null,
+        leadId: lead.id, landingPage: landingPage?.trim() || null,
+      });
+    } catch (err) {
+      console.error("[intake] partner alert failed for new lead:", err);
+    }
+  }
+
   if (isConsultation || isKeepInTouch) {
     const results = await Promise.allSettled([
       sendLeadAlert({
