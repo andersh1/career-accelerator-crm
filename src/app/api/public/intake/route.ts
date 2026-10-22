@@ -109,32 +109,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const existingAny = await prisma.lead.findFirst({
+  const existing = await prisma.lead.findFirst({
     where: { email: normalizedEmail },
     select: { id: true, stage: true, leadType: true, assignedTo: true,
-              phone: true, school: true, academicYear: true, jobTitle: true, zip: true, priority: true },
+              phone: true, school: true, academicYear: true, jobTitle: true, zip: true,
+              priority: true, company: true },
   });
 
-  /**
-   * Relationship contacts and programme participants are different tracks, and
-   * merging across them loses one of the two.
-   *
-   * A college's Head of Careers enquiring through "Partner with Us" is not the
-   * same record as a student who asked for a consultation, even on a shared
-   * address. The first time this ran, a partner enquiry was absorbed into an
-   * existing consultation lead and relabelled Consultation, because PARTNER is
-   * not in the INTENT ranking below and so can never win an upgrade. The
-   * enquiry was not lost, but nothing in the CRM said a college had been in
-   * touch.
-   *
-   * So a submission only merges with a lead on its own track. Across tracks it
-   * creates a separate record, which is what the two relationships are.
-   */
-  const RELATIONSHIP_TYPES = new Set(["PARTNER", "CONTACT"]);
-  const incomingIsRelationship = RELATIONSHIP_TYPES.has(leadType?.trim() ?? "");
-  const existingIsRelationship = RELATIONSHIP_TYPES.has(existingAny?.leadType ?? "");
-  const existing =
-    existingAny && incomingIsRelationship === existingIsRelationship ? existingAny : null;
 
   /**
    * Someone already in the CRM submitting again.
@@ -159,12 +140,21 @@ export async function POST(req: NextRequest) {
     const isApp = incomingType === "APPLICATION";
 
     const INTENT: Record<string, number> = {
-      // Participant track.
-      WAITLIST: 1, KEEP_IN_TOUCH: 2, PARENT: 2, CONSULTATION: 3, APPLICATION: 4,
-      // Relationship track. Ranked among themselves only: a cross-track merge
-      // cannot reach here, so these never compete with a student's intent.
-      CONTACT: 1, PARTNER: 2,
+      WAITLIST: 1, CONTACT: 1, KEEP_IN_TOUCH: 2, PARENT: 2, CONSULTATION: 3, APPLICATION: 4,
     };
+
+    /**
+     * A campus partner enquiry is not a step on the student funnel, so it has
+     * no place in the ranking above: PARTNER scored 0 there and could never
+     * win, which is how one got absorbed into a consultation lead and left no
+     * sign that a college had been in touch.
+     *
+     * Lead.email is unique, so one person is one lead and a second record is
+     * not an option. Instead the enquiry never changes the existing lead type
+     * (a prospective student stays a prospective student) but it is always
+     * recorded and always alerted, so it cannot pass silently again.
+     */
+    const isPartnerEnquiry = incomingType === "PARTNER";
     const upgradeType = (INTENT[incomingType] ?? 0) > (INTENT[existing.leadType ?? ""] ?? 0);
 
     /**
@@ -208,9 +198,11 @@ export async function POST(req: NextRequest) {
       leadId: existing.id,
       current: {
         phone: existing.phone, school: existing.school, academicYear: existing.academicYear,
-        jobTitle: existing.jobTitle, zip: existing.zip,
+        jobTitle: existing.jobTitle, zip: existing.zip, company: existing.company,
       },
-      submitted: { phone, school, academicYear, jobTitle, zip },
+      // company was missing here, so a partner's institution was silently
+      // dropped on the merge path while their job title came through.
+      submitted: { phone, school, academicYear, jobTitle, zip, company },
       changes: {
         ...(upgradeType ? { leadType: incomingType } : {}),
         ...(moveStage ? { stage: targetStage } : {}),
@@ -219,7 +211,9 @@ export async function POST(req: NextRequest) {
       },
       headline: isApp
         ? "📝 Submitted an application via the web form"
-        : `Re-submitted via web form (${incomingType.toLowerCase()})`,
+        : isPartnerEnquiry
+          ? "🤝 Campus partner enquiry via the web form"
+          : `Re-submitted via web form (${incomingType.toLowerCase()})`,
       details: [
         upgradeType ? `Lead type ${existing.leadType} → ${incomingType}` : null,
         moveStage ? `Stage ${existing.stage} → ${targetStage}` : null,
@@ -227,6 +221,29 @@ export async function POST(req: NextRequest) {
       ],
       body: notes,
     });
+
+    /**
+     * A partner enquiry on an existing lead raised nothing: it logged an
+     * activity on a record nobody was looking at, and the CRM looked empty.
+     * That is how Caleb filled the form in and saw no sign of it. A college
+     * getting in touch is worth a notification whether or not that address is
+     * already in the CRM.
+     */
+    if (isPartnerEnquiry) {
+      try {
+        await prisma.cRMNotification.create({
+          data: {
+            type:   "NEW_INTAKE",
+            title:  `Campus partner enquiry: ${firstName.trim()} ${lastName.trim()}`,
+            body:   [company?.trim(), jobTitle?.trim()].filter(Boolean).join(" · ")
+                      || "Submitted through Partner with Us.",
+            leadId: existing.id,
+          },
+        });
+      } catch (err) {
+        console.error("[intake] partner notification failed:", err);
+      }
+    }
 
     if (isApp) {
       try {
