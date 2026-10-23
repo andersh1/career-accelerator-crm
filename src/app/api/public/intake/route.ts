@@ -437,8 +437,17 @@ export async function POST(req: NextRequest) {
   await prisma.cRMNotification.create({
     data: {
       type:   "NEW_INTAKE",
-      title:  isApplication ? `New application: ${firstName.trim()} ${lastName.trim()}` : `New lead: ${firstName.trim()} ${lastName.trim()}`,
-      body:   company?.trim() ? `from ${company.trim()}` : normalizedEmail,
+      // A campus partner enquiry said "New lead", which is indistinguishable
+      // from a student at a glance. Caleb filled the form in, saw a generic
+      // notification, and reasonably concluded nothing had come through.
+      title:  isApplication
+        ? `New application: ${firstName.trim()} ${lastName.trim()}`
+        : leadType?.trim() === "PARTNER"
+          ? `Campus partner enquiry: ${firstName.trim()} ${lastName.trim()}`
+          : `New lead: ${firstName.trim()} ${lastName.trim()}`,
+      body:   leadType?.trim() === "PARTNER"
+        ? [company?.trim(), jobTitle?.trim()].filter(Boolean).join(" · ") || normalizedEmail
+        : company?.trim() ? `from ${company.trim()}` : normalizedEmail,
       leadId: lead.id,
       href:   `/leads/${lead.id}`,
     },
