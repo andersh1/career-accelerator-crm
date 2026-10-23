@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { mergeIntoExistingLead } from "@/lib/intake-merge";
 import { rateLimit } from "@/lib/rate-limit";
 import { routeLead, ownerName } from "@/lib/lead-routing";
+import { onboardPartnerEnquiry } from "@/lib/partner-onramp";
 import {
   sendAdminApplicationAlert,
   sendLeadAlert,
@@ -241,6 +242,18 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("[intake] partner alert failed:", err);
       }
+      /**
+       * The person's lead type is deliberately left alone a few lines above — a
+       * prospective student stays a prospective student. The ACCOUNT is opened
+       * regardless, which is what puts the college on Dan's board rather than
+       * leaving it buried in the student funnel.
+       */
+      const ramp = await onboardPartnerEnquiry({
+        leadId: existing.id,
+        company: company?.trim() || existing.company,
+        contactName: `${firstName.trim()} ${lastName.trim()}`,
+      });
+
       try {
         await prisma.cRMNotification.create({
           data: {
@@ -249,6 +262,8 @@ export async function POST(req: NextRequest) {
             body:   [company?.trim(), jobTitle?.trim()].filter(Boolean).join(" · ")
                       || "Submitted through Partner with Us.",
             leadId: existing.id,
+            // Straight to the deal, because the deal is the thing to work.
+            href:   ramp ? `/partnerships/deals/${ramp.dealId}` : `/leads/${existing.id}`,
           },
         });
       } catch (err) {
@@ -399,6 +414,7 @@ export async function POST(req: NextRequest) {
 
   // A college writing in for the first time. Alerted like any other lead, so
   // "Partner with Us" is never the one form nobody hears about.
+  let partnerRamp: Awaited<ReturnType<typeof onboardPartnerEnquiry>> = null;
   if (leadType?.trim() === "PARTNER") {
     try {
       await sendPartnerAlert({
@@ -409,6 +425,13 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("[intake] partner alert failed for new lead:", err);
     }
+    // Open the account and the deal, so the enquiry lands on the partnerships
+    // board rather than only in the student funnel.
+    partnerRamp = await onboardPartnerEnquiry({
+      leadId: lead.id,
+      company: company?.trim() || null,
+      contactName: `${firstName.trim()} ${lastName.trim()}`,
+    });
   }
 
   if (isConsultation || isKeepInTouch) {
@@ -449,7 +472,8 @@ export async function POST(req: NextRequest) {
         ? [company?.trim(), jobTitle?.trim()].filter(Boolean).join(" · ") || normalizedEmail
         : company?.trim() ? `from ${company.trim()}` : normalizedEmail,
       leadId: lead.id,
-      href:   `/leads/${lead.id}`,
+      // A partner enquiry opens straight on its deal; everyone else on the lead.
+      href:   partnerRamp ? `/partnerships/deals/${partnerRamp.dealId}` : `/leads/${lead.id}`,
     },
   }).catch(() => {});
 

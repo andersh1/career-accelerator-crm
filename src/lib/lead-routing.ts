@@ -19,6 +19,10 @@ const ROUTES: Record<string, string> = {
   KEEP_IN_TOUCH: DAVID,
   WAITLIST:      DAVID,
   CONTACT:       DAVID,
+  // A college writing in had no route at all, so every partner enquiry landed
+  // unassigned — nobody's list, nobody's problem. Partnerships are Dan's, and
+  // the Organization and Deal opened alongside the lead go to him too.
+  PARTNER:       DAN,
 };
 
 /** Email of the admin who should own this lead, or null to leave it open. */
