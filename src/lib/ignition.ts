@@ -123,8 +123,16 @@ export function normalizeEvent(body: Record<string, unknown>): NormalizedEvent {
   return {
     type,
     occurredAt,
+    /**
+     * Ignition does not use one name for this field. A client read from
+     * /clients carries `external_id`; the same client nested inside an invoice
+     * carries `external_client_id`. Reading only the first means an invoice
+     * event cannot find the record it belongs to, which is the one job this
+     * value has. Both spellings, at both levels.
+     */
     leadRef: firstString(
       body.external_id, data.external_id, client.external_id,
+      body.external_client_id, data.external_client_id, client.external_client_id,
       body.external_reference, data.external_reference, client.external_reference,
       body.lead_id, data.lead_id,
     ),
