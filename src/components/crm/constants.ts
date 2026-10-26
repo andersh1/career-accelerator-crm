@@ -255,6 +255,11 @@ export const CONTACT_LABELS = [
   { key: "SPEAKER",   label: "Guest speaker",     hint: "Will talk to a cohort",                     color: "bg-violet-100 text-violet-700" },
   { key: "DISCOVERY", label: "Discovery call",    hint: "Someone a Fellow should interview",         color: "bg-amber-100 text-amber-700" },
   { key: "COACH",     label: "Prospective coach", hint: "Could coach for us when we scale past Dan", color: "bg-indigo-100 text-indigo-700" },
+  // Someone we interviewed to understand a market: a student at a university we
+  // are pitching, not a partner and not a prospect. Added because without it
+  // these people look like partner contacts, which is how Elon ended up reading
+  // as a partnership conversation when it was one student Dan asked for leads.
+  { key: "STUDENT_DISCOVERY", label: "Student discovery", hint: "A student we spoke to for research, not a partner", color: "bg-slate-100 text-slate-600" },
 ] as const;
 
 export const contactLabel = (key: string) =>

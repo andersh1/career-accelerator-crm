@@ -157,7 +157,7 @@ const TOOLS = [
         source:       { type: "string", description: "Where they came from, e.g. Referral, Event, Inbound" },
         leadType:     { type: "string", description: "WHO THIS PERSON IS — get this right or they end up in the wrong list. Use CONTACT for anyone who is NOT a prospective student: referral partners, ecosystem people, university or employer contacts, advisors. CONTACT records live under Partnerships → Contacts and are kept out of the enrolment pipeline. Use APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH for actual prospective students. Defaults to WAITLIST (a prospect), so pass CONTACT explicitly for anyone who is not one." },
         organization: { type: "string", description: "For CONTACT records — the organisation they belong to, by name. Matched case-insensitively against existing organisations; created if it does not exist. 3i, PwC, Wake Forest University." },
-        labels:       { type: "array", items: { type: "string" }, description: "For CONTACT records — what they are TO US, any that apply: HIRING (employs our people or might), REFERRAL (sends us students — wealth managers, admissions consultants), SPEAKER (will talk to a cohort), DISCOVERY (someone a Fellow should interview), COACH (could coach for us later). One person is often several. This is the relationship, not their job title — a wealth manager who sends us students is REFERRAL." },
+        labels:       { type: "array", items: { type: "string" }, description: "For CONTACT records — what they are TO US, any that apply: HIRING (employs our people or might), REFERRAL (sends us students — wealth managers, admissions consultants), SPEAKER (will talk to a cohort), DISCOVERY (someone a Fellow should interview), COACH (could coach for us later), STUDENT_DISCOVERY (a student we interviewed to understand a university, not a partner). One person is often several. This is the relationship, not their job title — a wealth manager who sends us students is REFERRAL." },
         notes:        { type: "string", description: "What was actually said — their goal, situation, timeline, objections. This becomes the first activity on the record." },
       },
       required: ["email", "firstName", "lastName"],
@@ -191,7 +191,7 @@ const TOOLS = [
         academicYear: { type: "string" },
         linkedinUrl:  { type: "string" },
         priority:     { type: "string", description: "HIGH, MEDIUM or LOW" },
-        labels:       { type: "array", items: { type: "string" }, description: "Replace what they are to us: HIRING, REFERRAL, SPEAKER, DISCOVERY, COACH. Pass the full set — this overwrites." },
+        labels:       { type: "array", items: { type: "string" }, description: "Replace what they are to us: HIRING, REFERRAL, SPEAKER, DISCOVERY, COACH, STUDENT_DISCOVERY. Pass the full set — this overwrites." },
         leadType:     { type: "string", description: "Reclassify them. CONTACT = partner / referral source / ecosystem, moves them out of the enrolment pipeline into Partnerships → Contacts. Otherwise APPLICATION, CONSULTATION, WAITLIST or KEEP_IN_TOUCH." },
       },
       required: ["leadQuery"],
@@ -703,7 +703,7 @@ async function runTool(
         source:       String(input.source ?? "").trim() || "Claude (call notes)",
         tags:         (Array.isArray(input.labels) ? input.labels : [])
                         .map(x => String(x).toUpperCase())
-                        .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH"].includes(x)),
+                        .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH","STUDENT_DISCOVERY"].includes(x)),
         organizationId: await (async () => {
           const nm = String(input.organization ?? "").trim();
           if (!nm) return null;
@@ -1137,7 +1137,7 @@ async function runTool(
     if (["HIGH","MEDIUM","LOW"].includes(pr)) data.priority = pr;
     if (Array.isArray(input.labels)) {
       data.tags = input.labels.map(x => String(x).toUpperCase())
-        .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH"].includes(x)) as unknown as string;
+        .filter(x => ["HIRING","REFERRAL","SPEAKER","DISCOVERY","COACH","STUDENT_DISCOVERY"].includes(x)) as unknown as string;
     }
     const lt = String(input.leadType ?? "").trim().toUpperCase();
     if (["CONTACT","APPLICATION","CONSULTATION","WAITLIST","KEEP_IN_TOUCH"].includes(lt)) data.leadType = lt;
