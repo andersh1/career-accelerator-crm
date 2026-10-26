@@ -291,6 +291,53 @@ const TOOLS = [
       required: ["name"],
     },
   },
+  {
+    name: "list_deals",
+    description: "The partnerships pipeline — one card per institution we are working, under its organisation. Separate from the student pipeline on purpose: a university deal is not a lead. Use it before create_deal so you are not opening a second card for a conversation that already has one.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query:  { type: "string", description: "Optional fragment of the deal title or the organisation name" },
+        status: { type: "string", description: "Optional: PROSPECTING, PROPOSAL_SENT, NEGOTIATING, SIGNED, ACTIVE, CLOSED_WON, CLOSED_LOST" },
+      },
+    },
+  },
+  {
+    name: "create_deal",
+    description: "Open a deal under an organisation that already exists. The organisation is required and is never invented here — run list_organizations first, and create_organization if it is genuinely new. Deals are made deliberately, never inferred, so this refuses to open a second live deal on the same organisation unless you pass confirm.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        organization: { type: "string", description: "Name of an existing organisation, e.g. 'Wake Forest University'. Matched case-insensitively." },
+        title:        { type: "string", description: "What this deal is, e.g. 'Wake Forest — spring 2027 three-credit pilot'. Defaults to the organisation name plus the type." },
+        dealType:     { type: "string", description: "SEATS (buying places on a cohort), EVENT (a talk or workshop) or PARTNERSHIP (a programme run with them). Defaults to PARTNERSHIP." },
+        status:       { type: "string", description: "Defaults to PROSPECTING. Only set it higher if that has genuinely happened." },
+        contact:      { type: "string", description: "Optional name or email of the person at that organisation. Must already be a lead." },
+        seats:        { type: "number" },
+        pricePerSeat: { type: "number", description: "Whole dollars." },
+        totalValue:   { type: "number", description: "Whole dollars. Use for a flat fee instead of seats times price." },
+        notes:        { type: "string" },
+        confirm:      { type: "boolean", description: "Pass true to open a deal on an organisation that already has a live one." },
+      },
+      required: ["organization"],
+    },
+  },
+  {
+    name: "update_deal",
+    description: "Move a deal along or correct its numbers. Moving to PROPOSAL_SENT or SIGNED stamps the date automatically, and every status change is written to the deal's timeline so the board can be read back later.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        titleLike:  { type: "string", description: "Fragment of the deal title or its organisation name. Must match exactly one deal." },
+        status:     { type: "string", description: "PROSPECTING, PROPOSAL_SENT, NEGOTIATING, SIGNED, ACTIVE, CLOSED_WON or CLOSED_LOST" },
+        seats:      { type: "number" },
+        pricePerSeat: { type: "number" },
+        totalValue: { type: "number" },
+        note:       { type: "string", description: "Added to the deal's timeline. Say what actually happened." },
+      },
+      required: ["titleLike"],
+    },
+  },
 ];
 
 // ── Tool implementations ─────────────────────────────────────────────────────
@@ -749,6 +796,179 @@ async function runTool(
       select: { id: true, name: true, type: true },
     });
     return JSON.stringify({ ok: true, created: true, organization: org });
+  }
+
+  /**
+   * The partnerships pipeline.
+   *
+   * Deliberately NOT auto-created from anything. David, 26 Oct standup: "we
+   * won't auto-create deals. Dan and I need to create deals, so that we know
+   * that they're accurate. I think that's worth the manual effort." These
+   * tools exist so making one by hand is a sentence to Claude rather than a
+   * form, not so the CRM can infer them.
+   */
+  const DEAL_STATUS = ["PROSPECTING","PROPOSAL_SENT","NEGOTIATING","SIGNED","ACTIVE","CLOSED_WON","CLOSED_LOST"];
+  const DEAL_OPEN   = ["PROSPECTING","PROPOSAL_SENT","NEGOTIATING","SIGNED","ACTIVE"];
+
+  if (name === "list_deals") {
+    const q  = String(input.query ?? "").trim();
+    const st = String(input.status ?? "").trim().toUpperCase();
+    const deals = await prisma.deal.findMany({
+      where: {
+        ...(st && DEAL_STATUS.includes(st) ? { status: st } : {}),
+        ...(q ? { OR: [
+          { title:   { contains: q, mode: "insensitive" } },
+          { orgName: { contains: q, mode: "insensitive" } },
+        ] } : {}),
+      },
+      select: {
+        id: true, title: true, status: true, dealType: true, seats: true,
+        pricePerSeat: true, totalValue: true, assignedTo: true, updatedAt: true,
+        organization: { select: { name: true } },
+        contactLead:  { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    });
+    if (deals.length === 0) {
+      return JSON.stringify({ ok: true, count: 0, message: "No deals yet. The partnerships board is empty." });
+    }
+    return JSON.stringify({ ok: true, count: deals.length, deals: deals.map(d => ({
+      title: d.title, organisation: d.organization?.name ?? null, status: d.status, type: d.dealType,
+      seats: d.seats, pricePerSeat: d.pricePerSeat, totalValue: d.totalValue,
+      contact: d.contactLead ? `${d.contactLead.firstName} ${d.contactLead.lastName}` : null,
+      owner: d.assignedTo, updated: d.updatedAt.toISOString().slice(0, 10),
+    })) });
+  }
+
+  if (name === "create_deal") {
+    const orgName = String(input.organization ?? "").trim();
+    if (!orgName) return JSON.stringify({ error: "A deal needs an organisation." });
+
+    const org = await prisma.organization.findFirst({
+      where: { name: { equals: orgName, mode: "insensitive" } },
+      select: { id: true, name: true },
+    });
+    if (!org) {
+      // Never invent the account from inside the deal: that is how the same
+      // university ends up on the board twice under two spellings.
+      const near = await prisma.organization.findMany({
+        where: { name: { contains: orgName.split(" ")[0], mode: "insensitive" } },
+        select: { name: true }, take: 5,
+      });
+      return JSON.stringify({
+        error: `No organisation called "${orgName}".`,
+        didYouMean: near.map(o => o.name),
+        next: "Run list_organizations to check the spelling, or create_organization if it is genuinely new. A deal is never the thing that creates the account.",
+      });
+    }
+
+    if (input.confirm !== true) {
+      const live = await prisma.deal.findFirst({
+        where: { organizationId: org.id, status: { in: DEAL_OPEN } },
+        select: { title: true, status: true },
+      });
+      if (live) {
+        return JSON.stringify({
+          error: `${org.name} already has a live deal: "${live.title}" (${live.status}).`,
+          next: "Use update_deal to move that one along, or call create_deal again with confirm set to true if this really is a second, separate deal.",
+        });
+      }
+    }
+
+    const TYPES = ["SEATS","EVENT","PARTNERSHIP"];
+    const dealType = TYPES.includes(String(input.dealType ?? "").trim().toUpperCase())
+      ? String(input.dealType).trim().toUpperCase() : "PARTNERSHIP";
+    const status = DEAL_STATUS.includes(String(input.status ?? "").trim().toUpperCase())
+      ? String(input.status).trim().toUpperCase() : "PROSPECTING";
+
+    let contactLeadId: string | null = null;
+    const contact = String(input.contact ?? "").trim();
+    if (contact) {
+      const lead = await prisma.lead.findFirst({
+        where: { deletedAt: null, OR: [
+          { email: { equals: contact, mode: "insensitive" } },
+          { firstName: { contains: contact.split(" ")[0], mode: "insensitive" } },
+        ] },
+        select: { id: true },
+      });
+      contactLeadId = lead?.id ?? null;
+    }
+
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) : null);
+    const deal = await prisma.deal.create({
+      data: {
+        title: String(input.title ?? "").trim() || `${org.name} — ${dealType.toLowerCase()}`,
+        orgName: org.name,
+        organizationId: org.id,
+        dealType, status, contactLeadId,
+        seats: num(input.seats),
+        pricePerSeat: num(input.pricePerSeat),
+        totalValue: num(input.totalValue),
+        assignedTo: admin.email,
+        notes: String(input.notes ?? "").trim() || null,
+        ...(status === "PROPOSAL_SENT" ? { proposalSentAt: new Date() } : {}),
+        ...(status === "SIGNED" ? { signedAt: new Date() } : {}),
+      },
+      select: { id: true, title: true, status: true, dealType: true },
+    });
+    await prisma.dealActivity.create({
+      data: { dealId: deal.id, type: "NOTE", content: `Opened at ${status}.`, createdBy: admin.email },
+    }).catch(() => {});
+
+    return JSON.stringify({ ok: true, created: true, deal, organisation: org.name,
+      contactLinked: Boolean(contactLeadId),
+      ...(contact && !contactLeadId ? { warning: `No lead found matching "${contact}" — the deal was created without a contact.` } : {}) });
+  }
+
+  if (name === "update_deal") {
+    const q = String(input.titleLike ?? "").trim();
+    if (!q) return JSON.stringify({ error: "Say which deal." });
+    const found = await prisma.deal.findMany({
+      where: { OR: [
+        { title:   { contains: q, mode: "insensitive" } },
+        { orgName: { contains: q, mode: "insensitive" } },
+      ] },
+      select: { id: true, title: true, status: true },
+      take: 5,
+    });
+    if (found.length === 0) return JSON.stringify({ error: `No deal matching "${q}".` });
+    if (found.length > 1) {
+      return JSON.stringify({ error: `"${q}" matches ${found.length} deals.`, matches: found.map(d => d.title),
+        next: "Say more of the title so this picks one." });
+    }
+
+    const d = found[0];
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) : undefined);
+    const st = String(input.status ?? "").trim().toUpperCase();
+    const moving = st && DEAL_STATUS.includes(st) && st !== d.status;
+
+    await prisma.deal.update({
+      where: { id: d.id },
+      data: {
+        ...(moving ? { status: st } : {}),
+        ...(num(input.seats)        !== undefined ? { seats: num(input.seats) } : {}),
+        ...(num(input.pricePerSeat) !== undefined ? { pricePerSeat: num(input.pricePerSeat) } : {}),
+        ...(num(input.totalValue)   !== undefined ? { totalValue: num(input.totalValue) } : {}),
+        // The dates follow the stage rather than being typed separately, so a
+        // board read back in three months still says when things happened.
+        ...(moving && st === "PROPOSAL_SENT" ? { proposalSentAt: new Date() } : {}),
+        ...(moving && st === "SIGNED"        ? { signedAt: new Date() } : {}),
+      },
+    });
+
+    const note = String(input.note ?? "").trim();
+    if (moving || note) {
+      await prisma.dealActivity.create({
+        data: {
+          dealId: d.id,
+          type: moving ? "STATUS_CHANGE" : "NOTE",
+          content: [moving ? `${d.status} → ${st}` : null, note || null].filter(Boolean).join(" · "),
+          createdBy: admin.email,
+        },
+      }).catch(() => {});
+    }
+    return JSON.stringify({ ok: true, deal: d.title, status: moving ? st : d.status, moved: moving });
   }
 
   if (name === "create_issue") {

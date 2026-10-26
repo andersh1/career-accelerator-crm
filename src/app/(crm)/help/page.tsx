@@ -26,6 +26,8 @@ const sections: Section[] = [
       { title: "What it is", desc: "An AI assistant wired directly into the CRM database. Go to Ask Claude in the sidebar (CRM section) and ask in plain English — it can look up any student, read their application, pre-work, and assignments, and list who's missing work.", tip: "Admin only" },
       { title: "Example questions", desc: "\"Who hasn't submitted Module 1 pre-work?\" · \"Summarize Rodrigo's application\" · \"Which students look at risk?\" — the suggestion chips on the page are one-click starters." },
       { title: "Saving notes", desc: "Ask Claude can write notes to a student's record for you: say \"Add a note to Julia's record that…\" and choose lead activity (visible on the lead timeline) or private coach note (only coaches see it)." },
+      { title: "Partnership deals", desc: "Say \"open a deal for Wake Forest, three-credit spring pilot\" and Claude creates it under that organisation, or \"move the Syracuse deal to proposal sent\" to advance it — which stamps the date and writes the change to the deal's timeline. \"Show me the partnerships pipeline\" lists the board.", tip: "The organisation has to exist first" },
+      { title: "Why deals are never automatic", desc: "Nothing in the CRM infers a deal. A deal only exists because a person said so, here or in the Deals board, so every card on the partnerships pipeline is one you can vouch for. Claude will also refuse to open a second live deal on an organisation that already has one unless you confirm." },
     ],
   },
   {
