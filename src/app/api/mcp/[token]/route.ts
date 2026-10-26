@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findOrganizationByName, nearbyOrganizations } from "@/lib/organizations";
 import { routeLead } from "@/lib/lead-routing";
 
 export const maxDuration = 60;
@@ -706,9 +707,7 @@ async function runTool(
         organizationId: await (async () => {
           const nm = String(input.organization ?? "").trim();
           if (!nm) return null;
-          const found = await prisma.organization.findFirst({
-            where: { name: { equals: nm, mode: "insensitive" } }, select: { id: true },
-          });
+          const found = await findOrganizationByName(nm);
           if (found) return found.id;
           const made = await prisma.organization.create({
             data: { name: nm, createdBy: admin.email }, select: { id: true },
@@ -777,9 +776,7 @@ async function runTool(
   if (name === "create_organization") {
     const nm = String(input.name ?? "").trim();
     if (!nm) return JSON.stringify({ error: "An organisation needs a name." });
-    const existing = await prisma.organization.findFirst({
-      where: { name: { equals: nm, mode: "insensitive" } }, select: { id: true, name: true },
-    });
+    const existing = await findOrganizationByName(nm);
     if (existing) {
       return JSON.stringify({ ok: true, created: false, organization: existing.name,
         message: `"${existing.name}" already exists — nothing created.` });
@@ -845,20 +842,14 @@ async function runTool(
     const orgName = String(input.organization ?? "").trim();
     if (!orgName) return JSON.stringify({ error: "A deal needs an organisation." });
 
-    const org = await prisma.organization.findFirst({
-      where: { name: { equals: orgName, mode: "insensitive" } },
-      select: { id: true, name: true },
-    });
+    const org = await findOrganizationByName(orgName);
     if (!org) {
       // Never invent the account from inside the deal: that is how the same
       // university ends up on the board twice under two spellings.
-      const near = await prisma.organization.findMany({
-        where: { name: { contains: orgName.split(" ")[0], mode: "insensitive" } },
-        select: { name: true }, take: 5,
-      });
+      const near = await nearbyOrganizations(orgName);
       return JSON.stringify({
         error: `No organisation called "${orgName}".`,
-        didYouMean: near.map(o => o.name),
+        didYouMean: near,
         next: "Run list_organizations to check the spelling, or create_organization if it is genuinely new. A deal is never the thing that creates the account.",
       });
     }

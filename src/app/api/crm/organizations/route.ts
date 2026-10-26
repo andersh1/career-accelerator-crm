@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findOrganizationByName } from "@/lib/organizations";
 
 async function requireAdmin() {
   const s = await getServerSession(authOptions);
@@ -33,12 +34,10 @@ export async function POST(req: NextRequest) {
   const { name, type, website, notes } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-  // Case-insensitive, because "3i" and "3I" are the same partner and the whole
-  // point of this table is that one institution is one row.
-  const existing = await prisma.organization.findFirst({
-    where: { name: { equals: name.trim(), mode: "insensitive" } },
-    select: { id: true, name: true },
-  });
+  // One matcher for every path that can create an account — see
+  // src/lib/organizations.ts. Case was already safe; punctuation, stray
+  // spaces, a leading "The" and "&" versus "and" were not.
+  const existing = await findOrganizationByName(name.trim());
   if (existing) {
     return NextResponse.json({ error: `"${existing.name}" already exists.`, id: existing.id }, { status: 409 });
   }

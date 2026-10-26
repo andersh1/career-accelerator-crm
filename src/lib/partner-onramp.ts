@@ -28,29 +28,11 @@
  */
 import { prisma } from "@/lib/prisma";
 import { DAN } from "@/lib/lead-routing";
+import { normalizeOrgName, findOrganizationByName } from "@/lib/organizations";
 
 /** Deal statuses that mean the conversation is over. */
 const CLOSED = ["CLOSED_WON", "CLOSED_LOST"];
 
-/**
- * A name reduced to the part worth matching on: case, punctuation and a leading
- * "the" all dropped. "Wake Forest University" and "wake forest university." are
- * the same account; "BHSU" and "Black Hills State University" are not, and this
- * does not pretend otherwise. Guessing at acronyms would silently merge two
- * real institutions, which is far more expensive to undo than merging two rows
- * by hand later.
- */
-export function normalizeOrgName(raw: string): string {
-  // Collapse and trim BEFORE stripping a leading "the": done the other way
-  // round, " The University of New Haven" keeps its "the" because the pattern
-  // is anchored at a space, and silently becomes a second account.
-  return raw
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/^the /, "");
-}
 
 export interface PartnerOnRamp {
   organizationId: string;
@@ -89,11 +71,7 @@ export async function onboardPartnerEnquiry(opts: {
      * and the cap is only there so this can never become the slow part of a
      * public endpoint.
      */
-    const candidates = await prisma.organization.findMany({
-      select: { id: true, name: true },
-      take: 2000,
-    });
-    const match = candidates.find(o => normalizeOrgName(o.name) === key);
+    const match = await findOrganizationByName(typed);
 
     let organizationId: string;
     let organizationName: string;
