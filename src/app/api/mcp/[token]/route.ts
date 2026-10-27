@@ -111,19 +111,40 @@ const TOOLS = [
   },
   {
     name: "send_assignment_feedback",
-    description: "Send your feedback on a Fellow's assignment. This REACHES THE FELLOW: it emails them, notifies them in the LMS, and lands on their CRM record — so send it when the words are final, not as a draft. Feedback is kept as numbered rounds, so sending again after they revise adds round 2 rather than overwriting round 1. Use `get_student` first if you want to read what you said last time.",
+    description: "Send your feedback on a Fellow's assignment. This REACHES THE FELLOW: it emails them, notifies them in the LMS, and lands on their CRM record — so send it when the words are final, not as a draft. TWO STEPS, ALWAYS: call it first WITHOUT `confirm` and you get a preview back that sends nothing — it names the Fellow, the module number and title, the assignment it matched and the first line of your note. Show that preview to the user and get their go-ahead before calling again with confirm: true. Never pass confirm on the first call, and never confirm on the user's behalf: the module number is the field nobody can check after the email has gone, and a note posted to the wrong module cannot be unsent. Feedback is kept as numbered rounds, so sending again after they revise adds round 2 rather than overwriting round 1. Use `get_student` first if you want to read what you said last time, and `retract_assignment_feedback` if a round went out wrong.",
     inputSchema: {
       type: "object",
       properties: {
         studentQuery: { type: "string", description: "Fellow's name or email" },
-        moduleNumber: { type: "number", description: "Which module's assignment (1-8)" },
+        moduleNumber: { type: "number", description: "Which module's assignment (1-8). Check this against what the feedback is actually about before confirming — a networking note belongs on Module 6, not Module 5." },
         feedback:     { type: "string", description: "The feedback, in your voice, exactly as the Fellow should read it" },
         status: {
           type: "string",
           description: "NEEDS_REVISION (they go again — this reopens the assignment so they can resubmit), APPROVED (done), or REVIEWED (read, nothing required). Defaults to NEEDS_REVISION.",
         },
+        confirm: {
+          type: "boolean",
+          description: "Omit on the first call to preview. Pass true only after a human has seen the preview and agreed to send.",
+        },
+        allowDuplicate: {
+          type: "boolean",
+          description: "Only after a refusal saying this same note just went to a different module. Normally that means the earlier one was misfiled: retract it instead of sending twice.",
+        },
       },
       required: ["studentQuery", "moduleNumber", "feedback"],
+    },
+  },
+  {
+    name: "retract_assignment_feedback",
+    description: "Take back the most recent round of feedback on a Fellow's assignment — for a note sent to the wrong module, a typo, or words that were not final. The round comes off the submission, the slot reverts to whatever the previous round said, and the LMS notification for that send is removed. It CANNOT recall the email, which has already arrived, so tell the Fellow directly if the wrong thing reached them. Refused outright if they have already replied or resubmitted against that round, because then it is half of a conversation rather than a mistake. Past an hour it still works but asks you to confirm first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        studentQuery: { type: "string", description: "Fellow's name or email" },
+        moduleNumber: { type: "number", description: "Which module's assignment to take the latest round off (1-8)" },
+        confirm:      { type: "boolean", description: "Pass true to go ahead when told the round is older than the undo window." },
+      },
+      required: ["studentQuery", "moduleNumber"],
     },
   },
   {
@@ -1268,10 +1289,37 @@ async function runTool(
         studentQuery, moduleNumber, feedback,
         status: String(input.status ?? "NEEDS_REVISION").toUpperCase(),
         authorEmail: admin.email,
+        confirm: input.confirm === true,
+        allowDuplicate: input.allowDuplicate === true,
       }),
     });
     const out = await res.json().catch(() => ({ error: "The LMS did not return a readable response." }));
-    if (!res.ok) return JSON.stringify({ error: out.error ?? `LMS returned ${res.status}` });
+    if (!res.ok) return JSON.stringify(out.error ? out : { error: `LMS returned ${res.status}` });
+    return JSON.stringify(out);
+  }
+
+  if (name === "retract_assignment_feedback") {
+    const secret = process.env.INTERNAL_API_SECRET;
+    const lms = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
+    if (!secret) {
+      return JSON.stringify({ error: "INTERNAL_API_SECRET is not configured, so feedback cannot be retracted from here." });
+    }
+    const studentQuery = String(input.studentQuery ?? "").trim();
+    const moduleNumber = Number(input.moduleNumber);
+    if (!studentQuery || !Number.isFinite(moduleNumber)) {
+      return JSON.stringify({ error: "studentQuery and moduleNumber are both required" });
+    }
+    const res = await fetch(`${lms}/api/internal/submission-feedback/retract?key=${encodeURIComponent(secret)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentQuery, moduleNumber,
+        confirm: input.confirm === true,
+        actorName: admin.name ?? admin.email,
+      }),
+    });
+    const out = await res.json().catch(() => ({ error: "The LMS did not return a readable response." }));
+    if (!res.ok) return JSON.stringify(out.error || out.message ? out : { error: `LMS returned ${res.status}` });
     return JSON.stringify(out);
   }
 
