@@ -901,6 +901,29 @@ function CohortCard({
     }
   }, [expanded, activeTab, loadReadiness, cohort.orientationDate, cohort.orientationZoomLink, cohort.orientationDeckUrl]);
 
+  const [cvSaving, setCvSaving] = useState(false);
+  const [cvSaved,  setCvSaved]  = useState(false);
+
+  /** Content version on its own, so swapping it never carries a half-filled
+   *  orientation form along with it. */
+  async function saveContentVersion() {
+    setCvSaving(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentVersionId: contentVersionId || null }),
+      });
+      if (res.ok) {
+        setCvSaved(true);
+        onChanged?.();
+        setTimeout(() => setCvSaved(false), 4000);
+      }
+    } finally {
+      setCvSaving(false);
+    }
+  }
+
   async function saveOrientation() {
     setOriSaving(true);
     try {
@@ -912,7 +935,9 @@ function CohortCard({
           orientationZoomLink: oriZoom || null,
           orientationDeckUrl: oriDeck || null,
           slackInviteUrl: slackUrl || null,
-          contentVersionId: contentVersionId || null,
+          // Content version has its own card and its own Save. Leaving it in
+          // this payload would let the orientation form write back whatever
+          // the dropdown happened to be showing.
         }),
       });
       if (res.ok) {
@@ -2180,7 +2205,43 @@ function CohortCard({
                     )}
                   </div>
 
-                  {/* Orientation lives with the schedule: it is session one, and its date, link and deck belong beside the eight module rows rather than on Setup. The content version and Slack invite came with it rather than being split off mid-move. */}
+                  {/* Which content this cohort reads is its own decision, with
+                      its own Save. It used to be a field inside the Orientation
+                      form, which meant swapping a version went through a button
+                      labelled "Save orientation" and submitted the orientation
+                      date alongside it. */}
+                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#e4e0d6" }}>
+                    <p className="text-xs font-semibold" style={{ color: "#14211f" }}>Content version</p>
+                    <div className="flex gap-2 flex-wrap items-start">
+                      <select value={contentVersionId} onChange={e => setContentVersionId(e.target.value)}
+                        className="flex-1 min-w-[260px] text-xs border rounded-lg px-2 py-2" style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
+                        <option value="">Latest code — whatever is deployed</option>
+                        {contentVersions.filter(v => v.status === "PUBLISHED" || v.id === contentVersionId)
+                          .map(v => <option key={v.id} value={v.id}>{v.name} ({v.track}){v.status !== "PUBLISHED" ? ` — ${v.status.toLowerCase()}` : ""}</option>)}
+                      </select>
+                      <button onClick={saveContentVersion} disabled={cvSaving || contentVersionId === (cohort.contentVersionId ?? "")}
+                        className="text-xs font-semibold px-3 py-2 rounded-lg text-white disabled:opacity-40"
+                        style={{ background: "#086c64" }}>
+                        {cvSaving ? "Saving…" : "Save content version"}
+                      </button>
+                      {cvSaved && (
+                        <span className="text-xs font-semibold self-center" style={{ color: "#086c64" }}>Saved.</span>
+                      )}
+                    </div>
+                    <p className="text-[9px]" style={{ color: "#949598" }}>
+                      The module content this cohort runs. Pick it once at launch and it stays put, so rewriting the
+                      next version never changes what this group is reading. Leave it on &ldquo;Latest code&rdquo; and
+                      nothing changes from how it has always worked. Manage versions under Content.
+                    </p>
+                    {contentVersionId !== (cohort.contentVersionId ?? "") && (
+                      <p className="text-[10px] font-semibold" style={{ color: "#c0622f" }}>
+                        Unsaved. Switching version changes what every Fellow in this cohort reads, including modules
+                        they have already worked through.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Orientation lives with the schedule: it is session one, and its date, link and deck belong beside the eight module rows rather than on Setup. */}
                   <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#e4e0d6" }}>
                     <p className="text-xs font-semibold" style={{ color: "#14211f" }}>Orientation</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2198,21 +2259,6 @@ function CohortCard({
                         <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
                         <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
                           className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
-                      </label>
-                      <label className="flex flex-col gap-1 sm:col-span-2">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Content version</span>
-                        <select value={contentVersionId} onChange={e => setContentVersionId(e.target.value)}
-                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
-                          <option value="">Latest code — whatever is deployed</option>
-                          {contentVersions.filter(v => v.status === "PUBLISHED" || v.id === contentVersionId)
-                            .map(v => <option key={v.id} value={v.id}>{v.name} ({v.track}){v.status !== "PUBLISHED" ? ` — ${v.status.toLowerCase()}` : ""}</option>)}
-                        </select>
-                        <span className="text-[9px]" style={{ color: "#949598" }}>
-                          The module content this cohort runs. Pick it once at launch and it stays put, so
-                          rewriting the next version never changes what this group is reading. Leave it on
-                          &ldquo;Latest code&rdquo; and nothing changes from how it has always worked. Manage versions
-                          under Content.
-                        </span>
                       </label>
                       <label className="flex flex-col gap-1 sm:col-span-2">
                         <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Slack invite for this cohort</span>
