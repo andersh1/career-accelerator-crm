@@ -20,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { fromEasternNaive } from "@/lib/timezone";
 import {
   planSchedule, validatePlan, DEFAULT_OFFSETS, assignmentOffsetForFriday,
+  addWeeksToNaive,
   type ScheduleOffsets, type PlannedModule,
 } from "@/lib/schedule-plan";
 
@@ -37,6 +38,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     offsets?: Partial<ScheduleOffsets>;
     sessionZoomLink?: string | null;
     sessionLocation?: string | null;
+    /**
+     * Orientation is session one, and Module 1 is one cadence after it.
+     *
+     * The programme is run as orientation first, then the eight modules, but
+     * orientation is a field on the Cohort rather than a CohortSchedule row, so
+     * laying out the modules from the first date typed used to leave it out of
+     * the plan entirely and somebody had to remember to set it on another tab.
+     * When this is on, `firstSession` is orientation and the modules start a
+     * cadence later.
+     */
+    orientationFirst?: boolean;
     apply?: boolean;
   };
 
@@ -50,6 +62,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
   if (!cohort) return NextResponse.json({ error: "No such cohort" }, { status: 404 });
 
+  const cadenceWeeks = body.cadenceWeeks && body.cadenceWeeks > 0 ? body.cadenceWeeks : 1;
+  const orientationFirst = !!body.orientationFirst;
+  // What the admin typed is orientation; the modules begin a cadence later.
+  const orientationSession = orientationFirst ? body.firstSession : null;
+  const moduleFirstSession = orientationFirst
+    ? addWeeksToNaive(body.firstSession, cadenceWeeks)
+    : body.firstSession;
+
   const modules = await prisma.module.findMany({
     orderBy: { number: "asc" },
     select: { id: true, number: true, title: true },
@@ -61,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
    * is therefore derived from the first session rather than fixed, or a Monday
    * cohort silently gets Thursday deadlines.
    */
-  const fridayOffset = assignmentOffsetForFriday(body.firstSession);
+  const fridayOffset = assignmentOffsetForFriday(moduleFirstSession);
   const offsets: ScheduleOffsets = {
     unlock:     { ...DEFAULT_OFFSETS.unlock,   ...(body.offsets?.unlock   ?? {}) },
     prework:    { ...DEFAULT_OFFSETS.prework,  ...(body.offsets?.prework  ?? {}) },
@@ -73,8 +93,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let plan: PlannedModule[];
   try {
     plan = planSchedule({
-      firstSession:    body.firstSession,
-      cadenceWeeks:    body.cadenceWeeks && body.cadenceWeeks > 0 ? body.cadenceWeeks : 1,
+      firstSession:    moduleFirstSession,
+      cadenceWeeks,
       breakAfter:      body.breakAfter,
       offsets,
       sessionZoomLink: body.sessionZoomLink,
@@ -109,8 +129,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     };
   });
 
+  // Orientation rides along in the preview so the admin reads the whole run of
+  // nine sessions in one table, not eight plus one they have to remember.
+  const orientation = orientationSession
+    ? { sessionDate: orientationSession, sessionZoomLink: body.sessionZoomLink?.trim() || null }
+    : null;
+
   if (!body.apply) {
-    return NextResponse.json({ preview: true, cohort: cohort.name, rows, errors });
+    return NextResponse.json({ preview: true, cohort: cohort.name, rows, errors, orientation });
   }
 
   if (errors.length) {
@@ -138,10 +164,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     written++;
   }
 
+  // Orientation last, so a failure part-way through the modules does not leave
+  // a cohort whose orientation points at a schedule that was never written.
+  if (orientation) {
+    await prisma.cohort.update({
+      where: { id: params.id },
+      data: {
+        orientationDate: fromEasternNaive(orientation.sessionDate),
+        // Only fill the orientation link when one was given, so regenerating
+        // dates does not wipe a link somebody set by hand on the Setup tab.
+        ...(orientation.sessionZoomLink ? { orientationZoomLink: orientation.sessionZoomLink } : {}),
+      },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     cohort: cohort.name,
     written,
+    orientation,
     preambleSkipped: rows.filter(r => r.preambleLocked).map(r => r.moduleNumber),
   });
 }

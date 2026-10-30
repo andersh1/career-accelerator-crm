@@ -981,6 +981,45 @@ function CohortCard({
   const [genPreview,  setGenPreview]  = useState<GenRow[] | null>(null);
   const [genErrors,   setGenErrors]   = useState<string[]>([]);
   const [genBusy,     setGenBusy]     = useState(false);
+  /**
+   * Orientation as session one, with Module 1 a cadence later.
+   *
+   * On by default only when this cohort has no orientation date yet, which is
+   * the state a cohort being built for the first time is in. A cohort whose
+   * orientation already happened must not have its module dates pushed a week
+   * just because somebody reopened the generator to fix one thing.
+   */
+  const [genOrientation, setGenOrientation] = useState(!cohort.orientationDate);
+  const [genPreviewOri,  setGenPreviewOri]  = useState<string | null>(null);
+
+  // The Orientation row in the per-module list. Its own state rather than the
+  // Setup tab's, so editing one date here cannot half-save the Slack link and
+  // content version that the Setup form submits alongside orientation.
+  const [editingOri,  setEditingOri]  = useState(false);
+  const [oriRowDate,  setOriRowDate]  = useState("");
+  const [oriRowZoom,  setOriRowZoom]  = useState("");
+  const [oriRowBusy,  setOriRowBusy]  = useState(false);
+
+  async function saveOrientationRow() {
+    setOriRowBusy(true);
+    try {
+      const res = await fetch(`/api/crm/cohorts/${cohort.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orientationDate: oriRowDate || null,
+          orientationZoomLink: oriRowZoom || null,
+        }),
+      });
+      if (res.ok) {
+        setEditingOri(false);
+        await loadReadiness();
+        onChanged?.();
+      }
+    } finally {
+      setOriRowBusy(false);
+    }
+  }
 
   async function runGenerate(apply: boolean) {
     setGenBusy(true);
@@ -993,17 +1032,22 @@ function CohortCard({
           cadenceWeeks: genCadence,
           breakAfter: genBreaks.split(",").map(x => parseInt(x.trim())).filter(n => !isNaN(n)),
           sessionZoomLink: genZoom || null,
+          orientationFirst: genOrientation,
           apply,
         }),
       });
       const r = await res.json();
       if (!res.ok) { setGenErrors(r.errors ?? [r.error ?? "Could not build that schedule."]); setGenPreview(null); return; }
       if (apply) {
-        setGenOpen(false); setGenPreview(null); setGenErrors([]);
+        setGenOpen(false); setGenPreview(null); setGenErrors([]); setGenPreviewOri(null);
+        // Orientation is written on the cohort, not the schedule, so the card
+        // itself has to catch up or the Orientation row stays blank.
+        if (r.orientation) onChanged?.();
         setSchedule(null);           // force a refetch so the table shows what was written
         setActiveTab("roster"); setActiveTab("schedule");
       } else {
         setGenPreview(r.rows); setGenErrors(r.errors ?? []);
+        setGenPreviewOri(r.orientation?.sessionDate ?? null);
       }
     } finally {
       setGenBusy(false);
@@ -2130,7 +2174,9 @@ function CohortCard({
                       <div className="mt-3 space-y-3">
                         <div className="flex gap-2 flex-wrap items-end">
                           <label className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>First session (ET)</span>
+                            <span className="text-[10px] font-semibold" style={{ color: "#5a6663" }}>
+                              {genOrientation ? "Orientation, session one (ET)" : "First session (ET)"}
+                            </span>
                             <input
                               type="datetime-local"
                               value={genFirst}
@@ -2181,6 +2227,22 @@ function CohortCard({
                           </button>
                         </div>
 
+                        {/* Orientation is a field on the cohort, not a module
+                            row, so it used to sit outside the generator and had
+                            to be remembered separately on the Setup tab. */}
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={genOrientation}
+                            onChange={e => { setGenOrientation(e.target.checked); setGenPreview(null); setGenPreviewOri(null); }}
+                            className="mt-0.5"
+                          />
+                          <span className="text-[10px]" style={{ color: "#5a6663" }}>
+                            <strong>Start with orientation.</strong> The date above is orientation, and Module 1 lands
+                            one cadence after it. Nine sessions in all. Leave this off to start at Module 1.
+                          </span>
+                        </label>
+
                         <p className="text-[10px]" style={{ color: "#949598" }}>
                           Content opens 6 days before each session, pre-work is due 2 nights before, the kick-off email
                           goes 4 days before, and the assignment is due the Friday after. Nothing is saved until you
@@ -2214,6 +2276,16 @@ function CohortCard({
                                 </tr>
                               </thead>
                               <tbody>
+                                {genPreviewOri && (
+                                  <tr style={{ borderTop: "1px solid #e4e0d6", color: "#14211f", background: "#f4faf9" }}>
+                                    <td className="px-2 py-1.5 font-semibold">Orientation</td>
+                                    <td className="px-2 py-1.5" style={{ color: "#949598" }}>—</td>
+                                    <td className="px-2 py-1.5" style={{ color: "#949598" }}>—</td>
+                                    <td className="px-2 py-1.5" style={{ color: "#949598" }}>sent by hand</td>
+                                    <td className="px-2 py-1.5 font-semibold">{fmtNaive(genPreviewOri)}</td>
+                                    <td className="px-2 py-1.5" style={{ color: "#949598" }}>—</td>
+                                  </tr>
+                                )}
                                 {genPreview.map(r => (
                                   <tr key={r.moduleNumber} style={{ borderTop: "1px solid #e4e0d6", color: "#14211f" }}>
                                     <td className="px-2 py-1.5 font-semibold">M{r.moduleNumber}</td>
@@ -2232,7 +2304,8 @@ function CohortCard({
                             </table>
                             <div className="flex items-center justify-between px-2 py-2" style={{ background: "#f8f6f1" }}>
                               <span className="text-[10px]" style={{ color: "#949598" }}>
-                                This replaces the dates on all {genPreview.length} modules for this cohort.
+                                This replaces the dates on all {genPreview.length} modules for this cohort
+                                {genPreviewOri ? ", and sets the orientation date" : ""}.
                               </span>
                               <button
                                 onClick={() => runGenerate(true)}
@@ -2250,8 +2323,104 @@ function CohortCard({
                   </div>
 
                   <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
-                    Per-Module Session Dates — overrides LMS global dates for this cohort
+                    Session Dates — overrides LMS global dates for this cohort
                   </p>
+
+                  {/* Orientation sits at the top of the same list as the modules
+                      because that is the order it is run in. It writes to the
+                      cohort rather than to a schedule row, so it has no pre-work,
+                      assignment or kick-off of its own; its email is sent by hand
+                      from the Setup tab. */}
+                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#d0e8e6", background: "#f4faf9" }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold" style={{ color: "#14211f" }}>
+                        Orientation — session one
+                      </span>
+                      {editingOri ? (
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={saveOrientationRow}
+                            disabled={oriRowBusy}
+                            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg text-white transition"
+                            style={{ background: "#086c64" }}
+                          >
+                            {oriRowBusy ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+                            Save
+                          </button>
+                          <button onClick={() => setEditingOri(false)}
+                            className="text-xs px-2 py-1 rounded-lg transition"
+                            style={{ background: "#f1efe8", color: "#5a6663" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingOri(true);
+                            setOriRowDate(toEasternInput(cohort.orientationDate));
+                            setOriRowZoom(cohort.orientationZoomLink ?? "");
+                          }}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-lg transition"
+                          style={{ background: "#f1efe8", color: "#5a6663" }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+
+                    {editingOri ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                            <Calendar size={10} /> Orientation date
+                          </label>
+                          <input type="datetime-local"
+                            value={oriRowDate}
+                            onChange={e => setOriRowDate(e.target.value)}
+                            className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
+                            <Link2 size={10} /> Zoom link
+                          </label>
+                          <input
+                            value={oriRowZoom}
+                            onChange={e => setOriRowZoom(e.target.value)}
+                            placeholder="https://zoom.us/j/…"
+                            className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
+                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {cohort.orientationDate ? (
+                          <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
+                            <Calendar size={10} style={{ color: "#086c64" }} />
+                            Session {new Date(cohort.orientationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </span>
+                        ) : (
+                          <span className="text-xs italic" style={{ color: "#c9c4b8" }}>No date set</span>
+                        )}
+                        {cohort.orientationZoomLink ? (
+                          <a href={cohort.orientationZoomLink} target="_blank" rel="noopener noreferrer"
+                            className="text-xs flex items-center gap-1 hover:underline" style={{ color: "#086c64" }}>
+                            <Link2 size={10} /> Join Zoom
+                          </a>
+                        ) : (
+                          <span className="text-xs flex items-center gap-1" style={{ color: "#949598" }}>
+                            <Link2 size={10} /> No Zoom link
+                          </span>
+                        )}
+                        <span className="text-xs" style={{ color: "#949598" }}>
+                          Deck and the orientation email are on the Setup tab
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   {schedule.map(row => {
                     const isEditing = editingRow === row.moduleId;
                     return (

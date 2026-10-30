@@ -82,6 +82,19 @@ function at(naiveDate: string, days: number, time: string): string {
 }
 
 /**
+ * Move a whole "date + time" naive string by whole weeks, keeping the time.
+ *
+ * Used to put orientation in front of Module 1: orientation is session one and
+ * M1 is one cadence later, so the generator plans the modules from a first
+ * session shifted by the cadence rather than from the date the admin typed.
+ */
+export function addWeeksToNaive(naive: string, weeks: number): string {
+  const [date, time] = naive.split("T");
+  if (!date || !time) throw new Error("expected YYYY-MM-DDTHH:MM");
+  return `${shiftDays(date, weeks * 7)}T${time}`;
+}
+
+/**
  * The offset that puts the assignment on the Friday of the session's week.
  *
  * "Due Friday" is the rule everyone states; the number of days that takes
