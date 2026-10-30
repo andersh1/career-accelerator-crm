@@ -885,8 +885,11 @@ function CohortCard({
   }, [cohort.id]);
 
   useEffect(() => {
-    if (expanded && activeTab === "setup") {
-      loadReadiness();
+    // The Orientation card moved to the Schedule tab, so its fields have to be
+    // seeded when that tab opens too. Without this it renders empty and saving
+    // would blank the cohort's orientation date.
+    if (expanded && (activeTab === "setup" || activeTab === "schedule")) {
+      if (activeTab === "setup") loadReadiness();
       setOriDate(toEasternInput(cohort.orientationDate));
       setOriZoom(cohort.orientationZoomLink ?? "");
       setOriDeck(cohort.orientationDeckUrl ?? "");
@@ -992,34 +995,6 @@ function CohortCard({
   const [genOrientation, setGenOrientation] = useState(!cohort.orientationDate);
   const [genPreviewOri,  setGenPreviewOri]  = useState<string | null>(null);
 
-  // The Orientation row in the per-module list. Its own state rather than the
-  // Setup tab's, so editing one date here cannot half-save the Slack link and
-  // content version that the Setup form submits alongside orientation.
-  const [editingOri,  setEditingOri]  = useState(false);
-  const [oriRowDate,  setOriRowDate]  = useState("");
-  const [oriRowZoom,  setOriRowZoom]  = useState("");
-  const [oriRowBusy,  setOriRowBusy]  = useState(false);
-
-  async function saveOrientationRow() {
-    setOriRowBusy(true);
-    try {
-      const res = await fetch(`/api/crm/cohorts/${cohort.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orientationDate: oriRowDate || null,
-          orientationZoomLink: oriRowZoom || null,
-        }),
-      });
-      if (res.ok) {
-        setEditingOri(false);
-        await loadReadiness();
-        onChanged?.();
-      }
-    } finally {
-      setOriRowBusy(false);
-    }
-  }
 
   async function runGenerate(apply: boolean) {
     setGenBusy(true);
@@ -1648,123 +1623,6 @@ function CohortCard({
                     })}
                   </ol>
 
-                  {/* Orientation, inline — it used to live only in the LMS. */}
-                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#e4e0d6" }}>
-                    <p className="text-xs font-semibold" style={{ color: "#14211f" }}>Orientation</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <label className="flex flex-col gap-1">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Date and time (ET)</span>
-                        <input type="datetime-local" value={oriDate} onChange={e => setOriDate(e.target.value)}
-                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
-                      </label>
-                      <label className="flex flex-col gap-1">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Zoom link</span>
-                        <input value={oriZoom} onChange={e => setOriZoom(e.target.value)} placeholder="https://zoom.us/j/…"
-                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
-                      </label>
-                      <label className="flex flex-col gap-1">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
-                        <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
-                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
-                      </label>
-                      <label className="flex flex-col gap-1 sm:col-span-2">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Content version</span>
-                        <select value={contentVersionId} onChange={e => setContentVersionId(e.target.value)}
-                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
-                          <option value="">Latest code — whatever is deployed</option>
-                          {contentVersions.filter(v => v.status === "PUBLISHED" || v.id === contentVersionId)
-                            .map(v => <option key={v.id} value={v.id}>{v.name} ({v.track}){v.status !== "PUBLISHED" ? ` — ${v.status.toLowerCase()}` : ""}</option>)}
-                        </select>
-                        <span className="text-[9px]" style={{ color: "#949598" }}>
-                          The module content this cohort runs. Pick it once at launch and it stays put, so
-                          rewriting the next version never changes what this group is reading. Leave it on
-                          &ldquo;Latest code&rdquo; and nothing changes from how it has always worked. Manage versions
-                          under Content.
-                        </span>
-                      </label>
-                      <label className="flex flex-col gap-1 sm:col-span-2">
-                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Slack invite for this cohort</span>
-                        <input value={slackUrl} onChange={e => setSlackUrl(e.target.value)} placeholder="Leave blank to use the shared Vantage Slack invite"
-                          className="text-xs border rounded-lg px-2 py-1.5 font-mono" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
-                        <span className="text-[9px]" style={{ color: "#949598" }}>
-                          Blank means this cohort gets the shared invite, which is how every cohort worked before.
-                          Set one when a group needs its own workspace: a private 1:1 client should not land in a
-                          group cohort&rsquo;s Slack.
-                        </span>
-                      </label>
-                    </div>
-                    <button onClick={saveOrientation} disabled={oriSaving}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-40"
-                      style={{ background: "#086c64" }}>
-                      {oriSaving ? "Saving…" : "Save orientation"}
-                    </button>
-                    {oriSaved && (
-                      <span className="text-xs font-semibold ml-2" style={{ color: "#086c64" }}>
-                        Saved. The checklist above has been re-checked.
-                      </span>
-                    )}
-                    {/* What the Founder Mode button in the header actually does.
-                        It had a tooltip, but a tooltip you have to hover is how
-                        a control ends up unexplained for months. */}
-                    <div className="mt-4 pt-3 border-t" style={{ borderColor: "#e4e0d6" }}>
-                      <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
-                        Founder Mode — currently {cohort.founderMode ? "ON" : "off"} for this cohort
-                      </p>
-                      <p className="text-[11px]" style={{ color: "#5a6663" }}>
-                        It changes what <strong>Fellows</strong> see, not what you see. With it on, everyone in this
-                        cohort gets a momentum score and a short list of suggested next moves at the top of their
-                        dashboard. The toggle is the rocket button at the top of this card.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => orientationEmail(false)}
-                      disabled={oriMailBusy}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg ml-2 disabled:opacity-40"
-                      style={{ border: "1px solid #086c64", color: "#086c64" }}
-                    >
-                      {oriMailBusy ? "…" : "Preview the orientation email"}
-                    </button>
-                    {oriMailMsg && (
-                      <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{oriMailMsg}</p>
-                    )}
-
-                    {oriMail && (
-                      <div className="mt-3 rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "#fbfaf7" }}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
-                          Goes to {oriMail.recipients.length} {oriMail.recipients.length === 1 ? "person" : "people"}
-                        </p>
-                        <p className="text-[11px] mb-2" style={{ color: "#5a6663" }}>
-                          {oriMail.recipients.join(", ") || "Nobody yet. Publish the cohort first."}
-                        </p>
-                        {oriMail.alreadySent && (
-                          <p className="text-[11px] mb-2 font-semibold" style={{ color: "#c0622f" }}>
-                            Already sent {new Date(oriMail.alreadySent).toLocaleDateString("en-US", { month: "short", day: "numeric" })}.
-                          </p>
-                        )}
-                        <p className="text-xs font-semibold mb-2" style={{ color: "#14211f" }}>{oriMail.subject}</p>
-                        <div
-                          className="rounded-lg overflow-auto bg-white"
-                          style={{ maxHeight: 340, border: "1px solid #e4e0d6" }}
-                          dangerouslySetInnerHTML={{ __html: oriMail.html }}
-                        />
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => orientationEmail(true, !!oriMail.alreadySent)}
-                            disabled={oriMailBusy || oriMail.recipients.length === 0}
-                            className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
-                            style={{ background: "#086c64" }}
-                          >
-                            {oriMailBusy ? "Sending…" : oriMail.alreadySent ? "Send again" : `Send to ${oriMail.recipients.length}`}
-                          </button>
-                          <button onClick={() => setOriMail(null)}
-                            className="px-3 py-1.5 text-xs rounded-lg" style={{ background: "#f1efe8", color: "#5a6663" }}>
-                            Close
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </>
               ) : (
                 <p className="text-sm py-4" style={{ color: "#949598" }}>Could not load the checklist.</p>
@@ -2322,84 +2180,142 @@ function CohortCard({
                     )}
                   </div>
 
+                  {/* Orientation lives with the schedule: it is session one, and its date, link and deck belong beside the eight module rows rather than on Setup. The content version and Slack invite came with it rather than being split off mid-move. */}
+                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#e4e0d6" }}>
+                    <p className="text-xs font-semibold" style={{ color: "#14211f" }}>Orientation</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Date and time (ET)</span>
+                        <input type="datetime-local" value={oriDate} onChange={e => setOriDate(e.target.value)}
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Zoom link</span>
+                        <input value={oriZoom} onChange={e => setOriZoom(e.target.value)} placeholder="https://zoom.us/j/…"
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Deck link</span>
+                        <input value={oriDeck} onChange={e => setOriDeck(e.target.value)} placeholder="Google Slides /preview link"
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                      </label>
+                      <label className="flex flex-col gap-1 sm:col-span-2">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Content version</span>
+                        <select value={contentVersionId} onChange={e => setContentVersionId(e.target.value)}
+                          className="text-xs border rounded-lg px-2 py-1.5" style={{ borderColor: "#e4e0d6", color: "#14211f" }}>
+                          <option value="">Latest code — whatever is deployed</option>
+                          {contentVersions.filter(v => v.status === "PUBLISHED" || v.id === contentVersionId)
+                            .map(v => <option key={v.id} value={v.id}>{v.name} ({v.track}){v.status !== "PUBLISHED" ? ` — ${v.status.toLowerCase()}` : ""}</option>)}
+                        </select>
+                        <span className="text-[9px]" style={{ color: "#949598" }}>
+                          The module content this cohort runs. Pick it once at launch and it stays put, so
+                          rewriting the next version never changes what this group is reading. Leave it on
+                          &ldquo;Latest code&rdquo; and nothing changes from how it has always worked. Manage versions
+                          under Content.
+                        </span>
+                      </label>
+                      <label className="flex flex-col gap-1 sm:col-span-2">
+                        <span className="text-[10px] font-semibold" style={{ color: "#949598" }}>Slack invite for this cohort</span>
+                        <input value={slackUrl} onChange={e => setSlackUrl(e.target.value)} placeholder="Leave blank to use the shared Vantage Slack invite"
+                          className="text-xs border rounded-lg px-2 py-1.5 font-mono" style={{ borderColor: "#e4e0d6", color: "#14211f" }} />
+                        <span className="text-[9px]" style={{ color: "#949598" }}>
+                          Blank means this cohort gets the shared invite, which is how every cohort worked before.
+                          Set one when a group needs its own workspace: a private 1:1 client should not land in a
+                          group cohort&rsquo;s Slack.
+                        </span>
+                      </label>
+                    </div>
+                    <button onClick={saveOrientation} disabled={oriSaving}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-40"
+                      style={{ background: "#086c64" }}>
+                      {oriSaving ? "Saving…" : "Save orientation"}
+                    </button>
+                    {oriSaved && (
+                      <span className="text-xs font-semibold ml-2" style={{ color: "#086c64" }}>
+                        Saved. The Setup checklist has been re-checked.
+                      </span>
+                    )}
+                    {/* What the Founder Mode button in the header actually does.
+                        It had a tooltip, but a tooltip you have to hover is how
+                        a control ends up unexplained for months. */}
+                    <div className="mt-4 pt-3 border-t" style={{ borderColor: "#e4e0d6" }}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
+                        Founder Mode — currently {cohort.founderMode ? "ON" : "off"} for this cohort
+                      </p>
+                      <p className="text-[11px]" style={{ color: "#5a6663" }}>
+                        It changes what <strong>Fellows</strong> see, not what you see. With it on, everyone in this
+                        cohort gets a momentum score and a short list of suggested next moves at the top of their
+                        dashboard. The toggle is the rocket button at the top of this card.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => orientationEmail(false)}
+                      disabled={oriMailBusy}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg ml-2 disabled:opacity-40"
+                      style={{ border: "1px solid #086c64", color: "#086c64" }}
+                    >
+                      {oriMailBusy ? "…" : "Preview the orientation email"}
+                    </button>
+                    {oriMailMsg && (
+                      <p className="text-[11px] mt-2 font-semibold" style={{ color: "#086c64" }}>{oriMailMsg}</p>
+                    )}
+
+                    {oriMail && (
+                      <div className="mt-3 rounded-xl border p-3" style={{ borderColor: "#e4e0d6", background: "#fbfaf7" }}>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#949598" }}>
+                          Goes to {oriMail.recipients.length} {oriMail.recipients.length === 1 ? "person" : "people"}
+                        </p>
+                        <p className="text-[11px] mb-2" style={{ color: "#5a6663" }}>
+                          {oriMail.recipients.join(", ") || "Nobody yet. Publish the cohort first."}
+                        </p>
+                        {oriMail.alreadySent && (
+                          <p className="text-[11px] mb-2 font-semibold" style={{ color: "#c0622f" }}>
+                            Already sent {new Date(oriMail.alreadySent).toLocaleDateString("en-US", { month: "short", day: "numeric" })}.
+                          </p>
+                        )}
+                        <p className="text-xs font-semibold mb-2" style={{ color: "#14211f" }}>{oriMail.subject}</p>
+                        <div
+                          className="rounded-lg overflow-auto bg-white"
+                          style={{ maxHeight: 340, border: "1px solid #e4e0d6" }}
+                          dangerouslySetInnerHTML={{ __html: oriMail.html }}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => orientationEmail(true, !!oriMail.alreadySent)}
+                            disabled={oriMailBusy || oriMail.recipients.length === 0}
+                            className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-40"
+                            style={{ background: "#086c64" }}
+                          >
+                            {oriMailBusy ? "Sending…" : oriMail.alreadySent ? "Send again" : `Send to ${oriMail.recipients.length}`}
+                          </button>
+                          <button onClick={() => setOriMail(null)}
+                            className="px-3 py-1.5 text-xs rounded-lg" style={{ background: "#f1efe8", color: "#5a6663" }}>
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: "#949598", letterSpacing: "0.14em" }}>
                     Session Dates — overrides LMS global dates for this cohort
                   </p>
 
-                  {/* Orientation sits at the top of the same list as the modules
-                      because that is the order it is run in. It writes to the
-                      cohort rather than to a schedule row, so it has no pre-work,
-                      assignment or kick-off of its own; its email is sent by hand
-                      from the Setup tab. */}
-                  <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "#d0e8e6", background: "#f4faf9" }}>
-                    <div className="flex items-center justify-between gap-2">
+                  {/* Orientation as session one. Read-only on purpose: the
+                      editor for it is the Orientation card at the top of this
+                      same tab, and two places to change one date is how the two
+                      disagree. */}
+                  <div className="rounded-xl border p-3" style={{ borderColor: "#d0e8e6", background: "#f4faf9" }}>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-semibold" style={{ color: "#14211f" }}>
                         Orientation — session one
                       </span>
-                      {editingOri ? (
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={saveOrientationRow}
-                            disabled={oriRowBusy}
-                            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg text-white transition"
-                            style={{ background: "#086c64" }}
-                          >
-                            {oriRowBusy ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
-                            Save
-                          </button>
-                          <button onClick={() => setEditingOri(false)}
-                            className="text-xs px-2 py-1 rounded-lg transition"
-                            style={{ background: "#f1efe8", color: "#5a6663" }}>
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingOri(true);
-                            setOriRowDate(toEasternInput(cohort.orientationDate));
-                            setOriRowZoom(cohort.orientationZoomLink ?? "");
-                          }}
-                          className="text-xs font-semibold px-2.5 py-1 rounded-lg transition"
-                          style={{ background: "#f1efe8", color: "#5a6663" }}
-                        >
-                          Edit
-                        </button>
-                      )}
-                    </div>
-
-                    {editingOri ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
-                            <Calendar size={10} /> Orientation date
-                          </label>
-                          <input type="datetime-local"
-                            value={oriRowDate}
-                            onChange={e => setOriRowDate(e.target.value)}
-                            className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
-                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-semibold flex items-center gap-1 mb-1" style={{ color: "#949598" }}>
-                            <Link2 size={10} /> Zoom link
-                          </label>
-                          <input
-                            value={oriRowZoom}
-                            onChange={e => setOriRowZoom(e.target.value)}
-                            placeholder="https://zoom.us/j/…"
-                            className="w-full text-xs border rounded-lg px-2 py-1.5 focus:outline-none"
-                            style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         {cohort.orientationDate ? (
                           <span className="text-xs flex items-center gap-1" style={{ color: "#5a6663" }}>
                             <Calendar size={10} style={{ color: "#086c64" }} />
-                            Session {new Date(cohort.orientationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                            {new Date(cohort.orientationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </span>
                         ) : (
                           <span className="text-xs italic" style={{ color: "#c9c4b8" }}>No date set</span>
@@ -2414,11 +2330,9 @@ function CohortCard({
                             <Link2 size={10} /> No Zoom link
                           </span>
                         )}
-                        <span className="text-xs" style={{ color: "#949598" }}>
-                          Deck and the orientation email are on the Setup tab
-                        </span>
+                        <span className="text-xs" style={{ color: "#949598" }}>Edit in the Orientation card above</span>
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   {schedule.map(row => {

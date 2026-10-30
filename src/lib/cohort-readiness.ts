@@ -120,7 +120,10 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     detail: cohort.orientationDate
       ? (cohort.orientationZoomLink ? "Date and Zoom link set." : "Date set, but no Zoom link — nobody can join.")
       : "No orientation date yet.",
-    where: "Orientation box below", tab: "setup",
+    // Orientation moved to the Schedule tab, where it sits as session one
+    // ahead of the eight modules. A step that still sent people to Setup would
+    // land them on a tab that no longer has the field.
+    where: "Go to the Schedule tab", tab: "schedule",
   });
 
   // 4 ── Working sessions. Optional: plenty of cohorts run without extras.
