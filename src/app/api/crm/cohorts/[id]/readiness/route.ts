@@ -22,12 +22,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     select: {
       id: true, name: true, track: true, capacity: true, publishedAt: true,
-      orientationDate: true, orientationZoomLink: true,
+      orientationDate: true, orientationZoomLink: true, slackInviteUrl: true,
     },
   });
   if (!cohort) return NextResponse.json({ error: "No such cohort" }, { status: 404 });
 
-  const [moduleCount, schedules, students, liveSessions, templates] = await Promise.all([
+  const [moduleCount, schedules, students, liveSessions, templates, overrides] = await Promise.all([
     prisma.module.count(),
     prisma.cohortSchedule.findMany({
       where: { cohortId: params.id },
@@ -44,12 +44,24 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     }),
     prisma.emailTemplate.findMany({
       where: { key: { startsWith: "module-preamble-" } },
-      select: { key: true, enabled: true },
+      select: { key: true, enabled: true, body: true },
+    }),
+    // This cohort's own kick-off copy, where it has written any. The readiness
+    // check has to read the words this cohort would actually be sent, not the
+    // shared copy it may already have overridden.
+    prisma.cohortEmailTemplate.findMany({
+      where: { cohortId: params.id, key: { startsWith: "module-preamble-" } },
+      select: { key: true, body: true },
     }),
   ]);
 
+  const ownBody = new Map(overrides.map(o => [o.key, o.body]));
   const result = buildReadiness({
-    cohort, moduleCount, schedules, students, liveSessions, templates,
+    cohort, moduleCount, schedules, students, liveSessions,
+    templates: templates.map(t => ({
+      ...t,
+      body: ownBody.get(t.key) ?? t.body,
+    })),
     lmsUrl: process.env.LMS_URL ?? "https://lms.vantagecareer.co",
   });
 

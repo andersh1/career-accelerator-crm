@@ -15,3 +15,20 @@
 export function showsCohortLabel(track: string | null | undefined): boolean {
   return track !== "PRIVATE";
 }
+
+/**
+ * Whether this track gets the SHARED participant Slack workspace.
+ *
+ * Mirrors `communitySlack` in the LMS track table. Off for a private client:
+ * the first one was onboarded straight into the group cohort's workspace, and a
+ * paying 1:1 client landed among a dozen Fellows he was not in a programme
+ * with. The LMS now refuses to hand out the shared invite, but the kick-off
+ * email copy is free text in the Email Playbook and can carry a join link that
+ * no resolver ever sees — which is what the cohort readiness check looks for.
+ *
+ * Off does not mean no Slack: a private client with their own workspace has it
+ * on `Cohort.slackInviteUrl`, and that is honoured everywhere.
+ */
+export function hasCommunitySlack(track: string | null | undefined): boolean {
+  return track !== "PRIVATE";
+}

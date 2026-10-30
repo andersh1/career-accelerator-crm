@@ -13,6 +13,8 @@
  * wrong on a screen. They look like nothing at all.
  */
 
+import { hasCommunitySlack } from "@/lib/track";
+
 export type ReadinessStatus = "done" | "todo" | "warn" | "optional";
 
 export interface ReadinessStep {
@@ -32,6 +34,8 @@ export interface ReadinessInput {
   cohort: {
     track: string; capacity: number | null; publishedAt: Date | null;
     orientationDate: Date | null; orientationZoomLink: string | null;
+    /** This cohort's own Slack workspace, if it has one. */
+    slackInviteUrl: string | null;
   };
   moduleCount: number;
   schedules: {
@@ -42,9 +46,20 @@ export interface ReadinessInput {
   }[];
   students: { onboardedAt: Date | null; invitedAt: Date | null }[];
   liveSessions: { published: boolean; zoomLink: string | null }[];
-  templates: { key: string; enabled: boolean }[];
+  /** Kick-off templates, with the body this cohort would actually be sent
+   *  (its own override where it has one, otherwise the shared copy). */
+  templates: { key: string; enabled: boolean; body?: string | null }[];
   lmsUrl: string;
 }
+
+/**
+ * A Slack invite link sitting in free-text email copy.
+ *
+ * Matches the two shapes a Slack invite takes — join.slack.com/... and a
+ * workspace's own subdomain — which is the same pair the LMS validates an
+ * invite against when an admin saves one.
+ */
+const SLACK_INVITE_IN_COPY = /https:\/\/(?:join\.slack\.com\/|[a-z0-9-]+\.slack\.com\/)/i;
 
 export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[]; ready: boolean; outstanding: number } {
   const { cohort, schedules, students, liveSessions, templates, lmsUrl: lms } = input;
@@ -158,6 +173,39 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
       where: disabled.length ? "Automation → Email Playbook" : "Go to the Schedule tab",
       ...(disabled.length ? { href: "/automation" } : { tab: "schedule" as const }),
     });
+  }
+
+  // 5b ── A Slack invite in kick-off copy, sent to someone with no Slack.
+  //
+  // The LMS resolver refuses to hand a private client the shared workspace, so
+  // the dashboard card and the onboarding step both disappear for them. The
+  // kick-off emails route around all of that: their bodies are free text in the
+  // Email Playbook, and module-preamble-1 has a live join.slack.com link
+  // written into it. Nothing in the send path reads that link, so nothing can
+  // decide not to send it — which is how the first private client ended up in
+  // the group's workspace.
+  //
+  // This is the check rather than a strip-the-link rule because the paragraph
+  // around the link is wrong for a private client too ("where the cohort runs
+  // between sessions"), and only a person can rewrite that. Fix it with a
+  // per-cohort override of the kick-off copy.
+  if (!hasCommunitySlack(cohort.track) && !cohort.slackInviteUrl?.trim()) {
+    const leaky = templates
+      .filter(t => t.body && SLACK_INVITE_IN_COPY.test(t.body))
+      .map(t => parseInt(t.key.replace("module-preamble-", ""), 10))
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b)
+      .map(n => `M${n}`);
+    if (leaky.length) {
+      steps.push({
+        key: "slack-leak",
+        title: "Slack invite in kick-off copy",
+        status: "todo",
+        detail: `This client has no Slack, but the ${leaky.join(", ")} kick-off copy contains a Slack invite link. Sending it hands them the group cohort's workspace. Write a per-cohort override for ${leaky.join(", ")} with the Slack paragraph removed.`,
+        where: "Automation → Email Playbook",
+        href: "/automation",
+      });
+    }
   }
 
   // 6 ── People
