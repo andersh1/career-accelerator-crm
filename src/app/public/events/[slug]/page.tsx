@@ -3,6 +3,11 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Loader2, MapPin, Video, Calendar, Clock, Users, CheckCircle2, ChevronRight } from "lucide-react";
+import Field from "@/components/ui/Field";
+
+// Shared so wiring up labels did not change how any control looks.
+const EVENT_LABEL = "block text-xs font-semibold mb-1";
+const EVENT_INPUT = "w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:border-teal-500 transition-colors";
 
 interface EventData {
   id: string; slug: string; title: string; description: string | null;
@@ -317,35 +322,46 @@ function EventPageInner() {
               ) : (
                 <form onSubmit={submit} className="px-6 py-5 space-y-4" style={{ background: "#fff" }}>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>First name *</label>
-                      <input required value={form.firstName} onChange={e => set("firstName", e.target.value)} placeholder="Jane" className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:border-teal-500 transition-colors" style={{ borderColor: "#e4e0d6" }} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Last name *</label>
-                      <input required value={form.lastName} onChange={e => set("lastName", e.target.value)} placeholder="Smith" className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:border-teal-500 transition-colors" style={{ borderColor: "#e4e0d6" }} />
-                    </div>
+                    <Field label="First name" required labelClassName={EVENT_LABEL} labelStyle={{ color: "#5a6663" }}>
+                      {(p) => (
+                        <input {...p} autoComplete="given-name" value={form.firstName} onChange={e => set("firstName", e.target.value)} placeholder="Jane" className={EVENT_INPUT} style={{ borderColor: "#e4e0d6" }} />
+                      )}
+                    </Field>
+                    <Field label="Last name" required labelClassName={EVENT_LABEL} labelStyle={{ color: "#5a6663" }}>
+                      {(p) => (
+                        <input {...p} autoComplete="family-name" value={form.lastName} onChange={e => set("lastName", e.target.value)} placeholder="Smith" className={EVENT_INPUT} style={{ borderColor: "#e4e0d6" }} />
+                      )}
+                    </Field>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Email *</label>
-                    <input required type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="jane@example.com" className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:border-teal-500 transition-colors" style={{ borderColor: "#e4e0d6" }} />
-                  </div>
+                  <Field label="Email" required labelClassName={EVENT_LABEL} labelStyle={{ color: "#5a6663" }}>
+                    {(p) => (
+                      <input {...p} type="email" autoComplete="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="jane@example.com" className={EVENT_INPUT} style={{ borderColor: "#e4e0d6" }} />
+                    )}
+                  </Field>
 
-                  <div>
-                    <label className="block text-xs font-semibold mb-1" style={{ color: "#5a6663" }}>Phone (optional)</label>
-                    <input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (555) 000-0000" className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:border-teal-500 transition-colors" style={{ borderColor: "#e4e0d6" }} />
-                  </div>
+                  <Field label="Phone" optional labelClassName={EVENT_LABEL} labelStyle={{ color: "#5a6663" }}>
+                    {(p) => (
+                      <input {...p} type="tel" autoComplete="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (555) 000-0000" className={EVENT_INPUT} style={{ borderColor: "#e4e0d6" }} />
+                    )}
+                  </Field>
 
+                  {/* Two buttons that are really one choice, so they are
+                      announced as a radio group instead of two unrelated
+                      buttons whose state is only a border colour. */}
                   <div>
-                    <label className="block text-xs font-semibold mb-2" style={{ color: "#5a6663" }}>I am a *</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <p id="event-contact-type" className="block text-xs font-semibold mb-2" style={{ color: "#5a6663" }}>
+                      I am a <span className="text-red-500" aria-hidden="true">*</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="event-contact-type">
                       {[
                         { val: "STUDENT", label: "Student / Grad" },
                         { val: "PARENT",  label: "Parent / Guardian" },
                       ].map(({ val, label }) => (
                         <button
                           key={val} type="button"
+                          role="radio"
+                          aria-checked={form.contactType === val}
                           onClick={() => set("contactType", val)}
                           className="flex items-center justify-center px-3 py-2.5 rounded-xl border-2 text-xs font-semibold transition-all"
                           style={{
@@ -361,7 +377,7 @@ function EventPageInner() {
                   </div>
 
                   {error && (
-                    <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "#fef2f2", color: "#dc2626" }}>{error}</div>
+                    <div role="alert" className="rounded-xl px-4 py-3 text-sm" style={{ background: "#fef2f2", color: "#dc2626" }}>{error}</div>
                   )}
 
                   <button

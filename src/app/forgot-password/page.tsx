@@ -2,6 +2,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { Loader2, Mail, ArrowLeft, ArrowRight } from "lucide-react";
+import Field from "@/components/ui/Field";
 
 export default function ForgotPasswordPage() {
   const [email,     setEmail]     = useState("");
@@ -67,18 +68,21 @@ export default function ForgotPasswordPage() {
               </p>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
+                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>
-                    Email address
-                  </label>
+                <Field
+                  label="Email address"
+                  labelClassName="block text-sm font-semibold mb-1.5"
+                  labelStyle={{ color: "#14211f" }}
+                >
+                  {(p) => (
                   <input
-                    type="email" required autoFocus
+                    {...p}
+                    type="email" required autoFocus autoComplete="email"
                     value={email} onChange={e => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
@@ -86,7 +90,8 @@ export default function ForgotPasswordPage() {
                     onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
                   />
-                </div>
+                  )}
+                </Field>
 
                 <button
                   type="submit" disabled={loading}

@@ -135,7 +135,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-1 overflow-y-auto scrollbar-thin space-y-2.5">
+      {/* SidebarContent renders twice (desktop aside + mobile drawer), so this
+          carries a label but no id — a duplicate id would be its own defect. */}
+      <nav aria-label="Main" className="flex-1 px-3 py-1 overflow-y-auto scrollbar-thin space-y-2.5">
         {NAV_SECTIONS.filter(sec => !sec.adminOnly || isAdmin).map(section => {
           const sectionNav = nav.filter(item => section.keys.includes(item.href));
           if (!sectionNav.length) return null;
@@ -241,6 +243,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f8f6f1" }}>
+      {/* Skip link — every page repeats the same sidebar, so a keyboard or
+          screen reader user had to tab through all of it to reach the page
+          itself. WCAG 2.4.1 (Bypass Blocks). Invisible until focused. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-3 focus:left-3 focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:text-white"
+        style={{ background: "#086c64" }}
+      >
+        Skip to main content
+      </a>
       <GlobalSearch />
       {/* Desktop sidebar */}
       <aside
@@ -267,12 +279,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile topbar */}
         <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b" style={{ borderColor: "#e4e0d6" }}>
-          <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#5a6663" }}>
+          {/* Icon-only, so it needs a name of its own: without one a screen
+              reader announces "button" and nothing else. */}
+          <button
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "#5a6663" }}
+          >
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <img src="/vantage-logo.svg" alt="Vantage Career" className="h-6 w-auto object-contain" />
         </header>
-        <main className="flex-1 overflow-y-auto scrollbar-thin">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto scrollbar-thin">
           {children}
         </main>
       </div>

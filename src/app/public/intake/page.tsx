@@ -2,6 +2,12 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Field from "@/components/ui/Field";
+
+// Shared so every control on this form keeps exactly the look it had before
+// labels were wired up. This is an accessibility change, not a restyle.
+const INPUT =
+  "w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition";
 
 function IntakeForm() {
   const searchParams = useSearchParams();
@@ -50,9 +56,11 @@ function IntakeForm() {
   if (status === "success") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 px-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md text-center">
+        {/* role="status" so the swap from form to confirmation is announced.
+            Without it a screen reader user submits and hears nothing. */}
+        <div role="status" className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg aria-hidden="true" className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -78,100 +86,98 @@ function IntakeForm() {
         <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
           {/* Name row */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                First Name <span className="text-red-500">*</span>
-              </label>
+            <Field label="First Name" required>
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                  autoComplete="given-name"
+                  placeholder="Jane"
+                  className={INPUT}
+                />
+              )}
+            </Field>
+            <Field label="Last Name" required>
+              {(p) => (
+                <input
+                  {...p}
+                  type="text"
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handleChange}
+                  autoComplete="family-name"
+                  placeholder="Smith"
+                  className={INPUT}
+                />
+              )}
+            </Field>
+          </div>
+
+          <Field label="Email" required>
+            {(p) => (
               <input
-                type="text"
-                name="firstName"
-                value={form.firstName}
+                {...p}
+                type="email"
+                name="email"
+                value={form.email}
                 onChange={handleChange}
-                required
-                placeholder="Jane"
-                className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                autoComplete="email"
+                placeholder="jane@example.com"
+                className={INPUT}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Last Name <span className="text-red-500">*</span>
-              </label>
+            )}
+          </Field>
+
+          <Field label="Phone" optional>
+            {(p) => (
               <input
-                type="text"
-                name="lastName"
-                value={form.lastName}
+                {...p}
+                type="tel"
+                name="phone"
+                value={form.phone}
                 onChange={handleChange}
-                required
-                placeholder="Smith"
-                className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                autoComplete="tel"
+                placeholder="+1 (555) 000-0000"
+                className={INPUT}
               />
-            </div>
-          </div>
+            )}
+          </Field>
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              placeholder="jane@example.com"
-              className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
+          <Field label="Company" optional>
+            {(p) => (
+              <input
+                {...p}
+                type="text"
+                name="company"
+                value={form.company}
+                onChange={handleChange}
+                autoComplete="organization"
+                placeholder="Acme Corp"
+                className={INPUT}
+              />
+            )}
+          </Field>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Phone <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="+1 (555) 000-0000"
-              className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
+          <Field label="Message" optional>
+            {(p) => (
+              <textarea
+                {...p}
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Tell us a bit about yourself or what you're looking for..."
+                className={`${INPUT} resize-none`}
+              />
+            )}
+          </Field>
 
-          {/* Company */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Company <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              name="company"
-              value={form.company}
-              onChange={handleChange}
-              placeholder="Acme Corp"
-              className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
-
-          {/* Message */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Message <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Tell us a bit about yourself or what you're looking for..."
-              className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
-            />
-          </div>
-
-          {/* Error */}
+          {/* Error — announced, not just shown. */}
           {status === "error" && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div role="alert" className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {errorMsg}
             </div>
           )}

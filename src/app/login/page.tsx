@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowRight } from "lucide-react";
+import Field from "@/components/ui/Field";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -82,18 +83,23 @@ export default function LoginPage() {
             Sign in to your admin account
           </p>
 
+          {/* role="alert" so a screen reader announces the failure instead of
+              leaving the person waiting on a form that looks unchanged. */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
+            <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>
-                Email address
-              </label>
+            <Field
+              label="Email address"
+              labelClassName="block text-sm font-semibold mb-1.5"
+              labelStyle={{ color: "#14211f" }}
+            >
+              {(p) => (
               <input
+                {...p}
                 type="email" required autoComplete="email" autoFocus
                 value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com"
@@ -106,16 +112,22 @@ export default function LoginPage() {
                 onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                 onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
               />
-            </div>
+              )}
+            </Field>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold" style={{ color: "#14211f" }}>Password</label>
+            <Field
+              label="Password"
+              labelClassName="text-sm font-semibold"
+              labelStyle={{ color: "#14211f" }}
+              labelAside={
                 <Link href="/forgot-password" className="text-xs font-medium transition-colors" style={{ color: "#086c64" }}>
                   Forgot password?
                 </Link>
-              </div>
+              }
+            >
+              {(p) => (
               <input
+                {...p}
                 type="password" required autoComplete="current-password"
                 value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -128,7 +140,8 @@ export default function LoginPage() {
                 onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
                 onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
               />
-            </div>
+              )}
+            </Field>
 
             <button
               type="submit" disabled={loading}

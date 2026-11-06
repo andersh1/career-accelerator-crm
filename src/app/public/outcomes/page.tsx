@@ -3,6 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
+import Field from "@/components/ui/Field";
+
+// Shared so wiring up labels did not change how any control looks.
+const OUTCOME_INPUT = "w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2";
 
 const STATUSES = [
   { key: "PLACED",          label: "I got a job!",        desc: "I've accepted an offer or started a new role" },
@@ -120,16 +124,20 @@ function OutcomeForm() {
         {/* Form */}
         <form onSubmit={submit} className="space-y-5">
 
-          {/* Status */}
+          {/* Status — three buttons that behave as one choice, so they are
+              announced as a radio group rather than three unrelated buttons
+              whose selected state is carried only by a border colour. */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>
+            <p id="outcome-status-label" className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#949598" }}>
               Where are you right now?
             </p>
-            <div className="space-y-2">
+            <div className="space-y-2" role="radiogroup" aria-labelledby="outcome-status-label">
               {STATUSES.map(s => (
                 <button
                   key={s.key}
                   type="button"
+                  role="radio"
+                  aria-checked={status === s.key}
                   onClick={() => setStatus(s.key)}
                   className="w-full text-left rounded-xl border-2 px-4 py-3 transition"
                   style={{
@@ -148,52 +156,63 @@ function OutcomeForm() {
           {status === "PLACED" && (
             <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: "#e4e0d6", background: "white" }}>
               <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "#949598" }}>Tell us more (optional)</p>
-              <div>
-                <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Company</label>
-                <input
-                  value={company}
-                  onChange={e => setCompany(e.target.value)}
-                  placeholder="e.g. Google"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Role / Title</label>
-                <input
-                  value={role}
-                  onChange={e => setRole(e.target.value)}
-                  placeholder="e.g. Operations Analyst"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                />
-              </div>
+              <Field label="Company" labelClassName="text-xs font-semibold block mb-1" labelStyle={{ color: "#5a6663" }}>
+                {(p) => (
+                  <input
+                    {...p}
+                    value={company}
+                    onChange={e => setCompany(e.target.value)}
+                    autoComplete="organization"
+                    placeholder="e.g. Google"
+                    className={OUTCOME_INPUT}
+                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                  />
+                )}
+              </Field>
+              <Field label="Role / Title" labelClassName="text-xs font-semibold block mb-1" labelStyle={{ color: "#5a6663" }}>
+                {(p) => (
+                  <input
+                    {...p}
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    autoComplete="organization-title"
+                    placeholder="e.g. Operations Analyst"
+                    className={OUTCOME_INPUT}
+                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                  />
+                )}
+              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Salary (annual $)</label>
-                  <input
-                    value={salary}
-                    onChange={e => setSalary(e.target.value.replace(/\D/g, ""))}
-                    placeholder="e.g. 70000"
-                    className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold block mb-1" style={{ color: "#5a6663" }}>Start date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                    style={{ borderColor: "#e4e0d6", color: "#14211f" }}
-                  />
-                </div>
+                <Field label="Salary (annual $)" labelClassName="text-xs font-semibold block mb-1" labelStyle={{ color: "#5a6663" }}>
+                  {(p) => (
+                    <input
+                      {...p}
+                      inputMode="numeric"
+                      value={salary}
+                      onChange={e => setSalary(e.target.value.replace(/\D/g, ""))}
+                      placeholder="e.g. 70000"
+                      className={OUTCOME_INPUT}
+                      style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                    />
+                  )}
+                </Field>
+                <Field label="Start date" labelClassName="text-xs font-semibold block mb-1" labelStyle={{ color: "#5a6663" }}>
+                  {(p) => (
+                    <input
+                      {...p}
+                      type="date"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                      className={OUTCOME_INPUT}
+                      style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                    />
+                  )}
+                </Field>
               </div>
             </div>
           )}
 
-          {error && <p className="text-xs font-semibold" style={{ color: "#dc2626" }}>{error}</p>}
+          {error && <p role="alert" className="text-xs font-semibold" style={{ color: "#dc2626" }}>{error}</p>}
 
           <button
             type="submit"

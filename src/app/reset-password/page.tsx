@@ -3,6 +3,11 @@ import { useState, FormEvent, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import Field from "@/components/ui/Field";
+
+// Shared so wiring up labels did not change how any control looks.
+const RESET_LABEL = "block text-sm font-semibold mb-1.5";
+const RESET_INPUT = "w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all";
 
 function ResetForm() {
   const searchParams = useSearchParams();
@@ -50,36 +55,40 @@ function ResetForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>New password</label>
-        <input
-          type="password" required autoFocus
-          value={password} onChange={e => setPassword(e.target.value)}
-          placeholder="At least 8 characters"
-          className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
-          style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
-          onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
-        />
-      </div>
+      <Field label="New password" hint="At least 8 characters." labelClassName={RESET_LABEL} labelStyle={{ color: "#14211f" }}>
+        {(p) => (
+          <input
+            {...p}
+            type="password" required autoFocus autoComplete="new-password"
+            value={password} onChange={e => setPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            className={RESET_INPUT}
+            style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+            onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
+          />
+        )}
+      </Field>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1.5" style={{ color: "#14211f" }}>Confirm password</label>
-        <input
-          type="password" required
-          value={confirm} onChange={e => setConfirm(e.target.value)}
-          placeholder="Repeat new password"
-          className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all"
-          style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
-          onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
-        />
-      </div>
+      <Field label="Confirm password" labelClassName={RESET_LABEL} labelStyle={{ color: "#14211f" }}>
+        {(p) => (
+          <input
+            {...p}
+            type="password" required autoComplete="new-password"
+            value={confirm} onChange={e => setConfirm(e.target.value)}
+            placeholder="Repeat new password"
+            className={RESET_INPUT}
+            style={{ background: "#fff", border: "1.5px solid #e4e0d6", color: "#14211f" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "#086c64"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(10,107,100,0.12)"; }}
+            onBlur={e  => { e.currentTarget.style.borderColor = "#e4e0d6"; e.currentTarget.style.boxShadow = "none"; }}
+          />
+        )}
+      </Field>
 
       <button
         type="submit" disabled={loading}
