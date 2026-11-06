@@ -9,9 +9,13 @@ import { prisma } from "@/lib/prisma";
 const CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
 
+// Fail closed, like the other five crons. This used to `return true` when
+// CRON_SECRET was unset, so a missing or renamed variable would have taken the
+// other five crons quiet and made this one — the one that pulls a Google
+// mailbox into the database — public. Found in the 2026-11-06 audit.
 function authOk(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
+  if (!secret) return false;
   const auth = req.headers.get("authorization") ?? "";
   return auth === `Bearer ${secret}`;
 }
