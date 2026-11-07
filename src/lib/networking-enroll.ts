@@ -54,10 +54,30 @@ export async function syncNetworkingAllowlist(input: {
 }): Promise<void> {
   const role = crmRole(input.role);
   if (!role) return; // not a Fellow or admin — nothing to mirror
-  if (!networkingEnrollConfigured()) return;
 
   const email = (input.email ?? "").trim().toLowerCase();
   if (!email) return;
+
+  /**
+   * Say it out loud when the keys are missing.
+   *
+   * No-opping on missing config is the right call — a misconfigured mirror
+   * must never block account creation — but a silent return looked exactly
+   * like a successful mirror. Nothing logged, nothing failed, and the Fellow
+   * found out at their first Networking CRM sign-in, which is weeks later and
+   * reads as a bug in that app rather than an unset variable in this one.
+   *
+   * The config check moved below the email lookup only so this line can name
+   * who was missed. Behaviour is otherwise unchanged.
+   */
+  if (!networkingEnrollConfigured()) {
+    console.warn(
+      `[networking] allowlist NOT updated for ${email}: NETWORKING_SUPABASE_URL and ` +
+      `NETWORKING_SUPABASE_SERVICE_KEY are unset on this deployment. They will be ` +
+      `rejected at networking.vantagecareer.co until the address is added by hand.`,
+    );
+    return;
+  }
 
   try {
     // PostgREST upsert on the primary key (email). The networking CRM's

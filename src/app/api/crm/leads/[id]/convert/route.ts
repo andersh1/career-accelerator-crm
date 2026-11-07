@@ -108,6 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (sendInvite) {
     const lmsUrl   = process.env.LMS_URL ?? "https://lms.vantagecareer.co";
     const resetUrl = `${lmsUrl}/reset-password?token=${resetToken}`;
+    let delivered = false;
     await sendStudentInviteEmail({
       to:          user.email,
       studentName: user.name,
@@ -115,7 +116,32 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       cohort:      cohort?.name ?? cohortName ?? undefined,
       track:       cohort?.track,
       cohortId:    cohort?.id ?? null,
-    }).catch(() => {});
+    }).then(() => { delivered = true; }).catch(() => {});
+
+    /**
+     * Record that we invited them.
+     *
+     * This used to be stamped only by the publish route, so a Fellow converted
+     * here was emailed their setup link while the database still said they had
+     * never been invited. Everything downstream reads that field rather than
+     * the email log, so the consequences were all silent:
+     *
+     *  - the module kick-off cron and the orientation email both select on
+     *    `onboardedAt != null OR invitedAt != null`, so the Fellow was skipped
+     *    and the cron recorded "no Fellows" while marking the kick-off sent;
+     *  - cohort readiness and the board reported "never been invited" and
+     *    pointed at Publish, which would have sent a SECOND invite with a new
+     *    token, because publish gates on `onboardedAt`.
+     *
+     * Stamped only when the send resolved, so a Resend failure leaves the
+     * Fellow genuinely uninvited and Publish remains the correct recovery.
+     */
+    if (delivered) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data:  { invitedAt: new Date() },
+      });
+    }
   }
 
   // Fire Slack + webhook for new user enrollment
