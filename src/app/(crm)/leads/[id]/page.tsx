@@ -246,8 +246,26 @@ export default function LeadDetailPage() {
 
   if (!lead) return null;
 
-  const stage      = stageInfo(lead.stage);
-  const isEnrolled = lead.stage === "ENROLLED" || !!lead.enrolledUserId;
+  const stage = stageInfo(lead.stage);
+
+  /**
+   * Whether an LMS account actually exists for this lead.
+   *
+   * This used to be `lead.stage === "ENROLLED" || !!lead.enrolledUserId`, which
+   * let the pipeline stage decide whether provisioning had happened. Moving a
+   * lead to Enrolled by hand — the obvious thing to do once payment lands — then
+   * hid the Convert button, which is the only way to create the account. The
+   * record claimed the student was enrolled while nothing had been created: no
+   * account, no cohort, no invite. Two leads reached that state before anyone
+   * noticed, and from the lead page there was no way out of it.
+   *
+   * The stage is what somebody asserts. `enrolledUserId` is what actually
+   * happened. Gate on the second. Converting sets the stage to ENROLLED itself,
+   * so nothing is lost by letting the button show on a lead already marked so,
+   * and /api/crm/leads/[id]/convert refuses a lead that already has an account
+   * and links rather than duplicates when one exists under the same email.
+   */
+  const hasStudentAccount = !!lead.enrolledUserId;
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-5">
@@ -652,7 +670,7 @@ export default function LeadDetailPage() {
             </div>
           )}
 
-          {!isEnrolled && (
+          {!hasStudentAccount && (
             <button onClick={() => setShowConvert(true)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white text-sm font-bold rounded-xl shadow-sm transition hover:opacity-90"
               style={{ background: "#086c64" }}>
@@ -661,7 +679,7 @@ export default function LeadDetailPage() {
           )}
 
           {/* LMS Progress Panel — shown once enrolled */}
-          {isEnrolled && (
+          {hasStudentAccount && (
             <>
               <button
                 onClick={async () => {
