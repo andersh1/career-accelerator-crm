@@ -23,6 +23,14 @@ function OutcomeForm() {
   const [role,      setRole]      = useState("");
   const [salary,    setSalary]    = useState("");
   const [startDate, setStartDate] = useState("");
+  const [quote,     setQuote]     = useState("");
+  /**
+   * null until they answer, so skipping the question is not recorded as a no.
+   * A blank release and a declined one are different facts and the CRM shows
+   * them differently.
+   */
+  const [consent,   setConsent]   = useState<boolean | null>(null);
+  const [scopes,    setScopes]    = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [done,       setDone]       = useState(false);
   const [error,      setError]      = useState("");
@@ -58,6 +66,9 @@ function OutcomeForm() {
           role:      role      || null,
           salary:    salary    ? parseInt(salary, 10) : null,
           startDate: startDate || null,
+          quote:     quote.trim() || null,
+          consent,
+          consentScopes: scopes,
         }),
       });
       if (!res.ok) { setError("Something went wrong. Please try again."); return; }
@@ -211,6 +222,77 @@ function OutcomeForm() {
               </div>
             </div>
           )}
+
+          {/* Their words, and whether we may use them */}
+          <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: "#e4e0d6", background: "white" }}>
+            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#949598" }}>
+              Anything you would tell someone considering this (optional)
+            </p>
+            <Field label="In your own words" labelClassName="text-xs font-semibold block mb-1" labelStyle={{ color: "#5a6663" }}>
+              {(p) => (
+                <textarea
+                  {...p}
+                  value={quote}
+                  onChange={e => setQuote(e.target.value)}
+                  rows={4}
+                  placeholder="What you would say to a friend who is on the fence."
+                  className={OUTCOME_INPUT}
+                  style={{ borderColor: "#e4e0d6", color: "#14211f" }}
+                />
+              )}
+            </Field>
+
+            <div className="pt-2 border-t" style={{ borderColor: "#e4e0d6" }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: "#5a6663" }}>
+                May we share what you wrote?
+              </p>
+              <p className="text-[11px] mb-2.5" style={{ color: "#949598" }}>
+                Entirely up to you, and it changes nothing else. If you say no we still keep your
+                outcome for our own numbers, we just will not quote you anywhere.
+              </p>
+              <div className="flex items-center gap-2 mb-3">
+                {[
+                  { v: true,  label: "Yes, you can share it" },
+                  { v: false, label: "No, keep it private"   },
+                ].map(opt => (
+                  <button
+                    key={String(opt.v)}
+                    type="button"
+                    onClick={() => { setConsent(opt.v); if (!opt.v) setScopes([]); }}
+                    className="text-xs font-semibold px-3 py-2 rounded-lg border transition"
+                    style={consent === opt.v
+                      ? { background: "#086c64", borderColor: "#086c64", color: "white" }
+                      : { borderColor: "#e4e0d6", color: "#5a6663", background: "white" }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {consent === true && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-semibold" style={{ color: "#5a6663" }}>
+                    Tick what you are comfortable with:
+                  </p>
+                  {[
+                    { key: "NAME",       label: "Use my name" },
+                    { key: "QUOTE_ANON", label: "Quote me without my name" },
+                    { key: "EMPLOYER",   label: "Say where I landed" },
+                    { key: "PHOTO",      label: "Use my photo" },
+                  ].map(sc => (
+                    <label key={sc.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={scopes.includes(sc.key)}
+                        onChange={() => setScopes(s =>
+                          s.includes(sc.key) ? s.filter(x => x !== sc.key) : [...s, sc.key])}
+                      />
+                      <span className="text-xs" style={{ color: "#14211f" }}>{sc.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {error && <p role="alert" className="text-xs font-semibold" style={{ color: "#dc2626" }}>{error}</p>}
 

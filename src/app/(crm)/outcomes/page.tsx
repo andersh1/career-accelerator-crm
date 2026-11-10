@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Trophy, Building2, Briefcase, DollarSign,
-  ChevronDown, Loader2, ExternalLink, Circle, AlertTriangle,
+  ChevronDown, Loader2, ExternalLink, Circle, AlertTriangle, Quote,
 } from "lucide-react";
 import { OUTCOME_STATUSES, outcomeStatusInfo } from "@/components/crm/constants";
 import { useToast } from "@/lib/toast";
+import ProofLibrary from "@/components/crm/ProofLibrary";
 
 interface OutcomeLead {
   id: string;
@@ -36,8 +37,19 @@ const STATUS_FILTERS = [
   { key: "NOT_LOOKING", label: "Not Looking" },
 ];
 
+/**
+ * Two halves of the same question, kept on one page.
+ *
+ * Placements are the hard numbers: where a Fellow landed, in what role, for
+ * what money. Proof is what they said about it in their own words. Marketing
+ * needs both for the same story, and they were in different systems: the
+ * numbers here, the quotes buried in Module 8 survey answers nobody opened.
+ */
+type Tab = "placements" | "proof";
+
 export default function OutcomesPage() {
   const { success, error: toastError } = useToast();
+  const [tab,          setTab]          = useState<Tab>("placements");
   const [leads,        setLeads]        = useState<OutcomeLead[]>([]);
   const [stats,        setStats]        = useState<Stats | null>(null);
   const [cohorts,      setCohorts]      = useState<string[]>([]);
@@ -76,15 +88,42 @@ export default function OutcomesPage() {
           <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: "#14211f" }}>
             <Trophy size={20} style={{ color: "#086c64" }} /> Outcomes
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>Track where enrolled students land after the program</p>
+          <p className="text-sm mt-0.5" style={{ color: "#949598" }}>
+            {tab === "placements"
+              ? "Where enrolled students land after the program"
+              : "What Fellows said about it, cleared and ready for marketing"}
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold"
-          style={{ background: "#fffbeb", borderColor: "#fde68a", color: "#92400e" }}>
-          <AlertTriangle size={13} />
-          Email sends disabled — enable after cohort graduates
-        </div>
+        {tab === "placements" && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold"
+            style={{ background: "#fffbeb", borderColor: "#fde68a", color: "#92400e" }}>
+            <AlertTriangle size={13} />
+            Email sends disabled, enable after cohort graduates
+          </div>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-6 border-b" style={{ borderColor: "#e4e0d6" }}>
+        {([
+          { key: "placements", label: "Placements", icon: Trophy },
+          { key: "proof",      label: "Proof",      icon: Quote  },
+        ] as const).map(t => (
+          <button key={t.key}
+            onClick={() => setTab(t.key)}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 -mb-px border-b-2 transition"
+            style={tab === t.key
+              ? { borderColor: "#086c64", color: "#086c64" }
+              : { borderColor: "transparent", color: "#949598" }}>
+            <t.icon size={14} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "proof" && <ProofLibrary />}
+
+      {tab === "placements" && (
+      <>
       {/* Stats row */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
@@ -259,6 +298,8 @@ export default function OutcomesPage() {
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
     </div>
   );

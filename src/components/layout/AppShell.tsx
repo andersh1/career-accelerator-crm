@@ -25,7 +25,8 @@ const baseNav = [
   { href: "/sequences",  label: "Sequences",   icon: Mail,            adminOnly: false },
   { href: "/blast",      label: "Email Blast", icon: Zap,             adminOnly: false },
   { href: "/events",            label: "Events",       icon: Calendar,    adminOnly: false },
-  { href: "/outcomes",          label: "Outcomes",     icon: Trophy,      adminOnly: true  },
+  // Placements and the proof library live on the same page, as two tabs.
+  { href: "/outcomes",          label: "Outcomes & Proof", icon: Trophy,  adminOnly: true  },
   { href: "/analytics",         label: "Analytics",    icon: TrendingUp,  adminOnly: true  },
   { href: "/promo-codes",       label: "Promo Codes",  icon: Tag,         adminOnly: true  },
   { href: "/referrals",         label: "Referrals",    icon: Share2,      adminOnly: true  },

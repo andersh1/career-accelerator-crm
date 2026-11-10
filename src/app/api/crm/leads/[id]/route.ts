@@ -37,11 +37,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const { stage: newStage, notesAppend, ...rest } = body;
 
-  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true, unsubscribed: true, enrolledUserId: true } });
+  const existing = await prisma.lead.findUnique({ where: { id: params.id }, select: { stage: true, notes: true, outcomeEmailSentAt: true, unsubscribed: true, enrolledUserId: true, marketingConsent: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Whitelist patchable fields to prevent mass-assignment
-  const ALLOWED = new Set(["firstName","lastName","email","phone","company","jobTitle","source","subSource","leadType","priority","paymentStatus","dealValue","assignedTo","tags","notes","lostReason","lostCategory","unsubscribed","enrolledUserId","outcomeStatus","outcomeCompany","outcomeRole","outcomeSalary","outcomeStartDate","outcomeNotes","outcomeUpdatedAt","organizationId"]);
+  const ALLOWED = new Set(["firstName","lastName","email","phone","company","jobTitle","source","subSource","leadType","priority","paymentStatus","dealValue","assignedTo","tags","notes","lostReason","lostCategory","unsubscribed","enrolledUserId","outcomeStatus","outcomeCompany","outcomeRole","outcomeSalary","outcomeStartDate","outcomeNotes","outcomeUpdatedAt","organizationId","marketingConsent","marketingConsentScopes","marketingConsentNote"]);
   const data: Record<string, unknown> = Object.fromEntries(
     Object.entries(rest).filter(([k]) => ALLOWED.has(k))
   );
@@ -54,6 +54,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
    */
   if (newStage === "UNSUBSCRIBED") data.unsubscribed = true;
   else if (newStage && existing.stage === "UNSUBSCRIBED") data.unsubscribed = false;
+  /**
+   * Stamp when the marketing release was recorded, server-side.
+   *
+   * `marketingConsentAt` is not patchable on purpose: the date a Fellow gave
+   * permission is evidence, and evidence a caller can set to anything is not
+   * evidence. It moves only when the consent state itself changes, so editing
+   * the note later does not rewrite the date.
+   *
+   * Declining clears the scopes. Leaving "use my name" ticked under a DECLINED
+   * state is exactly the kind of stale half-state that gets read as a yes.
+   */
+  if (data.marketingConsent !== undefined && data.marketingConsent !== existing.marketingConsent) {
+    data.marketingConsentAt = data.marketingConsent ? new Date() : null;
+    if (data.marketingConsent === "DECLINED") data.marketingConsentScopes = [];
+  }
+
   // Append to notes rather than overwrite
   if (notesAppend) {
     data.notes = existing.notes

@@ -618,6 +618,24 @@ model Lead {
   outcomeToken       String?   @unique // one-time token for the self-report form
   outcomeEmailSentAt DateTime?         // when we sent the follow-up email
 
+  /// Marketing release, recorded once per person.
+  ///
+  /// Separate from Testimonial.status on purpose. This is what the FELLOW
+  /// permitted; that is whether DAN cleared a particular quote. Both have to be
+  /// true before anything runs publicly, and conflating them is how a quote
+  /// nobody agreed to ends up on a landing page.
+  ///
+  /// Every finale answer in the database was given to a coaching instrument,
+  /// not to marketing, so the default is no permission rather than silence
+  /// read as yes.
+  marketingConsent       String?   // PENDING | GRANTED | DECLINED
+  /// What they said yes to: NAME | QUOTE_ANON | EMPLOYER | PHOTO. Narrower than
+  /// a single boolean because "you can quote me" and "you can name my employer"
+  /// are different permissions and get asked as such.
+  marketingConsentScopes String[]  @default([])
+  marketingConsentAt     DateTime?
+  marketingConsentNote   String?   // how it was obtained, in whose words
+
   // Link to LMS user when converted to student
   organizationId String?
   organization   Organization? @relation("OrgContacts", fields: [organizationId], references: [id], onDelete: SetNull)
@@ -628,6 +646,7 @@ model Lead {
   tasks               Task[]
   sequenceEnrollments EmailSequenceEnrollment[]
   paymentRecords      PaymentRecord[]
+  testimonials        Testimonial[]
 
   // Deals / Partnerships
   dealId          String?  // FK to Deal (participant in a deal)
@@ -647,6 +666,73 @@ model Lead {
   @@index([stage])
   @@index([deletedAt])
   @@index([deletedAt, updatedAt])
+}
+
+/// One quotable line from one Fellow, in their own words.
+///
+/// Why a table and not a column on Lead: a Fellow produces several usable
+/// lines (the pitch, the parent answer, the arc, the caveat, a module
+/// takeaway), each needs its own approval state, and David needs to pull a
+/// quote without reading anybody's whole survey.
+///
+/// Nothing here is collected fresh. The finale survey has asked for the pitch
+/// line, the parent answer and the caveat since Module 8 shipped, and those
+/// answers are sitting in GrowthBattery. This table is where they get
+/// gathered, cleared and signed off, so the same quote is not re-chased every
+/// time marketing needs one.
+///
+/// Sources are an allowlist, never "all the feedback in one place". Weekly
+/// check-ins, 1:1 pulses, coaching notes and 360 responses are private to the
+/// Fellow and their coaches and must never be imported here. See the
+/// private-notes boundary.
+model Testimonial {
+  id     String  @id @default(cuid())
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Denormalized so a quote still reads correctly if the lead is merged or
+  /// soft-deleted. The live record is the one to trust for contact details.
+  studentName String
+  cohort      String?
+
+  /// Which question produced it: PITCH | PARENT | ARC | CAVEAT | TAKEAWAY | MANUAL.
+  /// Kept because the question is most of the context. "It's a lot of work" is a
+  /// warning as an unprompted line and a selling point as the answer to "what
+  /// caveat would you whisper".
+  kind String
+  /// FINALE | OUTCOME_FORM | MANUAL
+  source String
+  /// Idempotency key for imports, e.g. "finale:<growthBatteryId>:f_pitch".
+  /// Unique, so re-running the import updates rather than duplicates.
+  sourceRef String? @unique
+
+  /// The Fellow's words, exactly as submitted. Never edited in place: the
+  /// polished version goes in editedQuote, so there is always something to
+  /// check a trimmed quote against.
+  quote       String
+  editedQuote String?
+  nps         Int?
+
+  /// DRAFT | APPROVED | PUBLISHED | ARCHIVED.
+  ///
+  /// Dan is the sole approver of anything Fellow-facing, and a library David
+  /// pulls from directly is a way around that unless approval is a state on the
+  /// record. APPROVED means Dan cleared this wording; it does not mean the
+  /// Fellow consented, which lives on Lead.marketingConsent.
+  status     String    @default("DRAFT")
+  approvedBy String?
+  approvedAt DateTime?
+  /// Where it ran, so the same line is not used twice in one campaign.
+  usedIn     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([leadId])
+  @@index([userId])
 }
 
 model LeadActivity {
@@ -1244,6 +1330,7 @@ model User {
   worksheetResponses   WorksheetResponse[]
   surveyResponses      SurveyResponse[]
   growthBatteries      GrowthBattery[]
+  testimonials         Testimonial[]
   weeklyCheckins       WeeklyCheckin[]
   oneOnOnePulses       OneOnOnePulse[]
   interventionFlags    InterventionFlag[]
