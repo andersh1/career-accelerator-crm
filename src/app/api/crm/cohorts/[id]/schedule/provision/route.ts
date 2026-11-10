@@ -42,16 +42,25 @@ function forbidden(session: unknown) {
 }
 
 /**
- * The meeting title, following the house convention:
- *   `<Type> — <topic> (TIME ET)`
- * recorded in the Zoom session conventions. Fellows see this in Zoom and on the
- * calendar entry, so it is the one place the convention actually shows.
+ * The meeting title, matching the sessions already on the Vantage calendar:
+ *   `Vantage Career Accelerator | Module 5: Story`
+ *
+ * Taken from a real event rather than from the written convention, which says
+ * `<Type> — <topic> (TIME ET)` and is not what anybody actually books. A
+ * Fellow scrolling their calendar sees these next to the ones booked by hand,
+ * so matching the real thing matters more than matching the note.
+ *
+ * No time in the title: the calendar entry and the Zoom meeting both carry
+ * their own start time, and a time written into the title is one more thing to
+ * get wrong when a session moves.
+ *
+ * Long titles are trimmed to the first clause. Module 8 is "Accelerator Recap
+ * and Where We Go From Here" on the private track, which is a sentence rather
+ * than a calendar entry.
  */
-function sessionTitle(moduleNumber: number, title: string, when: Date) {
-  const time = when.toLocaleTimeString("en-US", {
-    timeZone: "America/New_York", hour: "numeric", minute: "2-digit",
-  });
-  return `Working Session — Module ${moduleNumber}: ${title} (${time} ET)`;
+function sessionTitle(moduleNumber: number, title: string) {
+  const short = title.split(/\s+and\s+/i)[0].trim();
+  return `Vantage Career Accelerator | Module ${moduleNumber}: ${short}`;
 }
 
 /** Everything the run needs, gathered once so failures are reported together. */
@@ -219,7 +228,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       wouldProcess: targets.map(r => ({
         moduleNumber: r.module.number,
         action: r.sessionZoomMeetingId ? "update" : "create",
-        title: sessionTitle(r.module.number, r.titleOverride ?? r.module.title, r.sessionDate!),
+        title: sessionTitle(r.module.number, r.titleOverride ?? r.module.title),
         sessionDate: r.sessionDate,
       })),
     });
@@ -248,7 +257,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
    */
   for (const row of targets) {
     const when = row.sessionDate!;
-    const title = sessionTitle(row.module.number, row.titleOverride ?? row.module.title, when);
+    const title = sessionTitle(row.module.number, row.titleOverride ?? row.module.title);
     const end = new Date(when.getTime() + SESSION_MINUTES * 60_000);
 
     try {
