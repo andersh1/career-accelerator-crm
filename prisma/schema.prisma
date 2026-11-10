@@ -107,6 +107,13 @@ model Cohort {
   /// Stamped when the pre-orientation email is sent, so a second press cannot
   /// mail the cohort twice. Cleared by hand if it genuinely needs resending.
   orientationEmailSentAt DateTime? @db.Timestamptz(6)
+  /// Which Google calendar this cohort's session events are created on, as a
+  /// Google calendar id. Null means the connected admin's own primary calendar.
+  ///
+  /// Held per cohort rather than globally because a partner cohort may belong on
+  /// a different calendar from the private clients, and because guessing wrong
+  /// puts eight events in front of the wrong audience.
+  calendarId String?
   capacity  Int?
   startDate DateTime? @db.Timestamptz(6)
   createdAt DateTime         @default(now())
@@ -205,6 +212,22 @@ model CohortSchedule {
   sessionDate     DateTime?
   sessionLocation String?
   sessionZoomLink String?
+  /// The Zoom meeting and Google Calendar event this session owns, when the CRM
+  /// created them rather than somebody pasting a link in by hand.
+  ///
+  /// Storing the ids is the whole difference between a button that can be
+  /// pressed once and one that can be pressed again. Without them the only
+  /// available operation is create: a second press duplicates all eight
+  /// meetings, and moving a session for a holiday abandons its Zoom meeting
+  /// while the stale link stays live in the LMS. Zac's schedule moved three
+  /// times before it was a week old.
+  ///
+  /// Null means we do not own this session's link. Provisioning then leaves the
+  /// row alone unless explicitly told to replace it, so a hand-pasted recurring
+  /// link is never silently overwritten.
+  sessionZoomMeetingId   String?
+  sessionCalendarEventId String?
+  sessionProvisionedAt   DateTime?
   /// When this module's kick-off email goes out. Null = not scheduled.
   preambleDate    DateTime? @db.Timestamptz(6)
   /// Stamped once sent, so a re-run cannot mail the cohort twice.

@@ -13,9 +13,24 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
 const BASE_URL      = process.env.NEXTAUTH_URL ?? "https://career-accelerator-crm.vercel.app";
 const REDIRECT_URI  = `${BASE_URL}/api/auth/gmail`;
 
+/**
+ * calendar.events was added so the CRM can create cohort session events on a
+ * Vantage calendar and let Google send the invitations.
+ *
+ * Adding a scope does not upgrade a token that already exists: the three
+ * admins connected before this line was written hold Gmail-only refresh
+ * tokens, and those will refresh perfectly and then be refused by the Calendar
+ * API. Reconnecting in Settings is what grants it. `prompt: "consent"` below
+ * was already forcing a fresh refresh_token on every pass, so one reconnect is
+ * the whole upgrade path.
+ *
+ * Scoped to events rather than the full calendar scope: this needs to create
+ * and move events, never to create, share or delete a calendar.
+ */
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
 function oauthUrl(state: string) {

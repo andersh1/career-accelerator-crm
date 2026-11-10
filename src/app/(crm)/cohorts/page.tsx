@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import CohortBoard from "@/components/crm/CohortBoard";
+import SessionProvisioner from "@/components/crm/SessionProvisioner";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
 import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays, FileText, Film } from "lucide-react";
@@ -1958,15 +1959,22 @@ function CohortCard({
                 <p className="text-sm py-4" style={{ color: "#949598" }}>No modules found. Add modules in the LMS first.</p>
               ) : (
                 <div className="space-y-2">
-                  {/* One link on every module. Separate from the generator on
-                      purpose: adding Zoom links is the routine job, rewriting
-                      the whole schedule is not, and doing it through the
-                      generator would move dates to change one field. */}
+                  {/* The automatic path. Creates the Zoom meetings, puts them on
+                      a Vantage calendar with the Fellows invited, and writes the
+                      links back here, which is the job the two panels below were
+                      standing in for by hand. */}
+                  <SessionProvisioner cohortId={cohort.id} onDone={() => setSchedule(null)} />
+
+                  {/* One link on every module. Kept as the manual fallback: a
+                      cohort that genuinely meets on one recurring link somebody
+                      made in Zoom, or a day when Zoom is unreachable. Separate
+                      from the generator on purpose, since doing it there would
+                      move dates to change one field. */}
                   <div className="rounded-xl border p-3 mb-2" style={{ borderColor: "#e4e0d6", background: "white" }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: "#14211f" }}>Zoom link for every module</p>
+                    <p className="text-xs font-semibold mb-1" style={{ color: "#14211f" }}>Paste a Zoom link instead</p>
                     <p className="text-[10px] mb-2" style={{ color: "#949598" }}>
-                      For a cohort that meets on one recurring link. Fills in the modules that have none and leaves
-                      any module you have given its own. No dates are changed.
+                      For a cohort that meets on one recurring link you made yourself. Fills in the modules that have
+                      none and leaves any module you have given its own. No dates are changed, and no invites go out.
                     </p>
                     <div className="flex gap-2 flex-wrap items-center">
                       <input
