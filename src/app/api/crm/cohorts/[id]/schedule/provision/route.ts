@@ -29,12 +29,12 @@ import {
   zoomConfigured, createZoomMeeting, updateZoomMeeting, getZoomMeeting,
   SESSION_HOST_EMAIL,
 } from "@/lib/zoom";
+import { sessionMinutes as sessionMinutesFor } from "@/lib/track";
 import {
   googleConfigured, getAccessToken, hasCalendarScope, listWritableCalendars,
   createCalendarEvent, updateCalendarEvent, type CalendarAttendee, type EventInput,
 } from "@/lib/google-calendar";
 
-const SESSION_MINUTES = 60;
 
 function forbidden(session: unknown) {
   const u = (session as { user?: { role?: string; crmRole?: string } } | null)?.user;
@@ -185,6 +185,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const pre = await preflight(params.id, adminId);
   if ("error" in pre) return NextResponse.json({ error: pre.error }, { status: pre.status });
   const { cohort, rows, fellows, admin } = pre;
+
+  // 90 for a group, 60 for a 1:1. Booking the wrong length puts the wrong
+  // hour in everyone's diary and in Zoom.
+  const SESSION_MINUTES = sessionMinutesFor(cohort.track);
 
   if (!zoomConfigured()) {
     return NextResponse.json({ error: "Zoom is not configured on this deployment. Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET on the CRM project, then redeploy." }, { status: 400 });

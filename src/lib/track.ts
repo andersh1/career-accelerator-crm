@@ -32,3 +32,20 @@ export function showsCohortLabel(track: string | null | undefined): boolean {
 export function hasCommunitySlack(track: string | null | undefined): boolean {
   return track !== "PRIVATE";
 }
+
+/**
+ * How long a live session runs, in minutes.
+ *
+ * Mirrors `sessionMinutes` in the LMS track table, which is the source of
+ * truth. A group session is 90 minutes because the room needs time to work; a
+ * 1:1 is 60, because one person with Dan gets through the same material
+ * faster.
+ *
+ * Used when booking the Zoom meeting and the calendar event, so the hour that
+ * goes in somebody's diary is the hour that is actually run. This was a flat
+ * 60 in the provisioning route, which would have under-booked every group
+ * session by half an hour the moment it was pointed at a cohort.
+ */
+export function sessionMinutes(track: string | null | undefined): number {
+  return track === "PRIVATE" ? 60 : 90;
+}
