@@ -12,8 +12,20 @@ interface AdminUser {
   email: string;
 }
 
+interface GmailAccountStatus {
+  id: string;
+  email: string;
+  syncedAt: string | null;
+  syncError: string | null;
+  isPrimary: boolean;
+  stale: boolean;
+  healthy: boolean;
+}
+
 interface GmailStatus {
   connected: boolean;
+  /// Every connected mailbox. A person can work out of more than one.
+  accounts?: GmailAccountStatus[];
   gmailEmail: string | null;
   gmailSyncedAt: string | null;
   /// Why the last sync failed, or null when it worked.
@@ -141,7 +153,8 @@ export default function SettingsPage() {
   const [inbound,         setInbound]         = useState<InboundStatus | null>(null);
   const [inboundCopied,   setInboundCopied]   = useState(false);
   const [gmailConnecting, setGmailConnecting] = useState(false);
-  const [gmailSyncing,    setGmailSyncing]    = useState(false);
+  // Which mailbox is syncing: an account id, "all", or null.
+  const [gmailSyncing,    setGmailSyncing]    = useState<string | null>(null);
   const [gmailSyncResult, setGmailSyncResult] = useState<string | null>(null);
   const [gmailBanner,     setGmailBanner]     = useState<"connected" | "disconnected" | "error" | null>(null);
 
@@ -360,24 +373,40 @@ export default function SettingsPage() {
     }
   }
 
-  async function disconnectGmail() {
-    if (!confirm("Disconnect Gmail? Synced email history will remain in the timeline.")) return;
-    window.location.href = "/api/auth/gmail?action=disconnect";
+  // Named, because "Disconnect Gmail?" is ambiguous once there are two of them.
+  async function disconnectGmail(account?: GmailAccountStatus) {
+    const what = account ? account.email : "Gmail";
+    if (!confirm(`Disconnect ${what}? Email already synced stays on the timeline.`)) return;
+    window.location.href = account
+      ? `/api/auth/gmail?action=disconnect&accountId=${encodeURIComponent(account.id)}`
+      : "/api/auth/gmail?action=disconnect";
   }
 
-  async function syncGmail() {
-    setGmailSyncing(true);
+  async function syncGmail(accountId?: string) {
+    setGmailSyncing(accountId ?? "all");
     setGmailSyncResult(null);
     try {
-      const res = await fetch("/api/crm/gmail-sync", { method: "POST" });
-      const data = await res.json() as { synced?: number; skipped?: number; error?: string };
+      const res = await fetch("/api/crm/gmail-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(accountId ? { accountId } : {}),
+      });
+      const data = await res.json() as {
+        synced?: number; skipped?: number; error?: string;
+        results?: { mailbox: string; synced: number; skipped: number; error?: string }[];
+      };
       if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      setGmailSyncResult(`✅ Synced ${data.synced} new email${data.synced === 1 ? "" : "s"} (${data.skipped} already logged)`);
+      // With more than one mailbox the totals alone hide which of them did the
+      // work, so each is named.
+      const detail = (data.results ?? []).length > 1
+        ? " — " + (data.results ?? []).map(r => `${r.mailbox}: ${r.error ? "failed" : r.synced}`).join(", ")
+        : "";
+      setGmailSyncResult(`✅ Synced ${data.synced} new email${data.synced === 1 ? "" : "s"} (${data.skipped} already logged)${detail}`);
       await loadGmailStatus();
     } catch (e: unknown) {
       setGmailSyncResult(`❌ ${e instanceof Error ? e.message : "Sync failed"}`);
     } finally {
-      setGmailSyncing(false);
+      setGmailSyncing(null);
     }
   }
 
@@ -764,68 +793,97 @@ export default function SettingsPage() {
 
           <Section title="Gmail Integration">
             <p className="text-xs -mt-2" style={{ color: "#949598" }}>
-              Connect your Gmail account to automatically log sent emails to lead timelines.
+              Connect a Gmail account to automatically log sent emails to lead timelines. You can
+              connect more than one, which matters if you still send from an old address.
             </p>
             {gmailStatus?.connected ? (
               <div className="space-y-4">
                 {/*
-                  The badge reports the last sync's OUTCOME, not whether a token
-                  is on file. The green-on-a-dead-connection version of this card
-                  hid two months of nothing being logged.
+                  One card per connected mailbox.
+                  Dan works out of two addresses, and a single card could only
+                  ever tell the truth about one of them: the other was silently
+                  replaced on connect and its state was invisible. Each badge
+                  reports that mailbox's own last sync OUTCOME, not whether a
+                  token is on file.
                 */}
-                {gmailStatus.healthy === false ? (
-                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                    <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-amber-900">Not syncing</p>
-                      <p className="text-xs text-amber-800 truncate">{gmailStatus.gmailEmail}</p>
-                      <p className="text-xs text-amber-800 mt-1">
-                        {gmailStatus.gmailSyncError
-                          ? syncErrorLabel(gmailStatus.gmailSyncError)
-                          : "No successful sync in over two days. Reconnect to start logging again."}
-                      </p>
+                {(gmailStatus.accounts ?? []).map(acct => (
+                  <div key={acct.id} className="space-y-2">
+                    {acct.healthy ? (
+                      <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-green-900">Connected and syncing</p>
+                          <p className="text-xs text-green-700 truncate">{acct.email}</p>
+                        </div>
+                        <Mail size={16} className="text-green-600 shrink-0" />
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-amber-900">Not syncing</p>
+                          <p className="text-xs text-amber-800 truncate">{acct.email}</p>
+                          <p className="text-xs text-amber-800 mt-1">
+                            {acct.syncError
+                              ? syncErrorLabel(acct.syncError)
+                              : "No successful sync in over two days. Reconnect to start logging again."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs mr-1" style={{ color: "#949598" }}>
+                        Last synced: {formatSyncDate(acct.syncedAt)}
+                        {acct.isPrimary && (gmailStatus.accounts ?? []).length > 1 ? " · used for calendar invites" : ""}
+                      </span>
+                      <button onClick={() => syncGmail(acct.id)} disabled={!!gmailSyncing}
+                        className="flex items-center gap-1.5 text-xs font-semibold border disabled:opacity-50 px-3 py-1.5 rounded-lg transition"
+                        style={{ color: "#086c64", borderColor: "#086c64", background: "#edf5f4" }}>
+                        {gmailSyncing === acct.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                        {gmailSyncing === acct.id ? "Syncing…" : "Sync"}
+                      </button>
+                      {!acct.healthy && (
+                        <button onClick={connectGmail} disabled={gmailConnecting}
+                          className="flex items-center gap-1.5 text-xs font-semibold border disabled:opacity-50 px-3 py-1.5 rounded-lg transition"
+                          style={{ color: "#92400e", borderColor: "#fcd34d", background: "#fffbeb" }}>
+                          <RefreshCw size={12} /> Reconnect
+                        </button>
+                      )}
+                      <button onClick={() => disconnectGmail(acct)}
+                        className="flex items-center gap-1.5 text-xs font-semibold border border-[#e4e0d6] hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg transition"
+                        style={{ color: "#5a6663" }}>
+                        <Unlink size={12} /> Disconnect
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-green-900">Connected and syncing</p>
-                      <p className="text-xs text-green-700 truncate">{gmailStatus.gmailEmail}</p>
-                    </div>
-                    <Mail size={16} className="text-green-600 shrink-0" />
-                  </div>
-                )}
-                <div className="text-xs" style={{ color: "#949598" }}>Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
+                ))}
+
                 {gmailSyncResult && (
                   <p className="text-sm border border-[#e4e0d6] rounded-xl px-4 py-2.5" style={{ color: "#5a6663", background: "#f8f6f1" }}>{gmailSyncResult}</p>
                 )}
-                <div className="flex gap-2">
-                  <button onClick={syncGmail} disabled={gmailSyncing}
+
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => syncGmail()} disabled={!!gmailSyncing}
                     className="flex items-center gap-2 text-sm font-semibold border disabled:opacity-50 px-4 py-2 rounded-xl transition"
-                    style={{ color: "#086c64", borderColor: "#086c64", background: "#edf5f4" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d6ecea"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#edf5f4"; }}>
-                    {gmailSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                    {gmailSyncing ? "Syncing…" : "Sync Now"}
+                    style={{ color: "#086c64", borderColor: "#086c64", background: "#edf5f4" }}>
+                    {gmailSyncing === "all" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                    {gmailSyncing === "all" ? "Syncing…" : "Sync all"}
                   </button>
-                  {gmailStatus.healthy === false && (
-                    // Reconnecting is the fix for every failure this card can
-                    // report, so it is offered here rather than leaving
-                    // Disconnect-then-Connect as the only route back.
-                    <button onClick={connectGmail} disabled={gmailConnecting}
-                      className="flex items-center gap-2 text-sm font-semibold border disabled:opacity-50 px-4 py-2 rounded-xl transition"
-                      style={{ color: "#92400e", borderColor: "#fcd34d", background: "#fffbeb" }}>
-                      {gmailConnecting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                      {gmailConnecting ? "Redirecting…" : "Reconnect"}
-                    </button>
-                  )}
-                  <button onClick={disconnectGmail}
-                    className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-xl transition"
+                  {/*
+                    Adding rather than replacing. Connecting a second mailbox
+                    used to overwrite the first without saying so.
+                  */}
+                  <button onClick={connectGmail} disabled={gmailConnecting}
+                    className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] hover:bg-[#f8f6f1] disabled:opacity-50 px-4 py-2 rounded-xl transition"
                     style={{ color: "#5a6663" }}>
-                    <Unlink size={14} /> Disconnect
+                    {gmailConnecting ? <Loader2 size={14} className="animate-spin" /> : <Plug size={14} />}
+                    {gmailConnecting ? "Redirecting…" : "Add another mailbox"}
                   </button>
                 </div>
+                <p className="text-xs" style={{ color: "#949598" }}>
+                  Sign in with a different Google account to add it. Each mailbox syncs on its own,
+                  so one going stale never hides the other.
+                </p>
               </div>
             ) : (
               <div className="space-y-3">

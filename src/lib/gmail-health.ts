@@ -122,24 +122,32 @@ export async function alertGmailBroken(
 export async function alertStaleGmailConnections(): Promise<number> {
   const cutoff = new Date(Date.now() - STALE_AFTER_DAYS * 86400000);
 
-  const users = await prisma.user.findMany({
+  /**
+   * Per MAILBOX, not per person.
+   *
+   * Someone with two connected addresses can have one working and one revoked,
+   * and reporting on the person would hide whichever half was broken. The
+   * alert names the mailbox, which is also what the dedupe keys on.
+   */
+  const accounts = await prisma.gmailAccount.findMany({
     where: {
-      crmRole:           "ADMIN",
-      gmailRefreshToken: { not: null },
-      // A connection made but never yet synced is not evidence of a fault —
-      // the first run has not happened. Only a connection that worked and
-      // then stopped, or one carrying an explicit error, counts.
+      user: { crmRole: "ADMIN" },
+      // A mailbox connected but never yet synced is not evidence of a fault —
+      // the first run has not happened. Only one that worked and then stopped,
+      // or one carrying an explicit error, counts.
       OR: [
-        { gmailSyncedAt: { lt: cutoff } },
-        { gmailSyncError: { not: null } },
+        { syncedAt: { lt: cutoff } },
+        { syncError: { not: null } },
       ],
     },
-    select: { email: true, gmailSyncedAt: true, gmailSyncError: true },
+    select: { email: true, syncedAt: true, syncError: true },
   });
 
   let sent = 0;
-  for (const u of users) {
-    if (await alertGmailBroken(u)) sent++;
+  for (const a of accounts) {
+    if (await alertGmailBroken({
+      email: a.email, gmailSyncedAt: a.syncedAt, gmailSyncError: a.syncError,
+    })) sent++;
   }
   return sent;
 }

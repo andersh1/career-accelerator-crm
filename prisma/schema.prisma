@@ -1354,6 +1354,13 @@ model User {
   /// nothing was logged. The status is now the outcome of the last run, not
   /// the presence of a credential.
   gmailSyncError       String?
+  /// Every Google mailbox this person has connected for email logging.
+  ///
+  /// The four `gmail*` columns above still describe ONE account, the primary,
+  /// and session provisioning reads them to create calendar events as that
+  /// person. They are kept in step with the primary row below rather than
+  /// retired, so the calendar path is untouched by multi-mailbox support.
+  gmailAccounts        GmailAccount[]
   submissions          Submission[]
   progress             Progress[]
   notes                Note[]
@@ -1685,3 +1692,32 @@ model ModuleContent {
   @@index([versionId])
 }
 
+
+/// One connected Google mailbox.
+///
+/// Dan works out of two: dan@10ximpact.co from before the rebrand and
+/// dan@vantagecareer.co since. The CRM held a single refresh token per person,
+/// so connecting the second silently replaced the first — which is how every
+/// email he sent from his Vantage address went unlogged for months while the
+/// sync reported itself healthy against the old mailbox.
+model GmailAccount {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The Google address itself, lowercase. Globally unique: one mailbox belongs
+  /// to one person, or two admins connecting the same inbox would each log the
+  /// same email onto the same lead.
+  email        String    @unique
+  refreshToken String
+  /// Last successful sync, and why the last one failed. Per mailbox, because a
+  /// revoked token on one says nothing about the other.
+  syncedAt     DateTime?
+  syncError    String?
+  /// The account session provisioning creates calendar events as, mirrored
+  /// into User.gmail* so that path keeps working unchanged. Exactly one per
+  /// person; the first mailbox connected becomes it.
+  isPrimary    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+}
