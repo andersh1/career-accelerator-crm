@@ -919,6 +919,10 @@ export default function LeadDetailPage() {
                   const meta = ACTIVITY_META[act.type] ?? ACTIVITY_META.NOTE;
                   let stageFrom = "", stageTo = "";
                   let recordingUrl = "";
+                  // Which way a CC'd email was going. The one thing the Gmail
+                  // sync could never show, because it only ever read our
+                  // sent mail — so it is worth saying on the badge.
+                  let ccDirection = "";
                   if (act.metadata) {
                     try {
                       const parsed = JSON.parse(act.metadata);
@@ -927,11 +931,15 @@ export default function LeadDetailPage() {
                         stageTo   = stageInfo(parsed.to)?.label   ?? parsed.to;
                       }
                       if (parsed.recordingUrl) recordingUrl = parsed.recordingUrl;
+                      if (parsed.direction) ccDirection = parsed.direction;
                     } catch { /* ignore */ }
                   }
                   const isEmail = act.type === "EMAIL";
                   const sourceBadge =
                     act.source === "COMPOSER"   ? { label: "Sent via CRM",  cls: "bg-blue-50 text-blue-600" }
+                    : act.source === "EMAIL_CC"   ? (ccDirection === "INBOUND"
+                        ? { label: "Received",      cls: "bg-teal-50 text-teal-700" }
+                        : { label: "Cc'd to CRM",   cls: "bg-teal-50 text-teal-700" })
                     : act.source === "GMAIL_SYNC" ? { label: "Gmail",         cls: "bg-red-50 text-red-600" }
                     : act.source === "SEQUENCE"   ? { label: "Sequence",      cls: "bg-violet-50 text-violet-600" }
                     : act.source === "TEMPLATE"   ? { label: "Template",      cls: "bg-emerald-50 text-emerald-600" }

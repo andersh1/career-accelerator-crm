@@ -89,6 +89,13 @@ export async function POST(req: NextRequest) {
 
   const accessToken = await getAccessToken(user.gmailRefreshToken);
   if (!accessToken) {
+    // Stamped so the Settings badge reflects it too — pressing Sync Now and
+    // seeing an error, then reloading onto a green "Connected", is how this
+    // went unnoticed for two months.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { gmailSyncError: "token_refresh_failed" },
+    }).catch(() => {});
     return NextResponse.json({ error: "Could not refresh Gmail access token. Reconnect in Settings." }, { status: 401 });
   }
 
@@ -116,7 +123,7 @@ export async function POST(req: NextRequest) {
   const messageIds = listData.messages ?? [];
 
   if (messageIds.length === 0) {
-    await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
+    await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart, gmailSyncError: null } });
     return NextResponse.json({ synced: 0, skipped: 0 });
   }
 
@@ -186,7 +193,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
+  await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart, gmailSyncError: null } });
 
   return NextResponse.json({ synced, skipped });
 }

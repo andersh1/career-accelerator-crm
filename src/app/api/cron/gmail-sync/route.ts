@@ -77,7 +77,17 @@ async function syncUser(
   leads: { id: string; email: string }[],
 ): Promise<{ synced: number; skipped: number; error?: string }> {
   const accessToken = await getAccessToken(user.gmailRefreshToken);
-  if (!accessToken) return { synced: 0, skipped: 0, error: "token_refresh_failed" };
+  if (!accessToken) {
+    // Record it. This is the failure that ran silently from September 2026:
+    // the function returned here without touching the user row, so
+    // `gmailSyncedAt` froze, Settings kept showing a green "Connected" badge,
+    // and nothing was logged for two months.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { gmailSyncError: "token_refresh_failed" },
+    }).catch(() => {});
+    return { synced: 0, skipped: 0, error: "token_refresh_failed" };
+  }
 
   const syncStart = new Date();
   const after = user.gmailSyncedAt
@@ -91,7 +101,10 @@ async function syncUser(
   );
 
   if (!listRes.ok) {
-    await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { gmailSyncedAt: syncStart, gmailSyncError: `gmail_list_failed_${listRes.status}` },
+    });
     return { synced: 0, skipped: 0, error: "gmail_list_failed" };
   }
 
@@ -99,7 +112,10 @@ async function syncUser(
   const messageIds = listData.messages ?? [];
 
   if (messageIds.length === 0) {
-    await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { gmailSyncedAt: syncStart, gmailSyncError: null },
+    });
     return { synced: 0, skipped: 0 };
   }
 
@@ -160,7 +176,11 @@ async function syncUser(
     }
   }
 
-  await prisma.user.update({ where: { id: user.id }, data: { gmailSyncedAt: syncStart } });
+  // Cleared, so a connection that recovers stops being reported as broken.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { gmailSyncedAt: syncStart, gmailSyncError: null },
+  });
   return { synced, skipped };
 }
 

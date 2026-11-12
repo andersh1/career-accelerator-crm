@@ -63,12 +63,32 @@ export async function GET(req: NextRequest) {
   if (action === "status") {
     const user = await prisma.user.findFirst({
       where:  { OR: [{ id: userId }, { email: userEmail }] },
-      select: { gmailEmail: true, gmailSyncedAt: true, gmailRefreshToken: true },
+      select: { gmailEmail: true, gmailSyncedAt: true, gmailRefreshToken: true, gmailSyncError: true },
     });
+
+    /**
+     * `healthy` is the honest answer, and it is not the same as `connected`.
+     *
+     * A stored refresh token only says somebody once completed the OAuth
+     * flow. Google can revoke it at any time, and when it does the sync stops
+     * without telling anyone — which is exactly what happened to all three
+     * admins in September 2026 while Settings showed a green badge.
+     *
+     * The sync runs daily, so two days without one is a connection that has
+     * stopped working even when no error was recorded.
+     */
+    const syncedAt = user?.gmailSyncedAt ?? null;
+    const staleAfterMs = 2 * 24 * 60 * 60 * 1000;
+    const stale = !!user?.gmailRefreshToken && syncedAt !== null
+      && Date.now() - syncedAt.getTime() > staleAfterMs;
+
     return NextResponse.json({
-      connected:     !!user?.gmailRefreshToken,
-      gmailEmail:    user?.gmailEmail ?? null,
-      gmailSyncedAt: user?.gmailSyncedAt?.toISOString() ?? null,
+      connected:      !!user?.gmailRefreshToken,
+      gmailEmail:     user?.gmailEmail ?? null,
+      gmailSyncedAt:  syncedAt?.toISOString() ?? null,
+      gmailSyncError: user?.gmailSyncError ?? null,
+      stale,
+      healthy:        !!user?.gmailRefreshToken && !user?.gmailSyncError && !stale,
     });
   }
 
@@ -85,7 +105,7 @@ export async function GET(req: NextRequest) {
   if (action === "disconnect") {
     await prisma.user.updateMany({
       where: { OR: [{ id: userId }, { email: userEmail }] },
-      data:  { gmailRefreshToken: null, gmailEmail: null, gmailSyncedAt: null },
+      data:  { gmailRefreshToken: null, gmailEmail: null, gmailSyncedAt: null, gmailSyncError: null },
     });
     return NextResponse.redirect(new URL("/settings?gmail=disconnected", BASE_URL));
   }
@@ -125,6 +145,7 @@ export async function GET(req: NextRequest) {
           gmailRefreshToken: tokens.refresh_token,
           gmailEmail:        profile.email ?? null,
           gmailSyncedAt:     null,
+          gmailSyncError:    null,
         },
       });
 

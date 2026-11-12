@@ -199,6 +199,8 @@ const sections: Section[] = [
       { title: "Invite team members", desc: "Go to Settings → Team to invite someone by email. Choose their CRM role: Admin (full access) or Member (read + create, no bulk delete or export).", tip: "Admin only" },
       { title: "Slack integration", desc: "Paste your Slack incoming webhook URL in Settings → Integrations. New leads, enrollments, and cold-lead alerts will ping your channel." },
       { title: "Email from address", desc: "Set RESEND_FROM_EMAIL in Vercel env vars to use your own verified domain (e.g. team@yourcompany.com) instead of the default sender." },
+      { title: "Email to CRM (the Cc address)", desc: "Settings → Integrations shows an address you can Cc or forward to. Anything sent there is matched to a lead by every address on the From, To and Cc lines (and, on a forward, by the addresses inside the forwarded block) and filed on that lead's timeline. It captures replies from a Fellow, parent or partner, which the Gmail sync cannot see. Forwarding something that matches no lead raises a notification rather than disappearing." },
+      { title: "Gmail connection health", desc: "The Gmail card reports the last sync's outcome, not just whether a token is stored. \"Not syncing\" means Google has revoked the connection or no sync has succeeded in two days — press Reconnect. The green badge only appears when email is actually being logged." },
     ],
   },
   {
@@ -382,7 +384,7 @@ const sections: Section[] = [
       { title: "Daily notifications", desc: "Runs at 12 PM UTC — checks for cold leads (14+ days inactive) and queues CRM notifications." },
       { title: "Event reminders", desc: "Runs at 2 PM UTC daily — finds events 7 days out (sends 7-day reminder) and events 24 hours out (sends 24-hour reminder). Each reminder is sent once and flagged so it doesn't duplicate. Requires CRON_SECRET env var on Vercel.", tip: "Vercel cron" },
       { title: "Weekly report", desc: "Runs Monday at 8 AM UTC — sends the leadership digest to all Admins via email." },
-      { title: "Gmail sync", desc: "Runs at 9 AM UTC — pulls replies from the connected Gmail inbox onto lead timelines." },
+      { title: "Gmail sync", desc: "Runs at 9 AM UTC — reads each connected admin's SENT mail and files anything addressed to a lead onto that lead's timeline. It does not see replies; use the Cc address for those. If it fails, the Settings card says \"Not syncing\" instead of showing a green badge." },
     ],
   },
 ];

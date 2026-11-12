@@ -1346,6 +1346,14 @@ model User {
   gmailRefreshToken    String?
   gmailEmail           String?
   gmailSyncedAt        DateTime?
+  /// Why the last Gmail sync failed, or null when the last one worked.
+  ///
+  /// Settings used to read "Connected" off `gmailRefreshToken` alone, so a
+  /// revoked token still showed a green badge: all three admins' syncs died in
+  /// September 2026 and the card went on saying Connected for two months while
+  /// nothing was logged. The status is now the outcome of the last run, not
+  /// the presence of a credential.
+  gmailSyncError       String?
   submissions          Submission[]
   progress             Progress[]
   notes                Note[]

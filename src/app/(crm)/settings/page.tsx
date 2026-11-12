@@ -16,6 +16,29 @@ interface GmailStatus {
   connected: boolean;
   gmailEmail: string | null;
   gmailSyncedAt: string | null;
+  /// Why the last sync failed, or null when it worked.
+  gmailSyncError?: string | null;
+  /// Connected, but the daily sync has not succeeded in over two days.
+  stale?: boolean;
+  /// Connected AND actually syncing. This is what the badge reads.
+  healthy?: boolean;
+}
+
+interface InboundStatus {
+  address: string;
+  configured: boolean;
+}
+
+/** Plain English for the failure codes the sync records. */
+function syncErrorLabel(code: string | null | undefined): string {
+  if (!code) return "";
+  if (code === "token_refresh_failed") {
+    return "Google has revoked the connection. Reconnect to start logging again.";
+  }
+  if (code.startsWith("gmail_list_failed")) {
+    return `Gmail refused the request (${code.replace("gmail_list_failed_", "HTTP ")}). Reconnect to start logging again.`;
+  }
+  return code;
 }
 
 const inputCls = "w-full px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#086c64] focus:bg-white" ;
@@ -115,6 +138,8 @@ export default function SettingsPage() {
 
   // Gmail
   const [gmailStatus,     setGmailStatus]     = useState<GmailStatus | null>(null);
+  const [inbound,         setInbound]         = useState<InboundStatus | null>(null);
+  const [inboundCopied,   setInboundCopied]   = useState(false);
   const [gmailConnecting, setGmailConnecting] = useState(false);
   const [gmailSyncing,    setGmailSyncing]    = useState(false);
   const [gmailSyncResult, setGmailSyncResult] = useState<string | null>(null);
@@ -150,6 +175,10 @@ export default function SettingsPage() {
     });
     loadGmailStatus();
     loadAdminUsers();
+    fetch("/api/crm/inbound-address")
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) setInbound(d); })
+      .catch(() => { /* the card simply does not render */ });
   }, []);
 
   async function loadGmailStatus() {
@@ -688,20 +717,85 @@ export default function SettingsPage() {
             )}
           </Section>
 
+          {inbound && (
+            <Section title="Email to CRM">
+              <p className="text-xs -mt-2" style={{ color: "#949598" }}>
+                Cc or forward any email to this address and it lands on the matching lead&apos;s
+                timeline. Unlike the Gmail sync, this also captures replies <em>from</em> a
+                Fellow, a parent or a partner.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 px-3 py-2.5 border border-[#e4e0d6] rounded-xl text-sm font-mono truncate"
+                  style={{ background: "#f8f6f1", color: "#14211f" }}>
+                  {inbound.address}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(inbound.address).then(() => {
+                      setInboundCopied(true);
+                      setTimeout(() => setInboundCopied(false), 2000);
+                    }).catch(() => { /* clipboard blocked; the address is on screen */ });
+                  }}
+                  className="flex items-center gap-2 text-sm font-semibold border px-4 py-2.5 rounded-xl transition shrink-0"
+                  style={{ color: "#086c64", borderColor: "#086c64", background: "#edf5f4" }}>
+                  {inboundCopied ? <CheckCircle2 size={14} /> : <Mail size={14} />}
+                  {inboundCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              {inbound.configured ? (
+                <p className="text-xs" style={{ color: "#949598" }}>
+                  Matched on the sender and every address on the To and Cc lines, against both a
+                  lead&apos;s own email and the student email on a parent-submitted application. An
+                  email we send that matches nobody shows up in notifications rather than
+                  disappearing.
+                </p>
+              ) : (
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    Not receiving yet. The MX record for this subdomain and{" "}
+                    <code className="px-1 rounded" style={{ background: "#fde68a" }}>RESEND_INBOUND_WEBHOOK_SECRET</code>{" "}
+                    still need to be set up. Mail sent here before then is held by Resend, not lost.
+                  </p>
+                </div>
+              )}
+            </Section>
+          )}
+
           <Section title="Gmail Integration">
             <p className="text-xs -mt-2" style={{ color: "#949598" }}>
               Connect your Gmail account to automatically log sent emails to lead timelines.
             </p>
             {gmailStatus?.connected ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-green-900">Connected</p>
-                    <p className="text-xs text-green-700 truncate">{gmailStatus.gmailEmail}</p>
+                {/*
+                  The badge reports the last sync's OUTCOME, not whether a token
+                  is on file. The green-on-a-dead-connection version of this card
+                  hid two months of nothing being logged.
+                */}
+                {gmailStatus.healthy === false ? (
+                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-900">Not syncing</p>
+                      <p className="text-xs text-amber-800 truncate">{gmailStatus.gmailEmail}</p>
+                      <p className="text-xs text-amber-800 mt-1">
+                        {gmailStatus.gmailSyncError
+                          ? syncErrorLabel(gmailStatus.gmailSyncError)
+                          : "No successful sync in over two days. Reconnect to start logging again."}
+                      </p>
+                    </div>
                   </div>
-                  <Mail size={16} className="text-green-600 shrink-0" />
-                </div>
+                ) : (
+                  <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-green-900">Connected and syncing</p>
+                      <p className="text-xs text-green-700 truncate">{gmailStatus.gmailEmail}</p>
+                    </div>
+                    <Mail size={16} className="text-green-600 shrink-0" />
+                  </div>
+                )}
                 <div className="text-xs" style={{ color: "#949598" }}>Last synced: {formatSyncDate(gmailStatus.gmailSyncedAt)}</div>
                 {gmailSyncResult && (
                   <p className="text-sm border border-[#e4e0d6] rounded-xl px-4 py-2.5" style={{ color: "#5a6663", background: "#f8f6f1" }}>{gmailSyncResult}</p>
@@ -715,6 +809,17 @@ export default function SettingsPage() {
                     {gmailSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                     {gmailSyncing ? "Syncing…" : "Sync Now"}
                   </button>
+                  {gmailStatus.healthy === false && (
+                    // Reconnecting is the fix for every failure this card can
+                    // report, so it is offered here rather than leaving
+                    // Disconnect-then-Connect as the only route back.
+                    <button onClick={connectGmail} disabled={gmailConnecting}
+                      className="flex items-center gap-2 text-sm font-semibold border disabled:opacity-50 px-4 py-2 rounded-xl transition"
+                      style={{ color: "#92400e", borderColor: "#fcd34d", background: "#fffbeb" }}>
+                      {gmailConnecting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                      {gmailConnecting ? "Redirecting…" : "Reconnect"}
+                    </button>
+                  )}
                   <button onClick={disconnectGmail}
                     className="flex items-center gap-2 text-sm font-semibold border border-[#e4e0d6] hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-xl transition"
                     style={{ color: "#5a6663" }}>
