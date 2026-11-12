@@ -201,6 +201,7 @@ const sections: Section[] = [
       { title: "Email from address", desc: "Set RESEND_FROM_EMAIL in Vercel env vars to use your own verified domain (e.g. team@yourcompany.com) instead of the default sender." },
       { title: "Email to CRM (the Cc address)", desc: "Settings → Integrations shows an address you can Cc or forward to. Anything sent there is matched to a lead by every address on the From, To and Cc lines (and, on a forward, by the addresses inside the forwarded block) and filed on that lead's timeline. It captures replies from a Fellow, parent or partner, which the Gmail sync cannot see. Forwarding something that matches no lead raises a notification rather than disappearing." },
       { title: "Gmail connection health", desc: "The Gmail card reports the last sync's outcome, not just whether a token is stored. \"Not syncing\" means Google has revoked the connection or no sync has succeeded in two days — press Reconnect. The green badge only appears when email is actually being logged." },
+      { title: "Gmail failure alerts", desc: "You no longer have to open Settings to find out the sync broke. A failed run, a connection that has not synced in three days, or the sync job not running at all each raise a CRM notification and a Slack message — once per outage, not daily. Set the Slack webhook in Settings → Integrations to get the Slack half; the bell works either way." },
     ],
   },
   {

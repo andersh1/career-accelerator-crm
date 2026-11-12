@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSlack, coldLeadBlocks } from "@/lib/slack";
+import { alertStaleGmailConnections, alertDeadGmailSync } from "@/lib/gmail-health";
 import { ACTIVE_STAGES, NON_PARTICIPANT_TYPES } from "@/components/crm/constants";
 
 /**
@@ -203,5 +204,29 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ created });
+  /**
+   * 4. Gmail connections that have gone quiet.
+   *
+   * Deliberately not behind an automation toggle: this reports that a piece of
+   * the CRM has stopped working, which is not an automation anyone would
+   * choose to turn off.
+   *
+   * It lives in THIS cron rather than the Gmail one so that a sync job which
+   * stops running altogether is still noticed. That is the failure mode that
+   * actually happened — between September and November 2026 nothing was
+   * logged and nothing said so.
+   */
+  const gmailAlerts = await alertStaleGmailConnections();
+
+  /**
+   * And whether the sync job is running at all.
+   *
+   * The sweep above asks after each person's connection, which cannot catch a
+   * cron that has stopped firing: somebody who has just reconnected has no
+   * last-sync date to be stale, and somebody whose connection is healthy has
+   * nothing wrong with it. This asks the only question that covers both.
+   */
+  const gmailJobDead = await alertDeadGmailSync();
+
+  return NextResponse.json({ created, gmailAlerts, gmailJobDead });
 }

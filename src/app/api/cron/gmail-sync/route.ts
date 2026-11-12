@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { alertGmailBroken, recordGmailSyncRun } from "@/lib/gmail-health";
 
 const CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     ?? "";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -73,7 +74,8 @@ function extractBody(payload: GmailPayload): string {
 }
 
 async function syncUser(
-  user: { id: string; gmailRefreshToken: string; gmailSyncedAt: Date | null },
+  // `email` is here so a failure can say whose connection broke.
+  user: { id: string; email: string; gmailRefreshToken: string; gmailSyncedAt: Date | null },
   leads: { id: string; email: string }[],
 ): Promise<{ synced: number; skipped: number; error?: string }> {
   const accessToken = await getAccessToken(user.gmailRefreshToken);
@@ -86,6 +88,11 @@ async function syncUser(
       where: { id: user.id },
       data: { gmailSyncError: "token_refresh_failed" },
     }).catch(() => {});
+    await alertGmailBroken({
+      email: user.email,
+      gmailSyncError: "token_refresh_failed",
+      gmailSyncedAt: user.gmailSyncedAt,
+    });
     return { synced: 0, skipped: 0, error: "token_refresh_failed" };
   }
 
@@ -101,10 +108,12 @@ async function syncUser(
   );
 
   if (!listRes.ok) {
+    const code = `gmail_list_failed_${listRes.status}`;
     await prisma.user.update({
       where: { id: user.id },
-      data: { gmailSyncedAt: syncStart, gmailSyncError: `gmail_list_failed_${listRes.status}` },
+      data: { gmailSyncedAt: syncStart, gmailSyncError: code },
     });
+    await alertGmailBroken({ email: user.email, gmailSyncError: code, gmailSyncedAt: user.gmailSyncedAt });
     return { synced: 0, skipped: 0, error: "gmail_list_failed" };
   }
 
@@ -193,6 +202,11 @@ export async function GET(req: NextRequest) {
     select: { id: true, email: true, gmailRefreshToken: true, gmailSyncedAt: true },
   });
 
+  // Stamped before the early return as well as after the work: "nobody has
+  // Gmail connected" is still the job having run, and leaving it unstamped
+  // would have the heartbeat check report a dead cron that is running fine.
+  await recordGmailSyncRun();
+
   if (admins.length === 0) {
     return NextResponse.json({ message: "No admins with Gmail connected", results: [] });
   }
@@ -203,7 +217,7 @@ export async function GET(req: NextRequest) {
   const results = [];
   for (const admin of admins) {
     const result = await syncUser(
-      { id: admin.id, gmailRefreshToken: admin.gmailRefreshToken!, gmailSyncedAt: admin.gmailSyncedAt },
+      { id: admin.id, email: admin.email, gmailRefreshToken: admin.gmailRefreshToken!, gmailSyncedAt: admin.gmailSyncedAt },
       leads,
     );
     results.push({ email: admin.email, ...result });
