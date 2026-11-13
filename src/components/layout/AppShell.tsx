@@ -51,7 +51,7 @@ const NAV_SECTIONS = [
  *
  * Organizations, Deals and Contacts are three primary objects, and a section
  * only auto-expands once you are already on one of its pages — so a collapsed
- * Partnerships could not be discovered by looking. David reported on
+ * Partnerships could not be discovered by looking. Dan reported on
  * 2026-11-12 that he could not find where deals and organizations lived and
  * assumed he lacked permission; nothing is permission-gated, it was shut.
  *

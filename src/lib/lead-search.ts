@@ -9,7 +9,7 @@
  * tested as `firstName contains "Dan Cohen"` and as `lastName contains
  * "Dan Cohen"`, and no single column holds both words. Searching "Cohen"
  * worked, so the records looked absent rather than unfindable, and the natural
- * conclusion was that they had been filed wrong. Reported by David on the Wake
+ * conclusion was that they had been filed wrong. Reported by Dan on the Wake
  * Forest contacts, 2026-11-12.
  *
  * The fix is to split on whitespace and require EVERY word to match somewhere:
