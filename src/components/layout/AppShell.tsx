@@ -46,7 +46,20 @@ const NAV_SECTIONS = [
   { label: "Admin",       keys: ["/outcomes", "/analytics", "/issues", "/team", "/automation"], adminOnly: true },
 ];
 
-const DEFAULT_COLLAPSED = ["Growth", "Partnerships", "Admin"];
+/**
+ * Partnerships is deliberately NOT in here.
+ *
+ * Organizations, Deals and Contacts are three primary objects, and a section
+ * only auto-expands once you are already on one of its pages — so a collapsed
+ * Partnerships could not be discovered by looking. David reported on
+ * 2026-11-12 that he could not find where deals and organizations lived and
+ * assumed he lacked permission; nothing is permission-gated, it was shut.
+ *
+ * This only sets the FIRST-VISIT default. Anyone who has already opened or
+ * closed a section keeps their own choice, which is saved per browser under
+ * "crm-nav-collapsed".
+ */
+const DEFAULT_COLLAPSED = ["Growth", "Admin"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname          = usePathname();
