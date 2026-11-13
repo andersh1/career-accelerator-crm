@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { leadSearchWhere } from "@/lib/lead-search";
 import { computeScore } from "@/lib/scoring";
 import { fireWebhook } from "@/lib/webhooks";
 import { NON_PARTICIPANT_TYPES } from "@/components/crm/constants";
@@ -63,14 +64,10 @@ export async function GET(req: NextRequest) {
             ? { leadType: { in: leadType.split(",").map(t => t.trim()).filter(Boolean) } }
             : { leadType })
         : { leadType: { notIn: Array.from(NON_PARTICIPANT_TYPES) } }),
-    ...(q ? {
-      OR: [
-        { firstName: { contains: q, mode: "insensitive" as const } },
-        { lastName:  { contains: q, mode: "insensitive" as const } },
-        { email:     { contains: q, mode: "insensitive" as const } },
-        { company:   { contains: q, mode: "insensitive" as const } },
-      ],
-    } : {}),
+    // Every word has to match something, so a full name finds the person.
+    // See lib/lead-search: this used to match the whole query against each
+    // column on its own, which made "Dan Cohen" return nothing at all.
+    ...leadSearchWhere(q),
     ...(tag ? { tags: { has: tag } } : {}),
   };
 

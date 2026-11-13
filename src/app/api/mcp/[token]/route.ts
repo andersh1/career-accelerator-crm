@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { leadSearchWhere } from "@/lib/lead-search";
 import { findOrganizationByName, nearbyOrganizations } from "@/lib/organizations";
 import { routeLead } from "@/lib/lead-routing";
 
@@ -380,13 +381,15 @@ async function findStudent(query: string) {
 
 async function findLead(query: string) {
   const q = query.trim();
+  // An exact address still wins outright; a name is matched word by word, so
+  // asking for "Dan Cohen" resolves instead of silently finding nobody.
+  const byName = leadSearchWhere(q, ["firstName", "lastName"]);
   return prisma.lead.findFirst({
     where: {
       deletedAt: null,
       OR: [
         { email: { equals: q, mode: "insensitive" } },
-        { firstName: { contains: q, mode: "insensitive" } },
-        { lastName: { contains: q, mode: "insensitive" } },
+        ...(byName.AND ? [byName] : []),
       ],
     },
     // stage is needed by update_lead to record what it moved FROM.
@@ -612,14 +615,8 @@ async function runTool(
       where: {
         deletedAt: null,
         ...(stage ? { stage } : {}),
-        ...(q ? {
-          OR: [
-            { firstName: { contains: q, mode: "insensitive" } },
-            { lastName: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-            { company: { contains: q, mode: "insensitive" } },
-          ],
-        } : {}),
+        // Word by word, so asking for a full name finds the person.
+        ...leadSearchWhere(q),
       },
       select: {
         firstName: true, lastName: true, email: true, stage: true, priority: true,

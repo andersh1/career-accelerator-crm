@@ -7,6 +7,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { leadSearchWhere } from "@/lib/lead-search";
 
 function checkApiKey(req: NextRequest) {
   const auth  = req.headers.get("authorization") ?? "";
@@ -32,15 +33,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "transcript is required" }, { status: 400 });
   }
 
-  // Find lead by email or first/last name
+  // Find lead by email or first/last name.
+  //
+  // Word by word, so a full name resolves. Matching the whole query against
+  // each column on its own meant "Dan Cohen" found nobody while "Cohen" did.
   const leads = await prisma.lead.findMany({
     where: {
       deletedAt: null,
-      OR: [
-        { email:      { contains: query.trim(), mode: "insensitive" } },
-        { firstName:  { contains: query.trim(), mode: "insensitive" } },
-        { lastName:   { contains: query.trim(), mode: "insensitive" } },
-      ],
+      ...leadSearchWhere(query, ["firstName", "lastName", "email"]),
     },
     select: {
       id: true, firstName: true, lastName: true, email: true, stage: true, notes: true,

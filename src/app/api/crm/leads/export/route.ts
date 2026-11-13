@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { leadSearchWhere } from "@/lib/lead-search";
 
 function esc(v: string | null | undefined): string {
   if (v == null || v === "") return "";
@@ -37,14 +38,9 @@ export async function GET(req: NextRequest) {
       ...(stage    ? { stage }    : {}),
       ...(source   ? { source }   : {}),
       ...(priority ? { priority } : {}),
-      ...(q ? {
-        OR: [
-          { firstName: { contains: q, mode: "insensitive" } },
-          { lastName:  { contains: q, mode: "insensitive" } },
-          { email:     { contains: q, mode: "insensitive" } },
-          { company:   { contains: q, mode: "insensitive" } },
-        ],
-      } : {}),
+      // Same word-by-word rule as the list it exports, or a search that
+      // found somebody on screen would export nothing.
+      ...leadSearchWhere(q),
     },
     include: {
       enrolledUser: { select: { id: true, name: true, email: true } },
