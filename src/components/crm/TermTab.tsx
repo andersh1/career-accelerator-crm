@@ -73,7 +73,18 @@ function fmtNaive(naive: string) {
   return `${weekday} ${month} ${d}, ${h12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "AM" : "PM"}`;
 }
 
+/** Another university class whose term can be copied as the shape for this one. */
+interface CopySource { id: string; name: string; sessions: number }
+
 export default function TermTab({ cohortId, cohortName }: { cohortId: string; cohortName: string }) {
+  /**
+   * Other university cohorts that already have a term. Picking one copies its
+   * shape and nothing else, which is how the next school is onboarded without a
+   * code change. Empty until there is a second class, and the control is hidden
+   * rather than shown empty.
+   */
+  const [copySources, setCopySources] = useState<CopySource[]>([]);
+  const [copyFrom, setCopyFrom] = useState("");
   const [sessions, setSessions] = useState<TermSession[] | null>(null);
   const [loading,  setLoading]  = useState(true);
 
@@ -94,6 +105,7 @@ export default function TermTab({ cohortId, cohortName }: { cohortId: string; co
     if (res.ok) {
       const data = await res.json();
       setSessions(data.sessions);
+      setCopySources(data.copySources ?? []);
     }
     setLoading(false);
   }, [cohortId]);
@@ -112,6 +124,7 @@ export default function TermTab({ cohortId, cohortName }: { cohortId: string; co
         minutes,
         location: location.trim() || null,
         zoomLink: zoomLink.trim() || null,
+        ...(copyFrom ? { copyFromCohortId: copyFrom } : {}),
         apply,
       }),
     });
@@ -206,6 +219,29 @@ export default function TermTab({ cohortId, cohortName }: { cohortId: string; co
             />
           </label>
         </div>
+
+        {copySources.length > 0 && (
+          <label className="text-xs block" style={{ color: "#5a6663" }}>
+            Shape of the term
+            <select
+              value={copyFrom}
+              onChange={e => { setCopyFrom(e.target.value); setPreview(null); }}
+              className="mt-1 block w-full px-3 py-2 text-sm rounded-xl focus:outline-none"
+              style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+            >
+              <option value="">The Vantage course, fourteen weeks, two meetings a week</option>
+              {copySources.map(c => (
+                <option key={c.id} value={c.id}>
+                  Same as {c.name} ({c.sessions} meetings)
+                </option>
+              ))}
+            </select>
+            <span className="block mt-1" style={{ color: "#949598" }}>
+              Copying another class takes its weeks, modules and titles. It takes no dates,
+              links, rooms or recordings.
+            </span>
+          </label>
+        )}
 
         <label className="text-xs block" style={{ color: "#5a6663" }}>
           Zoom link for every meeting (optional, and only used on meetings that do not have one yet)

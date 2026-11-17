@@ -311,6 +311,12 @@ model CohortSession {
   /// sessions ("two free misses across the term"), so they have to be
   /// countable and ordered independently of their dates, which move.
   sequence  Int
+  /// Which teaching week this meeting belongs to, 1-based, break weeks not
+  /// counted. Stored rather than derived from the date, because that is what
+  /// makes a term reusable: another university's class can be built by reading
+  /// a term that already exists, and "week 5" survives a different start date,
+  /// a different number of meetings a week, and a break in a different place.
+  week      Int?
 
   startsAt  DateTime? @db.Timestamptz(6)
   /// 75 for this class, not the 90 a cohort session runs. Null falls back to

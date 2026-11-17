@@ -126,6 +126,85 @@ export const WAKE_SPRING_2027: TermWeekTemplate[] = [
     second: { title: "Demo Day, session 2, then the close", kind: "DEMO_DAY" } },
 ];
 
+/**
+ * The term shapes we can start a new class from, by key.
+ *
+ * ONBOARDING THE NEXT UNIVERSITY SHOULD NOT NEED A DEPLOY. There are two ways
+ * to start a term and neither involves editing this file:
+ *
+ *   1. Pick a key from here. Today there is one, the Wake shape, because that is
+ *      the programme. A genuinely different shape — a once-a-week class, a
+ *      ten-week quarter — gets a key here, and that IS a code change, because a
+ *      different shape is a different course.
+ *   2. Copy a term that already exists. `templateFromSessions` reads the saved
+ *      meetings of any university cohort back into a template, so "same class as
+ *      Wake, starting the first week of September" is a duplicate with a new
+ *      date, no code, no deploy. That is the path a second school takes.
+ */
+export const TERM_TEMPLATES: Record<string, { label: string; weeks: TermWeekTemplate[] }> = {
+  "vantage-14-week": {
+    label: "Vantage, 14 weeks, two meetings a week",
+    weeks: WAKE_SPRING_2027,
+  },
+};
+
+/**
+ * Read a saved term back into a template.
+ *
+ * This is the duplicate path: a cohort's meetings already carry the whole shape
+ * (which week, which module, workshop or lab, which kind of lab, the titles), so
+ * a new class is that shape with a different first date. Nothing is copied that
+ * belongs to the old class: no dates, no Zoom links, no rooms, no recordings.
+ *
+ * `week` is read, never guessed from the dates. A term whose meetings predate
+ * that column falls back to pairing them in order, which is right for every
+ * two-meeting week and is the only shape that existed before it.
+ */
+export function templateFromSessions(
+  sessions: {
+    sequence: number; week: number | null; kind: string; labKind: string | null;
+    title: string; moduleId: string | null; startsAt: Date | null;
+  }[],
+  moduleNumberById: Map<string, number>,
+): TermWeekTemplate[] {
+  const ordered = [...sessions].sort((a, b) => a.sequence - b.sequence);
+  if (ordered.length === 0) return [];
+
+  const byWeek = new Map<number, typeof ordered>();
+  ordered.forEach((s, i) => {
+    const week = s.week ?? Math.floor(i / 2) + 1;
+    byWeek.set(week, [...(byWeek.get(week) ?? []), s]);
+  });
+
+  const weeks = Array.from(byWeek.keys()).sort((a, b) => a - b);
+  return weeks.map((week, idx) => {
+    const meetings = byWeek.get(week)!;
+    const first = meetings[0];
+    const second = meetings[1] ?? meetings[0];
+    const moduleNumber = first.moduleId ? moduleNumberById.get(first.moduleId) ?? null : null;
+
+    /**
+     * A break falls after this week when the next week's first meeting is more
+     * than a week later. Derived from the source term's own dates, which is the
+     * one thing about a break that is reliably recorded.
+     */
+    const nextWeek = weeks[idx + 1];
+    const thisStart = first.startsAt?.getTime();
+    const nextStart = nextWeek ? byWeek.get(nextWeek)![0].startsAt?.getTime() : undefined;
+    const breakAfter = !!(thisStart && nextStart && nextStart - thisStart > 8 * 24 * 60 * 60 * 1000);
+
+    return {
+      week: idx + 1,
+      moduleNumber,
+      label: moduleNumber === null ? first.title : `Module ${moduleNumber}, week ${week}`,
+      first:  { title: first.title,  kind: first.kind as SessionKind },
+      second: { title: second.title, kind: second.kind as SessionKind,
+                ...(second.labKind ? { labKind: second.labKind as LabKind } : {}) },
+      ...(breakAfter ? { breakAfter: true } : {}),
+    };
+  });
+}
+
 export interface TermPlanInput {
   /** The first meeting of week 1, as a naive ET "YYYY-MM-DDTHH:MM". */
   firstMeeting: string;
@@ -158,6 +237,7 @@ export interface TermPlanInput {
 export interface PlannedSession {
   /** 1 to 28. What the attendance rule counts. */
   sequence: number;
+  /** 1-based teaching week, stored on the row so a term can be copied. */
   week: number;
   weekLabel: string;
   moduleNumber: number | null;

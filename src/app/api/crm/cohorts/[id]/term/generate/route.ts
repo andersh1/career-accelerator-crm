@@ -27,7 +27,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fromEasternNaive } from "@/lib/timezone";
-import { planTerm, planModules, validateTerm, type PlannedSession, type TermPlanInput } from "@/lib/term-plan";
+import {
+  planTerm, planModules, validateTerm, templateFromSessions, TERM_TEMPLATES,
+  type PlannedSession, type TermPlanInput, type TermWeekTemplate,
+} from "@/lib/term-plan";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -36,7 +39,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json() as Partial<TermPlanInput> & { apply?: boolean };
+  const body = await req.json() as Partial<TermPlanInput> & {
+    apply?: boolean;
+    /** A shape from TERM_TEMPLATES. Defaults to the Vantage 14-week course. */
+    templateKey?: string;
+    /**
+     * Or: another university cohort whose saved term is the shape to copy.
+     *
+     * This is how the next school is onboarded. Nothing but the shape comes
+     * across: no dates, no Zoom links, no rooms, no recordings. Takes precedence
+     * over templateKey, since copying a real term is more specific than picking
+     * a built-in one.
+     */
+    copyFromCohortId?: string;
+  };
 
   if (!body.firstMeeting || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(body.firstMeeting)) {
     return NextResponse.json({ error: "Pick the date and time of the first class." }, { status: 400 });
@@ -53,9 +69,48 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }, { status: 400 });
   }
 
+  const modules = await prisma.module.findMany({ select: { id: true, number: true, title: true } });
+  const moduleByNumber = new Map(modules.map(m => [m.number, m]));
+
+  /**
+   * Which shape this term takes: a copy of another class's term, or a built-in.
+   */
+  let template: TermWeekTemplate[] | undefined;
+  let shapeFrom = TERM_TEMPLATES["vantage-14-week"].label;
+
+  if (body.copyFromCohortId) {
+    const source = await prisma.cohort.findUnique({
+      where:  { id: body.copyFromCohortId },
+      select: {
+        name: true, track: true,
+        sessions: {
+          orderBy: { sequence: "asc" },
+          select: { sequence: true, week: true, kind: true, labKind: true,
+                    title: true, moduleId: true, startsAt: true },
+        },
+      },
+    });
+    if (!source) return NextResponse.json({ error: "No such cohort to copy from." }, { status: 400 });
+    if (source.sessions.length === 0) {
+      return NextResponse.json({ error: `${source.name} has no term to copy.` }, { status: 400 });
+    }
+    template = templateFromSessions(source.sessions, new Map(modules.map(m => [m.id, m.number])));
+    shapeFrom = `a copy of ${source.name}`;
+  } else if (body.templateKey) {
+    const chosen = TERM_TEMPLATES[body.templateKey];
+    if (!chosen) {
+      return NextResponse.json({
+        error: `No term shape called "${body.templateKey}". Known shapes: ${Object.keys(TERM_TEMPLATES).join(", ")}.`,
+      }, { status: 400 });
+    }
+    template = chosen.weeks;
+    shapeFrom = chosen.label;
+  }
+
   let plan: PlannedSession[];
   try {
     plan = planTerm({
+      template,
       firstMeeting:    body.firstMeeting,
       secondDayOffset: body.secondDayOffset,
       minutes:         body.minutes,
@@ -69,9 +124,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const errors = validateTerm(plan);
-
-  const modules = await prisma.module.findMany({ select: { id: true, number: true, title: true } });
-  const moduleByNumber = new Map(modules.map(m => [m.number, m]));
 
   const wanted = plan.map(s => s.moduleNumber).filter((n): n is number => n !== null);
   const missing = Array.from(new Set(wanted)).filter(n => !moduleByNumber.has(n));
@@ -119,6 +171,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       cohort: cohort.name,
       sessions: rows.length,
       weeks: new Set(rows.map(r => r.week)).size,
+      shapeFrom,
       rows,
       modules: moduleRows,
       errors,
@@ -138,6 +191,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       kind:       r.kind,
       labKind:    r.labKind,
       title:      r.title,
+      // Written so this term can be read back as a shape for the next class.
+      week:       r.week,
       startsAt:   fromEasternNaive(r.startsAt),
       preworkDue: fromEasternNaive(r.preworkDue),
       minutes:    r.minutes,

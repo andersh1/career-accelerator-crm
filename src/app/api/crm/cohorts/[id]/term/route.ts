@@ -33,6 +33,20 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
   if (!cohort) return NextResponse.json({ error: "No such cohort" }, { status: 404 });
 
+  /**
+   * Other university classes whose term can be copied as the shape for this one.
+   *
+   * This is the onboarding path for the next school: the shape of a course that
+   * is already running, started on a different date. Returned with the term so
+   * the tab does not need a second request, and empty until there is a second
+   * class, which is honest rather than an empty menu.
+   */
+  const copySources = await prisma.cohort.findMany({
+    where:  { track: "UNIVERSITY", id: { not: params.id }, sessions: { some: {} } },
+    select: { id: true, name: true, _count: { select: { sessions: true } } },
+    orderBy: { startDate: "desc" },
+  });
+
   const sessions = await prisma.cohortSession.findMany({
     where:   { cohortId: params.id },
     orderBy: { sequence: "asc" },
@@ -44,12 +58,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   return NextResponse.json({
     cohort: { id: cohort.id, name: cohort.name, track: cohort.track },
+    copySources: copySources.map(c => ({ id: c.id, name: c.name, sessions: c._count.sessions })),
     // An empty array is a real answer here: a university cohort whose term has
     // not been generated yet. The caller should offer the generator, not an
     // error.
     sessions: sessions.map(s => ({
       id:            s.id,
       sequence:      s.sequence,
+      week:          s.week,
       kind:          s.kind,
       labKind:       s.labKind,
       title:         s.title,

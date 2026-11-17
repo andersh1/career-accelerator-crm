@@ -13,7 +13,10 @@
  */
 import { register } from "node:module";
 register("./ts-loader.mjs", import.meta.url);
-const { planTerm, planModules, validateTerm, WAKE_SPRING_2027, WAKE_WEIGHTS } = await import("@/lib/term-plan.ts");
+const {
+  planTerm, planModules, validateTerm, templateFromSessions,
+  WAKE_SPRING_2027, WAKE_WEIGHTS, TERM_TEMPLATES,
+} = await import("@/lib/term-plan.ts");
 
 /** Week: [Tuesday, Thursday], from the curriculum map. 2027. */
 const MAP = [
@@ -74,6 +77,51 @@ expect(weightTotal === 90, `module weights total 90%, leaving 10% for attendance
 // before the first meeting and is due the Friday of the second week.
 expect(mods[0].opensAt.startsWith("2027-01-18"), `Module 1 opens Mon Jan 18 (got ${mods[0].opensAt})`);
 expect(mods[0].assignmentDue.startsWith("2027-01-29"), `Module 1's assignment is due Fri Jan 29 (got ${mods[0].assignmentDue})`);
+
+/**
+ * THE SECOND UNIVERSITY. The real test of "is this a model we can reuse" is
+ * whether a term that has been saved can be read back as a shape and rerun on a
+ * different date, with no code change and nothing of the first school carried
+ * across.
+ *
+ * So: pretend the Wake term is in the database, read it back, and plan a new
+ * class from it starting Tuesday 31 August 2027.
+ */
+const asSaved = plan.map(s => ({
+  sequence: s.sequence,
+  week: s.week,
+  kind: s.kind,
+  labKind: s.labKind,
+  title: s.title,
+  moduleId: s.moduleNumber === null ? null : `mod-${s.moduleNumber}`,
+  startsAt: new Date(`${s.startsAt}:00-05:00`),
+}));
+const moduleNumberById = new Map(Array.from({ length: 8 }, (_, i) => [`mod-${i + 1}`, i + 1]));
+const copied = templateFromSessions(asSaved, moduleNumberById);
+const second = planTerm({ firstMeeting: "2027-08-31T10:00", template: copied, minutes: 50 });
+
+expect(copied.length === 14, `the saved term reads back as 14 weeks (got ${copied.length})`);
+expect(second.length === 28, `the copy plans 28 meetings (got ${second.length})`);
+expect(validateTerm(second).length === 0, `the copy validates clean (${validateTerm(second).join(" ") || "no errors"})`);
+expect(
+  second.every((s, i) => s.kind === plan[i].kind && s.labKind === plan[i].labKind && s.title === plan[i].title),
+  "the copy has the same kinds, lab kinds and titles, meeting for meeting",
+);
+expect(
+  second.every((s, i) => s.moduleNumber === plan[i].moduleNumber),
+  "the copy maps to the same modules",
+);
+expect(second[0].startsAt === "2027-08-31T10:00", `the copy starts on its own date (got ${second[0].startsAt})`);
+expect(second.every(s => s.minutes === 50), "the copy uses its own class length");
+expect(
+  second.every(s => !s.zoomLink && !s.location),
+  "the copy carries no Zoom links and no rooms from the class it was copied from",
+);
+// The break has to survive the copy, in the same place, derived from the source
+// term's own dates rather than from a constant.
+const gap = (p, i) => (new Date(`${p[i].startsAt}:00Z`) - new Date(`${p[i - 2].startsAt}:00Z`)) / 86400000;
+expect(gap(second, 16) === 14, `the copy keeps a break week after week 8 (gap was ${gap(second, 16)} days)`);
+expect(Object.keys(TERM_TEMPLATES).length >= 1, "at least one built-in term shape is registered");
 
 console.log("\nThe modules as planned:\n");
 for (const m of mods) {
