@@ -136,6 +136,11 @@ model Cohort {
   contentVersionId String?
   contentVersion   ContentVersion? @relation(fields: [contentVersionId], references: [id], onDelete: SetNull)
   programTools    ProgramTool[]
+  /// Every class meeting, for a cohort that meets more than once a module.
+  /// Empty for the eight-module cohorts, which keep using CohortSchedule.
+  sessions        CohortSession[]
+  /// The people who teach or assist THIS cohort, as opposed to global admins.
+  staff           CohortStaff[]
 }
 
 /// A live group session that is NOT one of the eight modules — the Claude build
@@ -253,6 +258,148 @@ model CohortSchedule {
   titleOverride   String?
 
   @@unique([cohortId, moduleId])
+}
+
+/// ONE CLASS MEETING.
+///
+/// CohortSchedule holds one row per cohort per module, with a single
+/// sessionDate, preworkDue and assignmentDue. That is the right shape for the
+/// eight-module programme, where a module IS a week and a week has one session.
+///
+/// The Wake Forest three-credit class is not that shape: it meets twice a week
+/// for fourteen weeks, most modules run two weeks, and every meeting has its
+/// own pre-work. Twenty-eight meetings cannot be squeezed into eight rows, and
+/// attendance is 10% of a university grade, so the calendar has to be able to
+/// say which of the twenty-eight a student missed.
+///
+/// So the session becomes the thing with a date, and the module goes back to
+/// being what it always was: a unit of content and one graded component.
+///
+/// CohortSchedule is NOT replaced and NOT deprecated. Every existing cohort
+/// still runs on it, and every job that reads it keeps working. A cohort has
+/// either schedules or sessions depending on how it is delivered; the
+/// university track uses sessions.
+///
+/// The CRM is the writer here: it builds the term's calendar and provisions the
+/// Zoom meetings and Google Calendar events, exactly as it does for
+/// CohortSchedule. The LMS reads.
+model CohortSession {
+  id        String   @id @default(cuid())
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  /// Which module's content this meeting serves. Null for Orientation, which
+  /// belongs to no module. Demo Day points at Module 8 like everything else.
+  moduleId  String?
+  module    Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  /// ORIENTATION | WORKSHOP | LAB | DEMO_DAY
+  ///
+  /// Tuesday is the Workshop, Thursday is the Skills Lab. They are genuinely
+  /// different sessions, not two halves of one: different teacher, different
+  /// room (one of them is remote), different pre-work, and the lab is the one
+  /// where something has to ship before anybody leaves.
+  kind      String   @default("WORKSHOP")
+  /// SPRINT | STUDIO | JUDGMENT, for labs only. Sprint is rounds of writing and
+  /// sending; Studio is building; Judgment is arguing with a score. Null on a
+  /// workshop. Drives what the Do block looks like, nothing else.
+  labKind   String?
+  title     String
+
+  /// Where this meeting falls in the term, 1 to 28. The attendance rule counts
+  /// sessions ("two free misses across the term"), so they have to be
+  /// countable and ordered independently of their dates, which move.
+  sequence  Int
+
+  startsAt  DateTime? @db.Timestamptz(6)
+  /// 75 for this class, not the 90 a cohort session runs. Null falls back to
+  /// the track's sessionMinutes.
+  minutes   Int?
+  location  String?
+  zoomLink  String?
+  /// The Zoom meeting and Google Calendar event this session owns, when the CRM
+  /// created them rather than somebody pasting a link in. Written by the CRM,
+  /// exactly as on CohortSchedule.
+  zoomMeetingId   String?
+  calendarEventId String?
+  provisionedAt   DateTime? @db.Timestamptz(6)
+
+  /// What is due BEFORE this meeting. On a lab this is the ticket in: no
+  /// ticket, and the student is booked into office hours rather than turned
+  /// away. ticketIn is the human sentence naming it, said in the same words in
+  /// the Tuesday close and in the pre-work.
+  preworkDue   DateTime? @db.Timestamptz(6)
+  ticketIn     String?
+
+  recordingUrl String?
+  deckUrl      String?
+  /// Facilitator-only. Never rendered to a student: see the private notes
+  /// boundary. The lab card, the stuck queue and what to watch for live here.
+  facilitatorNote String?
+
+  attendance SessionAttendance[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@unique([cohortId, sequence])
+  @@index([cohortId, startsAt])
+  @@index([moduleId])
+}
+
+/// Who was in the room, per meeting.
+///
+/// AttendanceRecord is unique on (userId, moduleId) and is left exactly as it
+/// is: it is the record for every cohort that has already run, and nothing is
+/// migrated or dropped. It simply cannot express "present on Tuesday, absent on
+/// Thursday", which is the question a 28-session class asks.
+model SessionAttendance {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// PRESENT | ABSENT | EXCUSED | LATE. Four states and not a boolean, because
+  /// the grade rule turns on them: an excused absence is not one of the two
+  /// free misses, and an unmarked session is not an absence.
+  status    String   @default("PRESENT")
+  note      String?
+  /// The user id of whoever marked it, so a TA's mark in the room and a
+  /// correction made afterwards are tellable apart.
+  markedBy  String?
+  markedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+}
+
+/// Someone who teaches or assists ONE cohort.
+///
+/// `User.role === "ADMIN"` is checked in dozens of places and means access to
+/// everything: every cohort, every submission, the coaching notes, the CRM. A
+/// university TA needs the roster, the submissions, the attendance and the
+/// gradebook for the one class they are in the room for, and must not be handed
+/// the rest. That is a membership, not a role, so it lives here.
+///
+/// Access is "global admin, OR staff on this cohort". Adding a row grants
+/// nothing anywhere else, and nothing in the CRM.
+model CohortStaff {
+  id       String  @id @default(cuid())
+  cohortId String
+  cohort   Cohort  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// INSTRUCTOR | TA.
+  ///
+  /// INSTRUCTOR is the instructor of record: everything inside this class,
+  /// coaching notes included. TA is the room: roster, submissions, attendance,
+  /// gradebook, and no notes. Defaults to TA, the narrower of the two, so a row
+  /// written without thinking grants less rather than more.
+  role     String  @default("TA")
+  /// Who added them, for the audit trail.
+  addedBy  String?
+  addedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([cohortId, userId])
+  @@index([userId])
 }
 
 model CrmBridgeToken {
@@ -818,6 +965,9 @@ model Module {
   progress          Progress[]
   attendance        AttendanceRecord[]
   cohortSchedules   CohortSchedule[]
+  /// The individual meetings that serve this module, for cohorts that meet
+  /// more than once per module.
+  cohortSessions    CohortSession[]
   preworkQuestions  PreworkQuestion[]
   preworkSubmissions PreworkSubmission[]
   oneOnOneSlots     OneOnOneSlot[]
@@ -1382,6 +1532,10 @@ model User {
   attendanceRecords    AttendanceRecord[]
   crmLead              Lead?
   preworkSubmissions   PreworkSubmission[]
+  /// Per-meeting attendance, for a cohort that meets twice a week.
+  sessionAttendance    SessionAttendance[]
+  /// Cohorts this person teaches or assists, as instructor of record or TA.
+  cohortStaff          CohortStaff[]
   oneOnOneSlots        OneOnOneSlot[]       @relation("AdminSlots")
   oneOnOneBookings     OneOnOneBooking[]    @relation("StudentBookings")
   discussionPosts      DiscussionPost[]

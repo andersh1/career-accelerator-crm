@@ -28,9 +28,15 @@ export function showsCohortLabel(track: string | null | undefined): boolean {
  *
  * Off does not mean no Slack: a private client with their own workspace has it
  * on `Cohort.slackInviteUrl`, and that is honoured everywhere.
+ *
+ * Written as an allowlist, not `!== "PRIVATE"`. A new track must say yes to be
+ * handed the Fellowship workspace, because the failure mode of getting this
+ * wrong is a stranger inside the participant Slack and there is no taking that
+ * back. The university track says no: Wake students are enrolled
+ * undergraduates, not Fellows.
  */
 export function hasCommunitySlack(track: string | null | undefined): boolean {
-  return track !== "PRIVATE";
+  return track === "COHORT" || track === null || track === undefined;
 }
 
 /**
@@ -47,5 +53,8 @@ export function hasCommunitySlack(track: string | null | undefined): boolean {
  * session by half an hour the moment it was pointed at a cohort.
  */
 export function sessionMinutes(track: string | null | undefined): number {
-  return track === "PRIVATE" ? 60 : 90;
+  if (track === "PRIVATE") return 60;
+  // A university class period, not a cohort session. 75 minutes twice a week.
+  if (track === "UNIVERSITY") return 75;
+  return 90;
 }

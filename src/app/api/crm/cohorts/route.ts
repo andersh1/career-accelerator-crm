@@ -63,8 +63,10 @@ export async function POST(req: NextRequest) {
       startDate: startDate ? new Date(startDate + "T12:00:00.000Z") : null,
       // COHORT unless explicitly told otherwise — see the LMS src/lib/track.ts.
       // A bad value would silently switch off the hot seat and peer roster for
-      // a real group, so only the two known strings are accepted.
-      track:     track === "PRIVATE" ? "PRIVATE" : "COHORT",
+      // a real group, so only the known strings are accepted. UNIVERSITY is a
+      // class delivered for academic credit: it meets twice a week, so its
+      // calendar lives in CohortSession rather than CohortSchedule.
+      track:     track === "PRIVATE" || track === "UNIVERSITY" ? track : "COHORT",
       isActive:  true,
     },
   });
