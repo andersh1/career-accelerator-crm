@@ -355,6 +355,14 @@ model CohortSession {
   studentBrief String?
   /// What a student leaves this class holding. One line, shown under the brief.
   walkOut      String?
+  /// WHAT THIS WEEK IS ABOUT, in one sentence, written on the week's FIRST
+  /// class and read for the whole week. A week has one theme and two classes,
+  /// so storing it on both would be the same sentence twice, free to drift.
+  ///
+  /// It exists because the alternative is making one up: This Week was joining
+  /// the two class titles with "and", which is accurate and reads like nobody
+  /// wrote it. A week's theme is part of the curriculum, like the rest.
+  weekTheme    String?
 
   attendance SessionAttendance[]
   createdAt  DateTime @default(now())
