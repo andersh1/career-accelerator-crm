@@ -216,7 +216,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!m.moduleId) continue;
     const dates = {
       opensAt:       fromEasternNaive(m.opensAt),
-      assignmentDue: fromEasternNaive(m.assignmentDue),
+      // Null for a module with nothing to submit, which is orientation.
+      assignmentDue: m.assignmentDue ? fromEasternNaive(m.assignmentDue) : null,
     };
     await prisma.cohortModule.upsert({
       where:  { cohortId_moduleId: { cohortId: params.id, moduleId: m.moduleId } },

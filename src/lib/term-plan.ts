@@ -68,7 +68,15 @@ export interface TermWeekTemplate {
  *   module of its own.
  */
 export const WAKE_SPRING_2027: TermWeekTemplate[] = [
-  { week: 1,  moduleNumber: null, label: "Orientation and kick-off",
+  /**
+   * Orientation is Module 0, not "no module".
+   *
+   * It has pre-work, a work session and a skills lab, so it needs somewhere for
+   * that pre-work to live, and a module is what the LMS calls that. Numbered 0
+   * so the eight keep their numbers. Nothing is submitted at the end of it: see
+   * MODULES_WITHOUT_ASSIGNMENT in the LMS.
+   */
+  { week: 1,  moduleNumber: 0, label: "Orientation and kick-off",
     first:  { title: "What this course is, and what you leave with", kind: "ORIENTATION" },
     second: { title: "Get set up and start the three inputs", kind: "LAB", labKind: "STUDIO" } },
 
@@ -267,11 +275,21 @@ export interface PlannedModule {
   moduleNumber: number;
   /** Naive ET. */
   opensAt: string;
-  assignmentDue: string;
+  /** Null for a module with nothing to submit. */
+  assignmentDue: string | null;
   weightPct: number | null;
   firstWeek: number;
   lastWeek: number;
 }
+
+/**
+ * Modules with nothing to submit, so no deadline and no weight.
+ *
+ * Orientation only. It mirrors MODULES_WITHOUT_ASSIGNMENT in the LMS, which also
+ * holds Module 8: Demo Day has no upload, but it does have the 90-day plan due
+ * after it, so its deadline stays.
+ */
+const NO_ASSIGNMENT = new Set<number>([0]);
 
 /**
  * Proposed weights, from the Grading tab of the curriculum map (Nov 11, 2026).
@@ -316,8 +334,14 @@ export function planModules(
         moduleNumber,
         // The Monday of the first week. A Tuesday first meeting is one day on.
         opensAt:       `${shiftDays(firstDate, -mondayOffset(firstDate))}T09:00`,
-        // The Friday of the last week, last thing.
-        assignmentDue: `${shiftDays(lastDate, fridayOffset(lastDate))}T23:59`,
+        /**
+         * The Friday of the last week, last thing. Null for a module with
+         * nothing to submit: orientation is not graded, and a deadline on a
+         * module with no assignment is a date a student cannot meet.
+         */
+        assignmentDue: NO_ASSIGNMENT.has(moduleNumber)
+          ? null
+          : `${shiftDays(lastDate, fridayOffset(lastDate))}T23:59`,
         weightPct:     weights[moduleNumber] ?? null,
         firstWeek:     first.week,
         lastWeek:      last.week,

@@ -53,30 +53,42 @@ for (let w = 0; w < MAP.length; w++) {
 expect(plan.every(s => s.startsAt.endsWith("T14:00")), "every meeting starts at 2:00 PM ET");
 expect(plan.every(s => s.minutes === 75), "every meeting is 75 minutes");
 expect(plan[0].kind === "ORIENTATION", "the term opens with orientation, not a workshop");
-expect(plan[0].moduleNumber === null, "orientation belongs to no module");
+// Orientation is Module 0: it has pre-work, a work session and a skills lab, so
+// it needs a module for that pre-work to live in. Numbered 0 so the eight keep
+// their numbers, and carrying no assignment and no weight.
+expect(plan[0].moduleNumber === 0, `orientation is Module 0 (got ${plan[0].moduleNumber})`);
 expect(plan[26].kind === "DEMO_DAY" && plan[27].kind === "DEMO_DAY", "the last week is two Demo Day sessions");
 expect(plan.filter(s => s.kind === "LAB").length === 13, `13 labs (got ${plan.filter(s => s.kind === "LAB").length})`);
 expect(plan.filter(s => s.kind === "LAB").every(s => s.labKind), "every lab says which kind it is");
 
 // The modules derived from those meetings.
 const mods = planModules(plan);
-expect(mods.length === 8, `8 modules derived from the term (got ${mods.length})`);
+expect(mods.length === 9, `9 modules derived from the term, orientation plus the eight (got ${mods.length})`);
+expect(mods[0].moduleNumber === 0 && mods[0].assignmentDue === null,
+  "orientation has no assignment deadline: it is not graded, and a deadline for nothing is a date nobody can meet");
+expect(mods[0].weightPct === null, "orientation carries no weight in the grade");
+
+const graded = mods.filter(m => m.assignmentDue);
+expect(graded.length === 8, `the eight graded modules each have a deadline (got ${graded.length})`);
 expect(mods.every(m => m.opensAt.endsWith("T09:00")), "every module opens at 9:00 AM ET");
-expect(mods.every(m => m.assignmentDue.endsWith("T23:59")), "every assignment is due at 11:59 PM ET");
+expect(graded.every(m => m.assignmentDue.endsWith("T23:59")), "every assignment is due at 11:59 PM ET");
 expect(
-  mods.every(m => new Date(m.opensAt) < new Date(m.assignmentDue)),
+  graded.every(m => new Date(m.opensAt) < new Date(m.assignmentDue)),
   "every module opens before its own assignment is due",
 );
 expect(
-  mods.every((m, i) => i === 0 || new Date(mods[i - 1].assignmentDue) <= new Date(m.assignmentDue)),
+  graded.every((m, i) => i === 0 || new Date(graded[i - 1].assignmentDue) <= new Date(m.assignmentDue)),
   "module deadlines run in order",
 );
 const weightTotal = Object.values(WAKE_WEIGHTS).reduce((a, b) => a + b, 0);
 expect(weightTotal === 90, `module weights total 90%, leaving 10% for attendance and touchpoints (got ${weightTotal})`);
 // Module 1 spans two weeks on the map: Jan 19 to Jan 28, so it opens the Monday
 // before the first meeting and is due the Friday of the second week.
-expect(mods[0].opensAt.startsWith("2027-01-18"), `Module 1 opens Mon Jan 18 (got ${mods[0].opensAt})`);
-expect(mods[0].assignmentDue.startsWith("2027-01-29"), `Module 1's assignment is due Fri Jan 29 (got ${mods[0].assignmentDue})`);
+const m1 = mods.find(m => m.moduleNumber === 1);
+expect(m1.opensAt.startsWith("2027-01-18"), `Module 1 opens Mon Jan 18 (got ${m1.opensAt})`);
+expect(m1.assignmentDue.startsWith("2027-01-29"), `Module 1's assignment is due Fri Jan 29 (got ${m1.assignmentDue})`);
+const m0 = mods.find(m => m.moduleNumber === 0);
+expect(m0.opensAt.startsWith("2027-01-11"), `orientation opens Mon Jan 11, the day before the first class (got ${m0.opensAt})`);
 
 /**
  * THE SECOND UNIVERSITY. The real test of "is this a model we can reuse" is
@@ -96,7 +108,8 @@ const asSaved = plan.map(s => ({
   moduleId: s.moduleNumber === null ? null : `mod-${s.moduleNumber}`,
   startsAt: new Date(`${s.startsAt}:00-05:00`),
 }));
-const moduleNumberById = new Map(Array.from({ length: 8 }, (_, i) => [`mod-${i + 1}`, i + 1]));
+// 0 through 8: orientation is a module now, and a copy has to carry it.
+const moduleNumberById = new Map(Array.from({ length: 9 }, (_, i) => [`mod-${i}`, i]));
 const copied = templateFromSessions(asSaved, moduleNumberById);
 const second = planTerm({ firstMeeting: "2027-08-31T10:00", template: copied, minutes: 50 });
 
@@ -127,7 +140,7 @@ console.log("\nThe modules as planned:\n");
 for (const m of mods) {
   console.log(
     `  M${m.moduleNumber}  weeks ${String(m.firstWeek).padStart(2)}-${String(m.lastWeek).padStart(2)}  ` +
-    `opens ${m.opensAt.split("T")[0]}  due ${m.assignmentDue.split("T")[0]}  ` +
+    `opens ${m.opensAt.split("T")[0]}  due ${m.assignmentDue ? m.assignmentDue.split("T")[0] : "not graded"}  ` +
     `${m.weightPct === null ? "unweighted" : m.weightPct + "%"}`,
   );
 }
