@@ -107,7 +107,7 @@ interface ReadinessStep {
   detail: string;
   where: string;
   href?: string;
-  tab?: "setup" | "roster" | "schedule";
+  tab?: "setup" | "roster" | "schedule" | "term" | "sessions";
 }
 
 interface GenRow {

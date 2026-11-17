@@ -27,7 +27,7 @@ export interface ReadinessStep {
   where: string;
   href?: string;
   /** A tab on this card the UI can switch to, so the step is one click. */
-  tab?: "setup" | "roster" | "schedule" | "sessions";
+  tab?: "setup" | "roster" | "schedule" | "term" | "sessions";
 }
 
 export interface ReadinessInput {
@@ -44,6 +44,11 @@ export interface ReadinessInput {
     preambleSkipped: boolean;
     module: { number: number };
   }[];
+  /**
+   * A university class's meetings, which stand in for the module schedule
+   * above. Empty for every other track.
+   */
+  sessions?: { sequence: number; kind: string; startsAt: Date | null; zoomLink: string | null }[];
   students: { onboardedAt: Date | null; invitedAt: Date | null }[];
   liveSessions: { published: boolean; zoomLink: string | null }[];
   /** Kick-off templates, with the body this cohort would actually be sent
@@ -64,6 +69,9 @@ const SLACK_INVITE_IN_COPY = /https:\/\/(?:join\.slack\.com\/|[a-z0-9-]+\.slack\
 export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[]; ready: boolean; outstanding: number } {
   const { cohort, schedules, students, liveSessions, templates, lmsUrl: lms } = input;
   const modules = input.moduleCount;
+  /** A class for academic credit: its calendar is meetings, not module rows. */
+  const isUniversity = cohort.track === "UNIVERSITY";
+  const sessions = input.sessions ?? [];
   type Step = ReadinessStep;
   const steps: Step[] = [];
   const missing = (sel: (s: (typeof schedules)[number]) => unknown) =>
@@ -74,7 +82,9 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     key: "basics",
     title: "Cohort details",
     status: "done",
-    detail: `${cohort.track === "PRIVATE" ? "Private 1:1 client" : "Group cohort"}${cohort.capacity ? ` · capacity ${cohort.capacity}` : ""}`,
+    detail: `${cohort.track === "PRIVATE" ? "Private 1:1 client"
+              : isUniversity ? "University class, for credit"
+              : "Group cohort"}${cohort.capacity ? ` · capacity ${cohort.capacity}` : ""}`,
     where: "Edit on this card",
     tab: "setup",
   });
@@ -84,7 +94,38 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
   const noUnlock = missing(s => s.startDate);
   const noSession = missing(s => s.sessionDate);
   const noDue = missing(s => s.assignmentDue);
-  if (schedules.length === 0) {
+  if (isUniversity) {
+    /**
+     * A university class is dated as twenty-eight meetings, not eight modules.
+     * Asking it for a module schedule would report "nothing set" beside a term
+     * that is fully laid out, and send somebody to a tab this cohort does not
+     * have.
+     */
+    const undated = sessions.filter(s => !s.startsAt).length;
+    const noLink  = sessions.filter(s => !s.zoomLink).length;
+    const orientation = sessions.find(s => s.kind === "ORIENTATION");
+    steps.push({
+      key: "schedule", title: "The term",
+      status: sessions.length === 0 ? "todo" : (undated || noLink) ? "warn" : "done",
+      detail: sessions.length === 0
+        ? "No meetings yet. Lay out the term from the date of the first class and the rest follows, spring break included."
+        : undated
+          ? `${sessions.length} meetings, but ${undated} have no date.`
+          : noLink
+            ? `All ${sessions.length} meetings dated. ${noLink} have no Zoom link, and Dan teaches on screen every other week.`
+            : `All ${sessions.length} meetings dated, with Zoom links.`,
+      where: "Go to the Term tab", tab: "term",
+    });
+    steps.push({
+      key: "orientation", title: "Orientation",
+      status: !orientation ? "todo" : orientation.zoomLink ? "done" : "warn",
+      detail: !orientation
+        ? "The term has no orientation meeting yet."
+        : `The first class of the term${orientation.startsAt ? `, ${orientation.startsAt.toISOString().slice(0, 10)}` : ""}`
+          + (orientation.zoomLink ? ", with a Zoom link." : ", with no Zoom link yet."),
+      where: "Go to the Term tab", tab: "term",
+    });
+  } else if (schedules.length === 0) {
     steps.push({
       key: "schedule", title: "Module schedule", status: "todo",
       detail: `Nothing set. All ${modules} modules would use the LMS global dates, which belong to the previous cohort.`,
@@ -112,8 +153,10 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     });
   }
 
-  // 3 ── Orientation
-  steps.push({
+  // 3 ── Orientation. A university class already had its orientation step above,
+  //      because its orientation is the first meeting of the term rather than a
+  //      date on the cohort.
+  if (!isUniversity) steps.push({
     key: "orientation",
     title: "Orientation",
     status: cohort.orientationDate ? (cohort.orientationZoomLink ? "done" : "warn") : "todo",
@@ -161,7 +204,20 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
     .filter(n => !isNaN(n))
     .sort((a, b) => a - b)
     .map(n => `M${n}`);
-  if (schedules.length === 0) {
+  if (isUniversity) {
+    /**
+     * The per-module kick-off email is dated off CohortSchedule.preambleDate,
+     * which a university class does not have. Said plainly as "not wired up
+     * yet" rather than shown as a todo pointing at a tab this cohort has not
+     * got: a step that cannot be done is worse than one that is absent, because
+     * it teaches people to ignore the list.
+     */
+    steps.push({
+      key: "preamble", title: "Kick-off emails", status: "optional",
+      detail: "Not wired up for a university class yet. Module kick-offs are dated off the module schedule, and this class is dated as meetings. Nothing will send, and nothing is silently missing.",
+      where: "Term tab", tab: "term",
+    });
+  } else if (schedules.length === 0) {
     steps.push({ key: "preamble", title: "Kick-off emails", status: "todo",
       detail: "Set the schedule first. Kick-off dates come from it.", where: "Go to the Schedule tab", tab: "schedule" });
   } else {
@@ -204,7 +260,7 @@ export function buildReadiness(input: ReadinessInput): { steps: ReadinessStep[];
         key: "slack-leak",
         title: "Slack invite in kick-off copy",
         status: "todo",
-        detail: `This client has no Slack, but the ${leaky.join(", ")} kick-off copy contains a Slack invite link. Sending it hands them the group cohort's workspace. Write a per-cohort override for ${leaky.join(", ")} with the Slack paragraph removed.`,
+        detail: `${isUniversity ? "This class has" : "This client has"} no Slack, but the ${leaky.join(", ")} kick-off copy contains a Slack invite link. Sending it hands them the Fellowship workspace. Write a per-cohort override for ${leaky.join(", ")} with the Slack paragraph removed.`,
         where: "Automation → Email Playbook",
         href: "/automation",
       });

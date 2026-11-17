@@ -27,12 +27,18 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
   if (!cohort) return NextResponse.json({ error: "No such cohort" }, { status: 404 });
 
-  const [moduleCount, schedules, students, liveSessions, templates, overrides] = await Promise.all([
+  const [moduleCount, schedules, termSessions, students, liveSessions, templates, overrides] = await Promise.all([
     prisma.module.count(),
     prisma.cohortSchedule.findMany({
       where: { cohortId: params.id },
       select: { startDate: true, sessionDate: true, assignmentDue: true, preworkDue: true,
                 preambleDate: true, preambleSkipped: true, sessionZoomLink: true, module: { select: { number: true } } },
+    }),
+    // A university class's calendar. Empty for every other track.
+    prisma.cohortSession.findMany({
+      where:   { cohortId: params.id },
+      orderBy: { sequence: "asc" },
+      select:  { sequence: true, kind: true, startsAt: true, zoomLink: true },
     }),
     prisma.user.findMany({
       where: { cohortId: params.id, role: "STUDENT", withdrawnAt: null },
@@ -57,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const ownBody = new Map(overrides.map(o => [o.key, o.body]));
   const result = buildReadiness({
-    cohort, moduleCount, schedules, students, liveSessions,
+    cohort, moduleCount, schedules, sessions: termSessions, students, liveSessions,
     templates: templates.map(t => ({
       ...t,
       body: ownBody.get(t.key) ?? t.body,

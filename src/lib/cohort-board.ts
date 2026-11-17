@@ -52,7 +52,7 @@ export interface BoardStep {
   detail: string;
   /** Where to go and do it. */
   where: string;
-  tab?: "setup" | "roster" | "schedule" | "sessions" | "emails";
+  tab?: "setup" | "roster" | "schedule" | "term" | "sessions" | "emails";
   href?: string;
   /**
    * Required steps hold a cohort in its phase. Optional ones are shown but
@@ -84,6 +84,15 @@ export interface BoardInput {
     preworkDue: Date | null; preambleDate: Date | null; preambleSentAt: Date | null;
     preambleSkipped: boolean; sessionZoomLink: string | null;
     module: { number: number; id: string };
+  }[];
+  /**
+   * A university class's meetings, which are its calendar instead of the module
+   * schedule above. Empty for every other track, and the steps that care read
+   * one or the other rather than both.
+   */
+  sessions?: {
+    sequence: number; kind: string; startsAt: Date | null;
+    preworkDue: Date | null; zoomLink: string | null; provisionedAt: Date | null;
   }[];
   students: { onboardedAt: Date | null; invitedAt: Date | null }[];
   liveSessions: { published: boolean; zoomLink: string | null; startsAt: Date | null }[];
@@ -133,11 +142,20 @@ export function buildBoard(input: BoardInput): BoardCard {
   const invited = students.filter(s => s.invitedAt).length;
   const onboarded = students.filter(s => s.onboardedAt).length;
 
+  /**
+   * A university class keeps its calendar in sessions, not in the module
+   * schedule, so the three steps about dates and links ask the other table and
+   * send you to the other tab. Everything else on the board is the same work.
+   */
+  const isUniversity = cohort.track === "UNIVERSITY";
+  const sessions = input.sessions ?? [];
+
   // ── BUILDING ────────────────────────────────────────────────────────────
   steps.push({
     key: "basics", phase: "building", required: true, status: "done",
     title: "Cohort details",
-    detail: `${cohort.track === "PRIVATE" ? "Private 1:1 client" : "Group cohort"}`
+    detail: `${cohort.track === "PRIVATE" ? "Private 1:1 client"
+             : isUniversity ? "University class, for credit" : "Group cohort"}`
       + `${cohort.capacity ? ` · capacity ${cohort.capacity}` : ""}`
       + `${cohort.startDate ? ` · starts ${cohort.startDate.toISOString().slice(0, 10)}` : " · no start date"}`,
     where: "Setup tab", tab: "setup",
@@ -161,7 +179,18 @@ export function buildBoard(input: BoardInput): BoardCard {
   const noUnlock = missing(s => s.startDate);
   const noSession = missing(s => s.sessionDate);
   const noDue = missing(s => s.assignmentDue);
-  steps.push({
+  const undatedSessions = sessions.filter(s => !s.startsAt).length;
+  steps.push(isUniversity ? {
+    key: "schedule", phase: "building", required: true,
+    status: sessions.length === 0 ? "todo" : undatedSessions ? "warn" : "done",
+    title: "The term",
+    detail: sessions.length === 0
+      ? "No meetings yet. Lay out the term from the first class and the rest follows, spring break included."
+      : undatedSessions
+        ? `${undatedSessions} of ${sessions.length} meetings have no date.`
+        : `All ${sessions.length} meetings dated, ${new Date(Math.min(...sessions.map(s => s.startsAt!.getTime()))).toISOString().slice(0, 10)} to ${new Date(Math.max(...sessions.map(s => s.startsAt!.getTime()))).toISOString().slice(0, 10)}.`,
+    where: "Term tab", tab: "term",
+  } : {
     key: "schedule", phase: "building", required: true,
     status: schedules.length === 0 ? "todo"
       : (noUnlock.length || noSession.length || noDue.length) ? "warn" : "done",
@@ -180,7 +209,16 @@ export function buildBoard(input: BoardInput): BoardCard {
 
   // ── PREPARING ───────────────────────────────────────────────────────────
   const noZoom = missing(s => s.sessionZoomLink);
-  steps.push({
+  const meetingsNoZoom = sessions.filter(s => !s.zoomLink).length;
+  steps.push(isUniversity ? {
+    key: "module-zoom", phase: "preparing", required: true,
+    status: sessions.length === 0 ? "todo" : meetingsNoZoom ? "warn" : "done",
+    title: "Meeting Zoom links",
+    detail: sessions.length === 0 ? "Lay out the term first."
+      : meetingsNoZoom ? `${meetingsNoZoom} of ${sessions.length} meetings have no link. Dan teaches on screen every other week, so the room needs one even on an in-person day.`
+      : "Every meeting has its link.",
+    where: "Term tab", tab: "term",
+  } : {
     key: "module-zoom", phase: "preparing", required: true,
     status: schedules.length === 0 ? "todo" : noZoom.length ? "warn" : "done",
     title: "Session Zoom links",
@@ -190,7 +228,22 @@ export function buildBoard(input: BoardInput): BoardCard {
     where: "Schedule tab", tab: "schedule",
   });
 
-  steps.push({
+  /**
+   * Orientation for a university class is the first meeting of the term, not a
+   * date on the Cohort. Asking for Cohort.orientationDate would have it reading
+   * "no date set" forever, next to a term whose first session is orientation.
+   */
+  const orientationSession = sessions.find(s => s.kind === "ORIENTATION");
+  steps.push(isUniversity ? {
+    key: "orientation", phase: "preparing", required: true,
+    status: !orientationSession ? "todo" : !orientationSession.zoomLink ? "warn" : "done",
+    title: "Orientation",
+    detail: !orientationSession
+      ? "The term has no orientation meeting. Lay out the term."
+      : `${orientationSession.startsAt?.toISOString().slice(0, 10) ?? "undated"}, the first class of the term`
+        + (orientationSession.zoomLink ? " with a Zoom link." : ", with no Zoom link yet."),
+    where: "Term tab", tab: "term",
+  } : {
     key: "orientation", phase: "preparing", required: true,
     status: !cohort.orientationDate ? "todo" : !cohort.orientationZoomLink ? "warn" : "done",
     title: "Orientation",
@@ -204,16 +257,21 @@ export function buildBoard(input: BoardInput): BoardCard {
   // Slack. Required for a group, deliberately not for a private client: the
   // shared workspace is the group's, and a 1:1 client landing in it is the
   // bug this step exists to stop happening twice.
-  const isPrivate = cohort.track === "PRIVATE";
+  // A university class is in the same position as a private client here: the
+  // shared workspace belongs to the Fellows, and enrolled undergraduates are not
+  // Fellows. Neither track is ever handed it, so neither is held up by it.
+  const noSharedSlack = cohort.track === "PRIVATE" || isUniversity;
   steps.push({
-    key: "slack", phase: "preparing", required: !isPrivate,
+    key: "slack", phase: "preparing", required: !noSharedSlack,
     status: cohort.slackInviteUrl ? "done"
-      : isPrivate ? "optional"
+      : noSharedSlack ? "optional"
       : input.sharedSlackSet ? "done" : "todo",
     title: "Slack",
     detail: cohort.slackInviteUrl
       ? "This cohort has its own workspace."
-      : isPrivate
+      : isUniversity
+        ? "No workspace of their own, and a university class is never given the shared Fellowship one. Set a link here if this class should have Slack at all."
+      : noSharedSlack
         ? "No workspace of their own, and a private client is deliberately never given the shared one. Set a link here if they should have Slack at all."
         : input.sharedSlackSet
           ? "Using the shared Vantage workspace."

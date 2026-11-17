@@ -21,7 +21,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, AlertTriangle, CheckCircle2, Circle, MinusCircle, ChevronRight } from "lucide-react";
 import { PHASES, type Phase, type BoardCard, type StepStatus } from "@/lib/cohort-board";
 
-type Tab = "setup" | "roster" | "schedule" | "sessions" | "emails";
+type Tab = "setup" | "roster" | "schedule" | "term" | "sessions" | "emails";
 
 const STATUS_ICON: Record<StepStatus, { icon: typeof Circle; color: string; label: string }> = {
   done:     { icon: CheckCircle2, color: "#086c64", label: "done" },

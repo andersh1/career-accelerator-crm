@@ -35,13 +35,21 @@ export async function GET(req: NextRequest) {
   if (cohorts.length === 0) return NextResponse.json({ cards: [] });
 
   const ids = cohorts.map(c => c.id);
-  const [moduleCount, schedules, students, liveSessions, recordings, sharedSlack] = await Promise.all([
+  const [moduleCount, schedules, termSessions, students, liveSessions, recordings, sharedSlack] = await Promise.all([
     prisma.module.count(),
     prisma.cohortSchedule.findMany({
       where: { cohortId: { in: ids } },
       select: { cohortId: true, startDate: true, sessionDate: true, assignmentDue: true,
                 preworkDue: true, preambleDate: true, preambleSentAt: true, preambleSkipped: true,
                 sessionZoomLink: true, module: { select: { number: true, id: true } } },
+    }),
+    // A university class's calendar. Empty for every other track, and the board
+    // steps read this or the module schedule, never both.
+    prisma.cohortSession.findMany({
+      where:   { cohortId: { in: ids } },
+      orderBy: { sequence: "asc" },
+      select: { cohortId: true, sequence: true, kind: true, startsAt: true,
+                preworkDue: true, zoomLink: true, provisionedAt: true },
     }),
     prisma.user.findMany({
       where: { cohortId: { in: ids }, role: "STUDENT", withdrawnAt: null },
@@ -76,6 +84,7 @@ export async function GET(req: NextRequest) {
     },
     moduleCount,
     schedules: by(schedules, c.id),
+    sessions: by(termSessions, c.id),
     students: by(students, c.id),
     liveSessions: by(liveSessions, c.id),
     modulesWithRecording: by(recordings, c.id)
