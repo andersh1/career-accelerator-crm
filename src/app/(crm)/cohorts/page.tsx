@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import CohortBoard from "@/components/crm/CohortBoard";
 import SessionProvisioner from "@/components/crm/SessionProvisioner";
+import TermTab from "@/components/crm/TermTab";
 import Link from "next/link";
 import { toEasternInput } from "@/lib/timezone";
 import { Plus, Edit2, Check, X, Loader2, Power, GraduationCap, Rocket, ChevronDown, ChevronUp, Target, AlertTriangle, Send, BookOpen, Calendar, Link2, MapPin, Save, CalendarDays, FileText, Film } from "lucide-react";
@@ -134,7 +135,12 @@ interface EmailRow {
   overridden: boolean;
 }
 
-type CohortTab = "setup" | "roster" | "schedule" | "sessions" | "emails";
+/**
+ * "term" replaces "schedule" for a UNIVERSITY cohort rather than joining it. A
+ * class has one calendar — twenty-eight meetings in CohortSession — and offering
+ * both tabs would invite somebody to fill in module rows nothing reads.
+ */
+type CohortTab = "setup" | "roster" | "schedule" | "term" | "sessions" | "emails";
 
 interface ScheduleEntry {
   moduleId:        string;
@@ -176,7 +182,7 @@ export default function CohortsPage() {
   const [newName,       setNewName]       = useState("");
   const [newCap,        setNewCap]        = useState("");
   const [newStartDate,  setNewStartDate]  = useState("");
-  const [newTrack,      setNewTrack]      = useState<"COHORT" | "PRIVATE">("COHORT");
+  const [newTrack,      setNewTrack]      = useState<"COHORT" | "PRIVATE" | "UNIVERSITY">("COHORT");
   const [savingNew,     setSavingNew]     = useState(false);
 
   // Edit
@@ -424,13 +430,14 @@ export default function CohortsPage() {
             />
             <select
               value={newTrack}
-              onChange={e => setNewTrack(e.target.value as "COHORT" | "PRIVATE")}
+              onChange={e => setNewTrack(e.target.value as "COHORT" | "PRIVATE" | "UNIVERSITY")}
               className="w-48 px-3 py-2.5 text-sm rounded-xl focus:outline-none"
               style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
-              title="A private cohort is one paying 1:1 client"
+              title="A private cohort is one paying 1:1 client. A university class meets twice a week for academic credit and is laid out as a term."
             >
               <option value="COHORT">Group cohort</option>
               <option value="PRIVATE">Private — 1:1 client</option>
+              <option value="UNIVERSITY">University class — for credit</option>
             </select>
             <div className="flex gap-2">
               <button
@@ -1437,7 +1444,7 @@ function CohortCard({
         <div className="border-t" style={{ borderColor: "#e4e0d6" }}>
           {/* Tab bar */}
           <div className="flex border-b px-5" style={{ borderColor: "#e4e0d6", background: "#f8f6f1" }}>
-            {(["setup", "roster", "schedule", "sessions", "emails"] as CohortTab[]).map(tab => (
+            {(["setup", "roster", cohort.track === "UNIVERSITY" ? "term" : "schedule", "sessions", "emails"] as CohortTab[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1451,12 +1458,19 @@ function CohortCard({
                   ? (readiness && readiness.outstanding > 0 ? `Setup (${readiness.outstanding})` : "Setup")
                   : tab === "roster" ? `Roster (${enrolled.length})`
                   : tab === "schedule" ? "Schedule"
+                  : tab === "term" ? "Term"
                   : tab === "sessions" ? "Sessions"
                   : (emails && emails.some(e => e.overridden) ? `Emails (${emails.filter(e => e.overridden).length})` : "Emails")}
               </button>
             ))}
           </div>
 
+
+          {/* Term tab — a university class's 28 meetings. Only reachable for a
+              UNIVERSITY cohort, since that is the only track with sessions. */}
+          {activeTab === "term" && cohort.track === "UNIVERSITY" && (
+            <TermTab cohortId={cohort.id} cohortName={cohort.name} />
+          )}
 
           {/* Emails tab — per-cohort overrides of the shared copy. */}
           {activeTab === "emails" && (
