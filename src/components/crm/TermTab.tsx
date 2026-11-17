@@ -13,7 +13,7 @@
  * a list of moves rather than a wall of dates to check by eye.
  */
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertTriangle, CalendarDays, Video, Users } from "lucide-react";
+import { Loader2, Check, AlertTriangle, CalendarDays, Video, Users, ClipboardList } from "lucide-react";
 
 interface TermSession {
   id: string;
@@ -75,6 +75,145 @@ function fmtNaive(naive: string) {
 
 /** Another university class whose term can be copied as the shape for this one. */
 interface CopySource { id: string; name: string; sessions: number }
+
+interface RosterPlanRow {
+  name: string; email: string; line: number;
+  action: "create" | "enrol" | "already-here" | "blocked";
+  note: string;
+}
+
+/**
+ * The class list, pasted.
+ *
+ * A Fellow arrives through the pipeline. A university student arrives on a list
+ * from the registrar, with no lead, no deal and no tuition, so this takes the
+ * list as it comes: name and email per line, either order, commas or tabs,
+ * header row or not.
+ *
+ * Previews before it writes. The two bad outcomes are both silent — a typo makes
+ * an account nobody can ever sign in to, and an address already enrolled
+ * elsewhere would be moved out of their own cohort — so each row says what would
+ * happen and why, and the second case is refused rather than resolved.
+ */
+function RosterImport({ cohortId }: { cohortId: string }) {
+  const [text, setText]     = useState("");
+  const [domain, setDomain] = useState("");
+  const [plan, setPlan]     = useState<RosterPlanRow[] | null>(null);
+  const [skipped, setSkipped] = useState<{ line: number; raw: string; why: string }[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [busy, setBusy]     = useState(false);
+  const [done, setDone]     = useState<string | null>(null);
+
+  async function run(apply: boolean) {
+    setBusy(true); setDone(null);
+    const res = await fetch(`/api/crm/cohorts/${cohortId}/roster`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, domain: domain || undefined, apply }),
+    });
+    const d = await res.json();
+    setBusy(false);
+    if (!res.ok) { setPlan(null); setWarnings([d.error ?? "Could not read that list."]); setSkipped(d.skipped ?? []); return; }
+    setWarnings(d.warnings ?? []);
+    setSkipped(d.skipped ?? []);
+    if (apply) {
+      setPlan(null); setText("");
+      setDone(`${d.created} account${d.created === 1 ? "" : "s"} created, ${d.enrolled} existing account${d.enrolled === 1 ? "" : "s"} added. ${d.next}`);
+    } else {
+      setPlan(d.plan);
+    }
+  }
+
+  const willWrite = plan?.filter(p => p.action === "create" || p.action === "enrol").length ?? 0;
+
+  return (
+    <div className="rounded-xl border p-3 space-y-3" style={{ borderColor: "#e4e0d6", background: "white" }}>
+      <div className="flex items-center gap-2">
+        <ClipboardList size={14} style={{ color: "#086c64" }} />
+        <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "#086c64" }}>
+          The class list
+        </span>
+      </div>
+      <p className="text-xs" style={{ color: "#5a6663" }}>
+        Paste what the registrar sends: a name and an email on each line, either order, commas or
+        tabs. This makes the accounts. Nobody is emailed until you publish the cohort.
+      </p>
+
+      <textarea
+        value={text}
+        onChange={e => { setText(e.target.value); setPlan(null); }}
+        rows={5}
+        placeholder={"Ada Lovelace, alovelace@wfu.edu\nbbarton@wfu.edu, Clara Barton"}
+        className="w-full px-3 py-2 text-sm rounded-xl focus:outline-none font-mono"
+        style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+      />
+
+      <div className="flex flex-wrap gap-2 items-end">
+        <label className="text-xs" style={{ color: "#5a6663" }}>
+          Expected email domain (optional)
+          <input
+            value={domain}
+            onChange={e => setDomain(e.target.value)}
+            placeholder="wfu.edu"
+            className="mt-1 block px-3 py-2 text-sm rounded-xl focus:outline-none"
+            style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+          />
+        </label>
+        <button
+          onClick={() => void run(false)}
+          disabled={busy || !text.trim()}
+          className="px-4 py-2 text-sm font-semibold rounded-xl transition disabled:opacity-40"
+          style={{ border: "1px solid #086c64", color: "#086c64" }}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : "Check the list"}
+        </button>
+        {plan && willWrite > 0 && (
+          <button
+            onClick={() => void run(true)}
+            disabled={busy}
+            className="px-4 py-2 text-sm font-semibold text-white rounded-xl transition disabled:opacity-40"
+            style={{ background: "#086c64" }}
+          >
+            Add {willWrite} student{willWrite === 1 ? "" : "s"}
+          </button>
+        )}
+      </div>
+
+      {warnings.length > 0 && (
+        <div className="rounded-xl p-3 text-xs space-y-1" style={{ background: "#fdf8ed", color: "#8a5a1c" }}>
+          {warnings.map((w, i) => <div key={i}>{w}</div>)}
+        </div>
+      )}
+
+      {skipped.length > 0 && (
+        <div className="rounded-xl p-3 text-xs space-y-1" style={{ background: "#fdf2f2", color: "#8a1c1c" }}>
+          {skipped.map(s => <div key={s.line}>Line {s.line}: {s.why} — <code>{s.raw}</code></div>)}
+        </div>
+      )}
+
+      {plan && (
+        <table className="w-full text-xs">
+          <tbody>
+            {plan.map(p => (
+              <tr key={p.email} className="border-t" style={{ borderColor: "#f0ede5" }}>
+                <td className="py-1.5 pr-2" style={{ color: "#14211f" }}>{p.name}</td>
+                <td className="py-1.5 pr-2" style={{ color: "#5a6663" }}>{p.email}</td>
+                <td className="py-1.5" style={{
+                  color: p.action === "blocked" ? "#8a1c1c"
+                       : p.action === "already-here" ? "#949598" : "#086c64",
+                }}>
+                  {p.note}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {done && <div className="rounded-xl p-3 text-xs" style={{ background: "#f0f7f6", color: "#086c64" }}>{done}</div>}
+    </div>
+  );
+}
 
 interface StaffRow {
   userId: string; name: string; email: string;
@@ -497,6 +636,8 @@ export default function TermTab({ cohortId, cohortName }: { cohortId: string; co
           </table>
         </div>
       )}
+
+      <RosterImport cohortId={cohortId} />
 
       <StaffPanel cohortId={cohortId} />
 
