@@ -13,7 +13,7 @@
  * a list of moves rather than a wall of dates to check by eye.
  */
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertTriangle, CalendarDays, Video } from "lucide-react";
+import { Loader2, Check, AlertTriangle, CalendarDays, Video, Users } from "lucide-react";
 
 interface TermSession {
   id: string;
@@ -75,6 +75,159 @@ function fmtNaive(naive: string) {
 
 /** Another university class whose term can be copied as the shape for this one. */
 interface CopySource { id: string; name: string; sessions: number }
+
+interface StaffRow {
+  userId: string; name: string; email: string;
+  role: "INSTRUCTOR" | "TA"; addedAt: string; addedBy: string | null;
+  globalRole: string;
+}
+
+/**
+ * Who teaches this class.
+ *
+ * A university appoints an instructor of record and puts a TA in the room, and
+ * both sign in to the LMS: the TA takes the register for all 28 classes. Adding
+ * them grants that one class and nothing else.
+ *
+ * The set-password link is shown once, here, rather than emailed. A university
+ * employee receiving an unexplained email from a system nobody has mentioned to
+ * them is a bad first impression; Dan or Caleb introduces them and sends it.
+ */
+function StaffPanel({ cohortId }: { cohortId: string }) {
+  const [staff, setStaff] = useState<StaffRow[] | null>(null);
+  const [name, setName]   = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole]   = useState<"INSTRUCTOR" | "TA">("TA");
+  const [busy, setBusy]   = useState(false);
+  const [msg, setMsg]     = useState<string | null>(null);
+  const [link, setLink]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/crm/cohorts/${cohortId}/staff`);
+    if (res.ok) setStaff((await res.json()).staff);
+  }, [cohortId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function add() {
+    setBusy(true); setMsg(null); setLink(null);
+    const res = await fetch(`/api/crm/cohorts/${cohortId}/staff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, role }),
+    });
+    const d = await res.json();
+    setBusy(false);
+    if (!res.ok) { setMsg(d.error ?? "Could not add them."); return; }
+    setName(""); setEmail("");
+    setMsg(d.joinedExistingAccount ?? `Added. Send them the link below so they can set a password.`);
+    setLink(d.setPasswordUrl ?? null);
+    await load();
+  }
+
+  async function remove(userId: string, who: string) {
+    if (!confirm(`Remove ${who} from this class? Their account and everything they marked stays.`)) return;
+    await fetch(`/api/crm/cohorts/${cohortId}/staff?userId=${userId}`, { method: "DELETE" });
+    await load();
+  }
+
+  return (
+    <div className="rounded-xl border p-3 space-y-3" style={{ borderColor: "#e4e0d6", background: "white" }}>
+      <div className="flex items-center gap-2">
+        <Users size={14} style={{ color: "#086c64" }} />
+        <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "#086c64" }}>
+          Who teaches this class
+        </span>
+      </div>
+
+      {staff && staff.length > 0 && (
+        <ul className="space-y-1.5">
+          {staff.map(s => (
+            <li key={s.userId} className="flex items-center justify-between gap-2 text-xs">
+              <span>
+                <strong style={{ color: "#14211f" }}>{s.name}</strong>
+                <span style={{ color: "#949598" }}> · {s.email}</span>
+                <span style={{ color: "#5a6663" }}>
+                  {" · "}{s.role === "INSTRUCTOR" ? "Instructor of record" : "Teaching assistant"}
+                </span>
+                {s.globalRole === "ADMIN" && <span style={{ color: "#949598" }}> · also an admin</span>}
+              </span>
+              <button
+                onClick={() => void remove(s.userId, s.name)}
+                className="px-2 py-0.5 rounded-md"
+                style={{ border: "1px solid #e4e0d6", color: "#8a1c1c" }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {staff && staff.length === 0 && (
+        <p className="text-xs" style={{ color: "#949598" }}>
+          Nobody yet. The TA cannot take the register until they are added here.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-2 items-end">
+        <label className="text-xs" style={{ color: "#5a6663" }}>
+          Name
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="mt-1 block px-3 py-2 text-sm rounded-xl focus:outline-none"
+            style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+          />
+        </label>
+        <label className="text-xs flex-1 min-w-[200px]" style={{ color: "#5a6663" }}>
+          Email
+          <input
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="name@wfu.edu"
+            className="mt-1 block w-full px-3 py-2 text-sm rounded-xl focus:outline-none"
+            style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+          />
+        </label>
+        <label className="text-xs" style={{ color: "#5a6663" }}>
+          Role
+          <select
+            value={role}
+            onChange={e => setRole(e.target.value as "INSTRUCTOR" | "TA")}
+            className="mt-1 block px-3 py-2 text-sm rounded-xl focus:outline-none"
+            style={{ border: "1px solid #e4e0d6", color: "#14211f" }}
+          >
+            <option value="TA">Teaching assistant</option>
+            <option value="INSTRUCTOR">Instructor of record</option>
+          </select>
+        </label>
+        <button
+          onClick={() => void add()}
+          disabled={busy || !name.trim() || !email.trim()}
+          className="px-4 py-2 text-sm font-semibold text-white rounded-xl transition disabled:opacity-40"
+          style={{ background: "#086c64" }}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : "Add"}
+        </button>
+      </div>
+
+      <p className="text-xs" style={{ color: "#949598" }}>
+        A TA gets this class only: the roster, the submissions, the register and the gradebook.
+        Never the coaching notes, never another cohort, and nothing they can send to a student.
+        The instructor of record gets the same plus the notes for this class.
+      </p>
+
+      {msg && <div className="rounded-xl p-3 text-xs" style={{ background: "#f0f7f6", color: "#086c64" }}>{msg}</div>}
+      {link && (
+        <div className="rounded-xl p-3 text-xs break-all" style={{ background: "#fdf8ed", color: "#8a5a1c" }}>
+          Send them this to set a password. It works for one hour and is shown only now:
+          <br />
+          <code>{link}</code>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TermTab({ cohortId, cohortName }: { cohortId: string; cohortName: string }) {
   /**
@@ -344,6 +497,8 @@ export default function TermTab({ cohortId, cohortName }: { cohortId: string; co
           </table>
         </div>
       )}
+
+      <StaffPanel cohortId={cohortId} />
 
       {/* What is saved now */}
       {loading && <p className="text-xs" style={{ color: "#949598" }}>Loading the term…</p>}
