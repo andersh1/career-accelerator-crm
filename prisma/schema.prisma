@@ -139,6 +139,8 @@ model Cohort {
   /// Every class meeting, for a cohort that meets more than once a module.
   /// Empty for the eight-module cohorts, which keep using CohortSchedule.
   sessions        CohortSession[]
+  /// Per-module dates and weights, for a cohort whose modules are not weeks.
+  cohortModules   CohortModule[]
   /// The people who teach or assist THIS cohort, as opposed to global admins.
   staff           CohortStaff[]
 }
@@ -343,6 +345,43 @@ model CohortSession {
   @@unique([cohortId, sequence])
   @@index([cohortId, startsAt])
   @@index([moduleId])
+}
+
+/// A MODULE, AS ONE COHORT RUNS IT, when its weeks are not its sessions.
+///
+/// CohortSession answers "when do we meet". It cannot answer "when does this
+/// module open" or "when is its assignment due", and for a university class
+/// those are not properties of a meeting: Module 1 spans two weeks and four
+/// meetings, opens before the first of them, and has one deadline after the
+/// last. The eight-module cohorts keep both dates on CohortSchedule, where a
+/// module and a week are the same thing.
+///
+/// `weightPct` is here because the graded components of the Wake class are its
+/// modules (Self 10%, Discovery 15%, and so on, from the Grading tab) and the
+/// weights are per cohort rather than global: a later class may weight them
+/// differently, and the eight-module programme does not weight them at all.
+/// Null means not weighted, which is every cohort today.
+///
+/// Written by the CRM's term generator alongside the sessions; read by the LMS.
+model CohortModule {
+  id        String   @id @default(cuid())
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  /// When this module's content becomes visible to the class.
+  opensAt       DateTime? @db.Timestamptz(6)
+  /// The one deadline for the module's assignment, after its last meeting.
+  assignmentDue DateTime? @db.Timestamptz(6)
+  /// Share of the final grade, 0 to 100. Null outside a graded programme.
+  weightPct     Int?
+  /// What this cohort calls the module, when it differs from Module.title.
+  titleOverride String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([cohortId, moduleId])
+  @@index([cohortId])
 }
 
 /// Who was in the room, per meeting.
@@ -968,6 +1007,8 @@ model Module {
   /// The individual meetings that serve this module, for cohorts that meet
   /// more than once per module.
   cohortSessions    CohortSession[]
+  /// Per-cohort dates and weight for this module, where a module is not a week.
+  cohortModules     CohortModule[]
   preworkQuestions  PreworkQuestion[]
   preworkSubmissions PreworkSubmission[]
   oneOnOneSlots     OneOnOneSlot[]

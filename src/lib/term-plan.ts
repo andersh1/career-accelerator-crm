@@ -172,6 +172,94 @@ export interface PlannedSession {
   location: string | null;
 }
 
+/**
+ * A module as this term runs it: when it opens, and when its one assignment is
+ * due. Derived from the meetings rather than typed, because a module's weeks are
+ * a fact about the term.
+ *
+ * Opens on the Monday of its first week, so the class can read ahead over the
+ * weekend. The assignment is due the Friday night of its last week, which is the
+ * rule the eight-module programme already uses and the one everybody states.
+ * Weights come from the Grading tab and are confirmed by Dan, so they are set
+ * here and not invented per cohort.
+ */
+export interface PlannedModule {
+  moduleNumber: number;
+  /** Naive ET. */
+  opensAt: string;
+  assignmentDue: string;
+  weightPct: number | null;
+  firstWeek: number;
+  lastWeek: number;
+}
+
+/**
+ * Proposed weights, from the Grading tab of the curriculum map (Nov 11, 2026).
+ *
+ * Dan has not confirmed them, so they are a proposal in one place rather than a
+ * number typed into a form and forgotten. Attendance and touchpoints hold the
+ * remaining 10% and are not a module, which is why these sum to 90.
+ */
+export const WAKE_WEIGHTS: Record<number, number> = {
+  1: 10, // Self Statement
+  2: 15, // Industry Brief and Discovery Log
+  3: 10, // My Wedge and ten firms
+  4: 15, // Spec and a build that runs
+  5: 15, // The site with five things
+  6: 10, // Pipeline and project pitch
+  7: 5,  // Money Plan
+  8: 10, // Demo Day presentation and 90-day plan
+};
+
+/** The modules of a planned term, with their dates and weights. Pure. */
+export function planModules(
+  plan: PlannedSession[],
+  weights: Record<number, number> = WAKE_WEIGHTS,
+): PlannedModule[] {
+  const byModule = new Map<number, PlannedSession[]>();
+  for (const s of plan) {
+    if (s.moduleNumber === null) continue;
+    const list = byModule.get(s.moduleNumber) ?? [];
+    list.push(s);
+    byModule.set(s.moduleNumber, list);
+  }
+
+  return Array.from(byModule.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([moduleNumber, sessions]) => {
+      const sorted = [...sessions].sort((a, b) => a.sequence - b.sequence);
+      const first = sorted[0];
+      const last  = sorted[sorted.length - 1];
+      const firstDate = first.startsAt.split("T")[0];
+      const lastDate  = last.startsAt.split("T")[0];
+      return {
+        moduleNumber,
+        // The Monday of the first week. A Tuesday first meeting is one day on.
+        opensAt:       `${shiftDays(firstDate, -mondayOffset(firstDate))}T09:00`,
+        // The Friday of the last week, last thing.
+        assignmentDue: `${shiftDays(lastDate, fridayOffset(lastDate))}T23:59`,
+        weightPct:     weights[moduleNumber] ?? null,
+        firstWeek:     first.week,
+        lastWeek:      last.week,
+      };
+    });
+}
+
+/** Days back to the Monday of this date's week. */
+function mondayOffset(isoDate: string): number {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 Sun … 6 Sat
+  return dow === 0 ? 6 : dow - 1;
+}
+
+/** Days forward to the Friday of this date's week. */
+function fridayOffset(isoDate: string): number {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  // Sunday counts as the end of that week, not the start of the next one.
+  return dow === 0 ? -2 : 5 - dow;
+}
+
 const DEFAULTS = {
   secondDayOffset: 2,
   minutes: 75,

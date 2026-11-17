@@ -27,7 +27,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fromEasternNaive } from "@/lib/timezone";
-import { planTerm, validateTerm, type PlannedSession, type TermPlanInput } from "@/lib/term-plan";
+import { planTerm, planModules, validateTerm, type PlannedSession, type TermPlanInput } from "@/lib/term-plan";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -102,6 +102,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     };
   });
 
+  /**
+   * The modules, derived from the meetings: when each opens, when its one
+   * assignment is due, and its share of the grade. A module spans two weeks
+   * here, so neither date belongs to any single meeting.
+   */
+  const moduleRows = planModules(plan).map(m => ({
+    ...m,
+    moduleId:    moduleByNumber.get(m.moduleNumber)?.id ?? null,
+    moduleTitle: moduleByNumber.get(m.moduleNumber)?.title ?? null,
+  }));
+
   if (!body.apply) {
     return NextResponse.json({
       preview: true,
@@ -109,6 +120,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       sessions: rows.length,
       weeks: new Set(rows.map(r => r.week)).size,
       rows,
+      modules: moduleRows,
       errors,
     });
   }
@@ -141,6 +153,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   /**
+   * The per-module rows. The weight is only ever written when the row is new, so
+   * regenerating the dates in January cannot quietly undo a weight Dan changed.
+   */
+  let modulesWritten = 0;
+  for (const m of moduleRows) {
+    if (!m.moduleId) continue;
+    const dates = {
+      opensAt:       fromEasternNaive(m.opensAt),
+      assignmentDue: fromEasternNaive(m.assignmentDue),
+    };
+    await prisma.cohortModule.upsert({
+      where:  { cohortId_moduleId: { cohortId: params.id, moduleId: m.moduleId } },
+      create: { cohortId: params.id, moduleId: m.moduleId, ...dates, weightPct: m.weightPct },
+      update: dates,
+    });
+    modulesWritten++;
+  }
+
+  /**
    * Anything beyond the template's length is left in place and reported, never
    * deleted. A shorter template does not mean somebody wanted twenty-nine
    * through thirty-two thrown away, and a session may already carry a recording.
@@ -153,6 +184,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     ok: true,
     cohort: cohort.name,
     written,
+    modulesWritten,
     provisionedLeftAlone: rows.filter(r => r.provisioned).map(r => r.sequence),
     orphans,
   });

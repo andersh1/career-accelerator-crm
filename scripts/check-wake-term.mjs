@@ -13,7 +13,7 @@
  */
 import { register } from "node:module";
 register("./ts-loader.mjs", import.meta.url);
-const { planTerm, validateTerm, WAKE_SPRING_2027 } = await import("@/lib/term-plan.ts");
+const { planTerm, planModules, validateTerm, WAKE_SPRING_2027, WAKE_WEIGHTS } = await import("@/lib/term-plan.ts");
 
 /** Week: [Tuesday, Thursday], from the curriculum map. 2027. */
 const MAP = [
@@ -54,6 +54,35 @@ expect(plan[0].moduleNumber === null, "orientation belongs to no module");
 expect(plan[26].kind === "DEMO_DAY" && plan[27].kind === "DEMO_DAY", "the last week is two Demo Day sessions");
 expect(plan.filter(s => s.kind === "LAB").length === 13, `13 labs (got ${plan.filter(s => s.kind === "LAB").length})`);
 expect(plan.filter(s => s.kind === "LAB").every(s => s.labKind), "every lab says which kind it is");
+
+// The modules derived from those meetings.
+const mods = planModules(plan);
+expect(mods.length === 8, `8 modules derived from the term (got ${mods.length})`);
+expect(mods.every(m => m.opensAt.endsWith("T09:00")), "every module opens at 9:00 AM ET");
+expect(mods.every(m => m.assignmentDue.endsWith("T23:59")), "every assignment is due at 11:59 PM ET");
+expect(
+  mods.every(m => new Date(m.opensAt) < new Date(m.assignmentDue)),
+  "every module opens before its own assignment is due",
+);
+expect(
+  mods.every((m, i) => i === 0 || new Date(mods[i - 1].assignmentDue) <= new Date(m.assignmentDue)),
+  "module deadlines run in order",
+);
+const weightTotal = Object.values(WAKE_WEIGHTS).reduce((a, b) => a + b, 0);
+expect(weightTotal === 90, `module weights total 90%, leaving 10% for attendance and touchpoints (got ${weightTotal})`);
+// Module 1 spans two weeks on the map: Jan 19 to Jan 28, so it opens the Monday
+// before the first meeting and is due the Friday of the second week.
+expect(mods[0].opensAt.startsWith("2027-01-18"), `Module 1 opens Mon Jan 18 (got ${mods[0].opensAt})`);
+expect(mods[0].assignmentDue.startsWith("2027-01-29"), `Module 1's assignment is due Fri Jan 29 (got ${mods[0].assignmentDue})`);
+
+console.log("\nThe modules as planned:\n");
+for (const m of mods) {
+  console.log(
+    `  M${m.moduleNumber}  weeks ${String(m.firstWeek).padStart(2)}-${String(m.lastWeek).padStart(2)}  ` +
+    `opens ${m.opensAt.split("T")[0]}  due ${m.assignmentDue.split("T")[0]}  ` +
+    `${m.weightPct === null ? "unweighted" : m.weightPct + "%"}`,
+  );
+}
 
 console.log("\nThe term as planned:\n");
 for (const s of plan) {
