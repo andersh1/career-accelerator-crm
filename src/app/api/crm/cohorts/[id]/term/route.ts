@@ -74,6 +74,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       startsAt:      s.startsAt,
       preworkDue:    s.preworkDue,
       ticketIn:      s.ticketIn,
+      studentBrief:  s.studentBrief,
+      walkOut:       s.walkOut,
       minutes:       s.minutes,
       location:      s.location,
       zoomLink:      s.zoomLink,
@@ -99,6 +101,9 @@ interface TermPatch {
   location?: string | null;
   zoomLink?: string | null;
   facilitatorNote?: string | null;
+  /** Student-facing: what this class is, and what they leave with. */
+  studentBrief?: string | null;
+  walkOut?: string | null;
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -131,6 +136,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ...(body.location        !== undefined ? { location: body.location?.trim() || null } : {}),
       ...(body.zoomLink        !== undefined ? { zoomLink: body.zoomLink?.trim() || null } : {}),
       ...(body.facilitatorNote !== undefined ? { facilitatorNote: body.facilitatorNote?.trim() || null } : {}),
+      ...(body.studentBrief    !== undefined ? { studentBrief: body.studentBrief?.trim() || null } : {}),
+      ...(body.walkOut         !== undefined ? { walkOut: body.walkOut?.trim() || null } : {}),
       ...(body.startsAt        !== undefined ? { startsAt: naive(body.startsAt) } : {}),
       ...(body.preworkDue      !== undefined ? { preworkDue: naive(body.preworkDue) } : {}),
     };

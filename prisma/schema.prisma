@@ -343,6 +343,18 @@ model CohortSession {
   /// Facilitator-only. Never rendered to a student: see the private notes
   /// boundary. The lab card, the stuck queue and what to watch for live here.
   facilitatorNote String?
+  /// WHAT THIS CLASS IS, in the student's own second person.
+  ///
+  /// A module overview covers two weeks and four meetings here, which is too
+  /// coarse to answer "what happens on Thursday". This is that answer, and it is
+  /// the only student-facing prose a meeting carries. Markdown-ish plain text.
+  ///
+  /// Separate from facilitatorNote on purpose: one is for the room, one is for
+  /// the person coming to it, and the two must never be rendered in the same
+  /// place by accident.
+  studentBrief String?
+  /// What a student leaves this class holding. One line, shown under the brief.
+  walkOut      String?
 
   attendance SessionAttendance[]
   createdAt  DateTime @default(now())
